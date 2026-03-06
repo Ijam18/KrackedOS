@@ -1,19 +1,25 @@
 {
-    "name": "KRACKED_OS",
+    "name": "KRACKED_OS Builder Workspace",
     "short_name": "KRACKED_OS",
-    "description": "KRACKED_OS standalone builder workspace",
-    "start_url": "/",
+    "description": "The official builder workstation for KRACKED_OS. Now Everyone Can Build (NECB).",
+    "start_url": "/?pwa=true",
     "display": "standalone",
-    "background_color": "#ffffff",
+    "background_color": "#1c1917",
     "theme_color": "#22c55e",
-    "orientation": "portrait-primary",
+    "orientation": "any",
     "scope": "/",
     "icons": [
         {
             "src": "/icons/kd-logo.svg",
             "sizes": "512x512",
             "type": "image/svg+xml",
-            "purpose": "any maskable"
+            "purpose": "any"
+        },
+        {
+            "src": "/icons/kd-logo.svg",
+            "sizes": "192x192",
+            "type": "image/svg+xml",
+            "purpose": "maskable"
         }
     ],
     "categories": [
@@ -31,27 +37,10 @@
             "type": "image/png",
             "form_factor": "wide",
             "label": "Builder Dashboard"
-        },
-        {
-            "src": "/screenshots/chat.png",
-            "sizes": "1280x720",
-            "type": "image/png",
-            "form_factor": "wide",
-            "label": "AI Chat Interface"
-        },
-        {
-            "src": "/screenshots/studio.png",
-            "sizes": "1280x720",
-            "type": "image/png",
-            "form_factor": "wide",
-            "label": "Builder Studio"
         }
     ],
     "related_applications": [],
     "prefer_related_applications": false,
-    "edge_side_panel": {
-        "preferred_width": 480
-    },
     "launch_handler": {
         "client_mode": "navigate-existing"
     }

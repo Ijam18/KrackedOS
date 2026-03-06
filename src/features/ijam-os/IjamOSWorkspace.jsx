@@ -3670,7 +3670,7 @@ YOU DID IT. APP DEPLOYED!`);
                                 }}
                             >
                                 <span style={{ pointerEvents: 'none', flex: 1, minWidth: 0, textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                    {mobileActiveWindow ? (APP_REGISTRY.find((a) => a.type === mobileActiveWindow)?.label || 'KRACKED_OS') : 'KRACKED_OS'}
+                                    {activeWindow ? (APP_REGISTRY.find((a) => a.type === activeWindow)?.label || 'KRACKED_OS') : 'KRACKED_OS'}
                                 </span>
                                 <button
                                     type="button"
@@ -4828,7 +4828,7 @@ YOU DID IT. APP DEPLOYED!`);
                         { id: 'progress', label: 'Stats', icon: User, onTap: () => openApp('progress') },
                         { id: 'settings', label: 'Settings', icon: Settings, onTap: () => openApp('settings') }
                     ].map((item) => {
-                        const active = item.id === mobileActiveWindow || (item.id === 'home' && !mobileActiveWindow);
+                        const active = item.id === activeWindow || (item.id === 'home' && !activeWindow);
                         const Icon = item.icon;
                         return (
                             <button

@@ -26,8 +26,8 @@ const KrackedInteractiveLoading = ({
                 style={{
                     position: 'fixed',
                     inset: 0,
-                    backgroundImage: 'url("/media/KDLoadscreen.png")',
-                    backgroundSize: '100% 100%',
+                    backgroundImage: (typeof window !== 'undefined' && window.innerWidth <= 640) ? 'url("/media/KDPhoneWallpaper.png")' : 'url("/media/KDLoadscreen.png")',
+                    backgroundSize: 'cover',
                     backgroundRepeat: 'no-repeat',
                     backgroundPosition: 'center',
                     display: 'flex',
@@ -53,6 +53,30 @@ const KrackedInteractiveLoading = ({
                             70% { opacity:0.1 }
                             100%{ transform: translateY(100vh); opacity:0 }
                         }
+
+                        /* Mobile refinements */
+                        @media (max-width: 640px) {
+                            .panel-cluster {
+                                transform: scale(0.9) translateY(-5%) !important;
+                                top: 25% !important;
+                                bottom: 25% !important;
+                                left: 5% !important;
+                                right: 5% !important;
+                            }
+                            .sky-text {
+                                top: 8% !important;
+                                font-size: 8px !important;
+                                width: 90% !important;
+                                padding: 0 10px !important;
+                            }
+                        }
+
+                        /* Ultra-narrow (Fold/Small Phones) */
+                        @media (max-width: 360px) {
+                            .panel-cluster {
+                                transform: scale(0.75) translateY(-10%) !important;
+                            }
+                        }
                     `}</style>
 
                 {/* Scan line overlay */}
@@ -74,18 +98,22 @@ const KrackedInteractiveLoading = ({
                     width: '100%',
                     height: '100%',
                     maxWidth: '1920px',
-                    maxHeight: '1080px'
+                    maxHeight: '1080px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
                 }}>
 
                     {/* Functional Box Overlay */}
-                    <div style={{
+                    <div className="panel-cluster" style={{
                         position: 'absolute',
                         top: '21%',
                         left: '10%',
                         right: '10%',
                         bottom: '23%',
                         display: 'flex',
-                        flexDirection: 'column'
+                        flexDirection: 'column',
+                        transition: 'all 0.3s ease'
                     }}>
                         {/* Header Row: "X" Close Button */}
                         <div style={{ height: '11%', position: 'relative' }}>
@@ -96,6 +124,7 @@ const KrackedInteractiveLoading = ({
                                     right: '2.5%',
                                     top: '15%',
                                     width: '4%',
+                                    minWidth: '24px',
                                     height: '70%',
                                     background: 'transparent',
                                     border: 'none',
@@ -128,9 +157,9 @@ const KrackedInteractiveLoading = ({
                                     marginRight: '-8px',
                                     marginTop: '-20px'
                                 }}>
-                                    <div style={{ fontSize: '14px' }}>{systemTime}</div>
+                                    <div style={{ fontSize: 'clamp(10px, 3vw, 14px)' }}>{systemTime}</div>
                                     <div style={{
-                                        fontSize: '12px',
+                                        fontSize: 'clamp(8px, 2.5vw, 12px)',
                                         opacity: 0.8,
                                         display: 'flex',
                                         flexDirection: 'column',
@@ -164,9 +193,10 @@ const KrackedInteractiveLoading = ({
                                     style={{
                                         padding: '4px 8px',
                                         width: 'fit-content',
+                                        minWidth: '80px',
                                         background: '#f5d000',
                                         color: '#000',
-                                        fontSize: '9px',
+                                        fontSize: 'clamp(7px, 2vw, 9px)',
                                         fontWeight: 900,
                                         cursor: 'pointer',
                                         fontFamily: '"Press Start 2P"',
@@ -192,6 +222,7 @@ const KrackedInteractiveLoading = ({
 
                         {/* Encouragement Typing Animation (In the Sky) */}
                         <motion.div
+                            className="sky-text"
                             initial="hidden"
                             animate="visible"
                             variants={{
@@ -209,13 +240,14 @@ const KrackedInteractiveLoading = ({
                                 top: '10%',
                                 left: '50%',
                                 transform: 'translateX(-50%)',
-                                fontSize: '10px',
+                                fontSize: 'clamp(7px, 2.5vw, 10px)',
                                 color: '#f5d000',
                                 fontFamily: '"Press Start 2P"',
                                 textAlign: 'center',
                                 textShadow: '2px 2px 0px rgba(0,0,0,0.5)',
                                 zIndex: 10,
-                                width: '100%'
+                                width: '100%',
+                                padding: '0 20px'
                             }}
                         >
                             {"READY TO MASTER VIBE CODING?".split("").map((char, i) => (
@@ -238,10 +270,10 @@ const KrackedInteractiveLoading = ({
                 {!isIdle && (
                     <div style={{
                         position: 'absolute',
-                        bottom: '10px',
+                        bottom: '20px',
                         left: '50%',
                         transform: 'translateX(-50%)',
-                        width: '40%',
+                        width: 'clamp(150px, 40%, 600px)',
                         height: '6px',
                         background: 'rgba(255,255,255,0.1)',
                         border: '1px solid rgba(255,255,255,0.2)'
