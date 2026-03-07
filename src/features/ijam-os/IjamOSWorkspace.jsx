@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
     Home,
     Globe, Server,
@@ -26,16 +26,15 @@ import {
     Search,
     Activity,
     Waypoints,
-    Wand2
+    Wand2,
+    Wifi,
+    Bluetooth,
+    SlidersHorizontal,
+    SunMedium,
+    Volume2,
+    MoonStar
 } from 'lucide-react';
 import { callNvidiaLLM, localIntelligence, ZARULIJAM_SYSTEM_PROMPT } from '../../lib/nvidia';
-import BuilderStudioLocal from './components/BuilderStudioLocal';
-import VibeSimulator from '../../components/simulator/VibeSimulator';
-import MindMapperApp from '../../components/mindmapper/MindMapperApp';
-import PromptForgeApp from '../../components/promptforge/PromptForgeApp';
-import KrackedMissionConsole from './components/windows/KrackedMissionConsole';
-import KrackedIjamTerminal from './components/windows/KrackedIjamTerminal';
-import KrackedKdAcademy from './components/windows/KrackedKdAcademy';
 import { useWeather } from '../../utils/useWeather';
 import { useSoundEffects } from '../../utils/useSoundEffects';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -44,6 +43,50 @@ import MobileStatusBar from '../../components/MobileStatusBar';
 import { useIjamOSWindowManager } from './hooks/useIjamOSWindowManager';
 import { APP_REGISTRY } from './constants/appRegistry';
 import KrackedInteractiveLoading from './components/loading/KrackedInteractiveLoading';
+
+const BuilderStudioLocal = lazy(() => import('./components/BuilderStudioLocal'));
+const VibeSimulator = lazy(() => import('../../components/simulator/VibeSimulator'));
+const MindMapperApp = lazy(() => import('../../components/mindmapper/MindMapperApp'));
+const PromptForgeApp = lazy(() => import('../../components/promptforge/PromptForgeApp'));
+const KrackedMissionConsole = lazy(() => import('./components/windows/KrackedMissionConsole'));
+const KrackedIjamTerminal = lazy(() => import('./components/windows/KrackedIjamTerminal'));
+const KrackedKdAcademy = lazy(() => import('./components/windows/KrackedKdAcademy'));
+
+function WindowModuleLoader({ label, background = '#0b1220' }) {
+    return (
+        <div
+            style={{
+                height: '100%',
+                minHeight: 0,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '24px',
+                background,
+                color: '#f8fafc',
+                fontFamily: 'monospace'
+            }}
+        >
+            <div
+                style={{
+                    border: '1px solid rgba(245,208,0,0.28)',
+                    borderRadius: '12px',
+                    padding: '14px 18px',
+                    background: 'rgba(15,23,42,0.76)',
+                    boxShadow: '4px 4px 0 rgba(11,18,32,0.85)',
+                    textAlign: 'center'
+                }}
+            >
+                <div style={{ fontSize: '10px', letterSpacing: '0.14em', color: '#f5d000', fontWeight: 900 }}>
+                    LOADING_MODULE
+                </div>
+                <div style={{ marginTop: '8px', fontSize: '12px', fontWeight: 700 }}>
+                    {label}
+                </div>
+            </div>
+        </div>
+    );
+}
 
 const LESSONS_IJAM = [
     {
@@ -2243,9 +2286,9 @@ const LESSON_MEDIA = {
 };
 
 const sectionStyle = {
-    paddingTop: '36px',
-    paddingBottom: '70px',
-    minHeight: '80vh',
+    paddingTop: 0,
+    paddingBottom: 0,
+    minHeight: '100vh',
     background: 'radial-gradient(circle at 10% 10%, #fff8dc 0%, #fff0b3 40%, #ffe6d5 100%)'
 };
 
@@ -2590,32 +2633,75 @@ const WindowFrame = ({
 };
 
 
-const DesktopIcon = ({ label, icon: Icon, onClick, color = '#f5d000', isPhoneMode = false, isTabletMode = false }) => (
-    <button onClick={onClick}
+const DesktopIcon = ({
+    label,
+    icon: Icon,
+    imageSrc,
+    iconScale = 1,
+    onClick,
+    color = '#f5d000',
+    isPhoneMode = false,
+    isTabletMode = false,
+    draggable = false,
+    onDragStart,
+    onDragOver,
+    onDrop,
+    onDragEnd,
+    isDropTarget = false
+}) => (
+    <button
+        onClick={onClick}
+        draggable={draggable}
+        onDragStart={onDragStart}
+        onDragOver={onDragOver}
+        onDrop={onDrop}
+        onDragEnd={onDragEnd}
         style={{
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
-            gap: isPhoneMode ? '6px' : '8px',
+            gap: isPhoneMode ? '0px' : '1px',
             background: 'transparent',
             border: 'none',
             cursor: 'pointer',
             padding: isPhoneMode ? '8px 6px' : (isTabletMode ? '10px' : '12px'),
             borderRadius: '12px',
-            transition: 'background 0.2s'
+            transition: 'background 0.2s',
+            outline: isDropTarget ? '2px dashed rgba(245,208,0,0.85)' : 'none',
+            outlineOffset: isDropTarget ? '3px' : 0
         }}
         onMouseOver={(e) => e.currentTarget.style.background = 'rgba(245,208,0,0.12)'}
         onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}
     >
         <div style={{
-            background: '#0b1220',
-            border: `2px solid ${color}`,
+            background: 'transparent',
+            border: 'none',
             color,
-            padding: isPhoneMode ? '10px' : '12px',
+            padding: 0,
             borderRadius: '14px',
-            boxShadow: '4px 4px 0 rgba(0,0,0,0.4)'
+            boxShadow: 'none',
+            width: isPhoneMode ? '56px' : '68px',
+            height: isPhoneMode ? '56px' : '68px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
         }}>
-            <Icon size={isPhoneMode ? 24 : 32} />
+            {imageSrc ? (
+                <img
+                    src={imageSrc}
+                    alt={`${label} icon`}
+                    style={{
+                        width: isPhoneMode ? '50px' : '64px',
+                        height: isPhoneMode ? '50px' : '64px',
+                        objectFit: 'contain',
+                        imageRendering: 'auto',
+                        transform: `scale(${iconScale})`,
+                        transformOrigin: 'center center'
+                    }}
+                />
+            ) : (
+                <Icon size={isPhoneMode ? 34 : 42} />
+            )}
         </div>
         <span style={{ color: '#fff', fontSize: isPhoneMode ? '10px' : '11px', fontWeight: 800, fontFamily: 'monospace', textShadow: '1px 1px 4px #000' }}>{label}</span>
     </button>
@@ -2631,6 +2717,19 @@ const StartMenuApp = ({ icon: Icon, label, onClick }) => (
         <span style={{ color: '#f8fafc', fontSize: '10px', fontWeight: 600, fontFamily: 'monospace' }}>{label}</span>
     </button>
 );
+
+const getInitialDesktopGridMetrics = () => {
+    if (typeof window === 'undefined') return { columns: 1, rows: 1 };
+    const COL_WIDTH = 100;
+    const COL_GAP = 12;
+    const ROW_HEIGHT = 86;
+    const ROW_GAP = 12;
+    const width = Math.max(320, window.innerWidth - 40);
+    const height = Math.max(220, window.innerHeight - 28 - 12 - 24);
+    const columns = Math.max(1, Math.floor((width + COL_GAP) / (COL_WIDTH + COL_GAP)));
+    const rows = Math.max(1, Math.floor((height + ROW_GAP) / (ROW_HEIGHT + ROW_GAP)));
+    return { columns, rows };
+};
 
 const IjamOSWorkspace = ({ session, currentUser, isMobileView, deviceMode = 'desktop', ijamOsMode = 'mac_desktop', setPublicPage, setCurrentUser }) => {
     const isMacMode = ijamOsMode === 'mac_desktop';
@@ -2670,6 +2769,23 @@ const IjamOSWorkspace = ({ session, currentUser, isMobileView, deviceMode = 'des
     const [missionEvents, setMissionEvents] = useState([]);
     const [latestMissionEvent, setLatestMissionEvent] = useState(null);
     const [batteryPct, setBatteryPct] = useState('--%');
+    const [desktopIconSlots, setDesktopIconSlots] = useState([]);
+    const [draggedIconType, setDraggedIconType] = useState(null);
+    const [dropTargetSlotIndex, setDropTargetSlotIndex] = useState(null);
+    const [isDraggingDesktopIcon, setIsDraggingDesktopIcon] = useState(false);
+    const desktopSlotsLoadedRef = useRef(false);
+    const desktopSlotsHydratedRef = useRef(false);
+    const desktopIconsContainerRef = useRef(null);
+    const [desktopGridMetrics, setDesktopGridMetrics] = useState(getInitialDesktopGridMetrics);
+    const [activeMacMenu, setActiveMacMenu] = useState(null);
+    const [showBatteryPopup, setShowBatteryPopup] = useState(false);
+    const [showControlCenter, setShowControlCenter] = useState(false);
+    const [uiBrightness, setUiBrightness] = useState(100);
+    const [uiVolume, setUiVolume] = useState(100);
+    const [wifiEnabled, setWifiEnabled] = useState(true);
+    const [bluetoothEnabled, setBluetoothEnabled] = useState(true);
+    const [airdropEnabled, setAirdropEnabled] = useState(false);
+    const [focusModeEnabled, setFocusModeEnabled] = useState(false);
     const getRoleHintFromApp = useCallback((appType) => {
         if (appType === 'terminal' || appType === 'prompt_forge') return 'engineer';
         if (appType === 'files' || appType === 'mind_mapper') return 'analyst';
@@ -3097,6 +3213,158 @@ const IjamOSWorkspace = ({ session, currentUser, isMobileView, deviceMode = 'des
         () => Object.values(windowStates).filter((state) => state?.isOpen && !state?.isMinimized).length,
         [windowStates]
     );
+    const appTypeList = useMemo(() => APP_REGISTRY.map((app) => app.type), []);
+    const appByType = useMemo(
+        () => Object.fromEntries(APP_REGISTRY.map((app) => [app.type, app])),
+        []
+    );
+    const desktopSlotCount = useMemo(() => {
+        if (isMacMode && !isTouchIjamMode) {
+            return Math.max(appTypeList.length, desktopGridMetrics.columns * desktopGridMetrics.rows);
+        }
+        return Math.max(24, appTypeList.length + 8);
+    }, [isMacMode, isTouchIjamMode, appTypeList.length, desktopGridMetrics.columns, desktopGridMetrics.rows]);
+    const batteryLevel = useMemo(() => {
+        const parsed = Number.parseInt(String(batteryPct).replace('%', ''), 10);
+        if (Number.isNaN(parsed)) return 100;
+        return Math.max(0, Math.min(parsed, 100));
+    }, [batteryPct]);
+    const currentDesktopAppLabel = useMemo(
+        () => APP_REGISTRY.find((app) => app.type === focusedWindow)?.label || 'KRACKED_OS v3.0',
+        [focusedWindow]
+    );
+    const recentApps = useMemo(
+        () => APP_REGISTRY.filter((app) => windowStates[app.type]?.isOpen).slice(0, 4),
+        [windowStates]
+    );
+
+    useEffect(() => {
+        const handleGlobalPointer = (e) => {
+            if (e.target.closest('[data-mac-menu-root]')) return;
+            setActiveMacMenu(null);
+            setShowBatteryPopup(false);
+            setShowControlCenter(false);
+        };
+        document.addEventListener('mousedown', handleGlobalPointer);
+        return () => document.removeEventListener('mousedown', handleGlobalPointer);
+    }, []);
+
+    useEffect(() => {
+        if (!isMacMode || isTouchIjamMode || !desktopIconsContainerRef.current) return;
+
+        const COL_WIDTH = 100;
+        const COL_GAP = 12;
+        const ROW_HEIGHT = 86;
+        const ROW_GAP = 12;
+
+        const updateMetrics = () => {
+            const el = desktopIconsContainerRef.current;
+            const width = el?.clientWidth || Math.max(320, window.innerWidth - 40);
+            const height = el?.clientHeight || Math.max(220, window.innerHeight - 28 - 12 - 24);
+            const columns = Math.max(1, Math.floor((width + COL_GAP) / (COL_WIDTH + COL_GAP)));
+            const rows = Math.max(1, Math.floor((height + ROW_GAP) / (ROW_HEIGHT + ROW_GAP)));
+            setDesktopGridMetrics((prev) => (
+                prev.columns === columns && prev.rows === rows
+                    ? prev
+                    : { columns, rows }
+            ));
+        };
+
+        updateMetrics();
+        let observer = null;
+        if (typeof ResizeObserver !== 'undefined' && desktopIconsContainerRef.current) {
+            observer = new ResizeObserver(updateMetrics);
+            observer.observe(desktopIconsContainerRef.current);
+        }
+        window.addEventListener('resize', updateMetrics);
+        return () => {
+            if (observer) observer.disconnect();
+            window.removeEventListener('resize', updateMetrics);
+        };
+    }, [isMacMode, isTouchIjamMode]);
+
+    const normalizeDesktopSlots = useCallback((slots, desiredCount) => {
+        const normalized = Array.from({ length: Math.max(1, desiredCount) }, () => null);
+        const seen = new Set();
+        (Array.isArray(slots) ? slots : []).forEach((type, index) => {
+            if (index >= normalized.length) return;
+            if (!appTypeList.includes(type)) return;
+            if (seen.has(type)) return;
+            normalized[index] = type;
+            seen.add(type);
+        });
+        const missing = appTypeList.filter((type) => !seen.has(type));
+        let cursor = 0;
+        for (const type of missing) {
+            while (cursor < normalized.length && normalized[cursor] !== null) cursor += 1;
+            if (cursor >= normalized.length) break;
+            normalized[cursor] = type;
+        }
+        return normalized;
+    }, [appTypeList]);
+
+    useEffect(() => {
+        if (desktopSlotsLoadedRef.current) return;
+        try {
+            const rawSlots = localStorage.getItem('ijamos_desktop_icon_slots');
+            if (rawSlots) {
+                const parsedSlots = JSON.parse(rawSlots);
+                if (Array.isArray(parsedSlots)) {
+                    setDesktopIconSlots(normalizeDesktopSlots(parsedSlots, Math.max(desktopSlotCount, parsedSlots.length)));
+                    desktopSlotsLoadedRef.current = true;
+                    desktopSlotsHydratedRef.current = true;
+                    return;
+                }
+            }
+            const rawOrder = localStorage.getItem('ijamos_desktop_icon_order');
+            if (!rawOrder) {
+                setDesktopIconSlots(normalizeDesktopSlots([], desktopSlotCount));
+                desktopSlotsLoadedRef.current = true;
+                desktopSlotsHydratedRef.current = true;
+                return;
+            }
+            const parsedOrder = JSON.parse(rawOrder);
+            if (Array.isArray(parsedOrder) && parsedOrder.length) {
+                setDesktopIconSlots(normalizeDesktopSlots(parsedOrder, desktopSlotCount));
+            } else {
+                setDesktopIconSlots(normalizeDesktopSlots([], desktopSlotCount));
+            }
+            desktopSlotsLoadedRef.current = true;
+            desktopSlotsHydratedRef.current = true;
+        } catch {
+            // Ignore broken local storage payloads.
+            setDesktopIconSlots(normalizeDesktopSlots([], desktopSlotCount));
+            desktopSlotsLoadedRef.current = true;
+            desktopSlotsHydratedRef.current = true;
+        }
+    }, [desktopSlotCount, normalizeDesktopSlots]);
+
+    useEffect(() => {
+        if (!desktopSlotsHydratedRef.current) return;
+        try {
+            localStorage.setItem('ijamos_desktop_icon_slots', JSON.stringify(desktopIconSlots));
+        } catch {
+            // Ignore storage failures.
+        }
+    }, [desktopIconSlots]);
+
+    useEffect(() => {
+        setDesktopIconSlots((prev) => normalizeDesktopSlots(prev, desktopSlotCount));
+    }, [desktopSlotCount, normalizeDesktopSlots]);
+
+    const moveDesktopIconToSlot = useCallback((fromType, slotIndex) => {
+        if (!fromType || slotIndex == null) return;
+        setDesktopIconSlots((prev) => {
+            const slots = normalizeDesktopSlots(prev, desktopSlotCount);
+            const fromIndex = slots.indexOf(fromType);
+            if (fromIndex < 0) return prev;
+            const clampedIndex = Math.max(0, Math.min(slotIndex, slots.length - 1));
+            const targetType = slots[clampedIndex];
+            slots[fromIndex] = targetType ?? null;
+            slots[clampedIndex] = fromType;
+            return slots;
+        });
+    }, [desktopSlotCount, normalizeDesktopSlots]);
 
     const addVibes = (amount, reason) => {
         setUserVibes(prev => prev + amount);
@@ -3610,6 +3878,83 @@ YOU DID IT. APP DEPLOYED!`);
                 return { background: '#0b131e' };
         }
     }, [isMacMode, currentWallpaper]);
+    const macMenus = useMemo(() => ([
+        {
+            id: 'system',
+            label: '⚡ KRACKED_OS',
+            accent: '#f5d000',
+            items: [
+                { label: 'About This Mac', action: () => { setIsStartMenuOpen(true); setStartMenuSearch(''); } },
+                { label: 'System Preferences', action: () => openApp('settings') },
+                { label: 'Recent Items', action: () => openApp('files') },
+                { label: 'Force Quit Finder', action: () => closeAllApps() },
+                { separator: true },
+                { label: 'Sleep', action: () => closeAllApps() },
+                { label: 'Restart', action: () => window.location.reload() },
+                { label: 'Shut Down', action: () => { localStorage.removeItem('vibe_os_booted'); window.location.reload(); } },
+                { separator: true },
+                { label: 'Lock Screen', action: () => { localStorage.removeItem('vibe_os_booted'); window.location.reload(); } },
+                { label: 'Log Out', action: () => exitIjamOS() }
+            ]
+        },
+        ...recentApps.map((app) => ({
+            id: `recent-${app.type}`,
+            label: app.label,
+            items: [
+                { label: `Focus ${app.label}`, action: () => focusApp(app.type) },
+                { label: `Minimize ${app.label}`, action: () => minimizeApp(app.type) },
+                { label: `Close ${app.label}`, action: () => closeApp(app.type) }
+            ]
+        })),
+        {
+            id: 'finder',
+            label: focusedWindow ? currentDesktopAppLabel : 'Finder',
+            bold: true,
+            items: [
+                { label: 'Open Files', action: () => openApp('files') },
+                { label: 'Open Stats', action: () => openApp('progress') },
+                { label: 'Empty Trash', action: () => openApp('trash') }
+            ]
+        },
+        {
+            id: 'files',
+            label: 'Files',
+            items: [
+                { label: 'New Window', action: () => openApp('files') },
+                { label: 'Open File Explorer', action: () => openApp('files') },
+                { label: 'Search Files', action: () => { openApp('files'); setExplorerSearch(''); } },
+                { label: 'File Properties', action: () => openApp('files') },
+                { label: 'Exit', action: () => closeApp('files') }
+            ]
+        },
+        {
+            id: 'view',
+            label: 'View',
+            items: [
+                { label: 'Open Wallpaper Gallery', action: () => openApp('wallpaper') },
+                { label: 'Open Simulator', action: () => openApp('simulator') },
+                { label: 'Open Mind Map', action: () => openApp('mind_mapper') }
+            ]
+        },
+        {
+            id: 'window',
+            label: 'Window',
+            items: [
+                { label: 'Show Academy', action: () => { setKdacademyTab('overview'); openApp('kdacademy'); } },
+                { label: 'Show Mission', action: () => openApp('mission') },
+                { label: 'Close All Windows', action: () => closeAllApps() }
+            ]
+        },
+        {
+            id: 'help',
+            label: 'Help',
+            items: [
+                { label: 'Open Prompt Forge', action: () => openApp('prompt_forge') },
+                { label: 'Builder Arcade', action: () => openApp('arcade') },
+                { label: 'Search Apps', action: () => { setIsStartMenuOpen(true); setStartMenuSearch(''); } }
+            ]
+        }
+    ]), [recentApps, focusedWindow, currentDesktopAppLabel, openApp, closeAllApps, focusApp, minimizeApp, closeApp, exitIjamOS, setKdacademyTab]);
 
     if (!isBooted) {
         return (
@@ -3637,7 +3982,19 @@ YOU DID IT. APP DEPLOYED!`);
     }
 
     return (
-        <section id="resources-page" style={{ ...sectionStyle, ...wallpaperStyle, height: '100vh', overflow: 'hidden', position: 'relative' }}>
+        <section
+            id="resources-page"
+            style={{
+                ...sectionStyle,
+                ...wallpaperStyle,
+                width: '100%',
+                minWidth: '100%',
+                height: '100vh',
+                minHeight: '100vh',
+                overflow: 'hidden',
+                position: 'relative'
+            }}
+        >
             {isTouchIjamMode && (
                 <div style={{ position: 'absolute', top: 'max(2px, env(safe-area-inset-top, 0px))', left: 10, right: 10, zIndex: 1200 }}>
                     <MobileStatusBar
@@ -3698,32 +4055,123 @@ YOU DID IT. APP DEPLOYED!`);
             <div style={{ position: 'absolute', inset: 0, opacity: 0.1, backgroundImage: 'radial-gradient(#f5d000 0.5px, transparent 0.5px)', backgroundSize: '24px 24px', pointerEvents: 'none' }} />
 
             {/* Desktop Icons Container */}
-            <div style={{
-                maxWidth: isMacMode ? '1280px' : '100%',
-                margin: '0 auto',
-                padding: isPhoneMode ? '58px 10px 96px' : (isTabletMode ? '62px 14px 104px' : '36px 20px 110px'),
-                height: '100%',
-                position: 'relative',
+            <div
+                ref={desktopIconsContainerRef}
+                style={{
+                position: 'absolute',
+                top: isMacMode ? '28px' : 0,
+                right: 0,
+                bottom: 0,
+                left: 0,
+                width: '100%',
+                maxWidth: '100%',
+                margin: 0,
+                padding: isPhoneMode ? '58px 10px 96px' : (isTabletMode ? '62px 14px 104px' : '12px 20px 24px'),
+                height: isMacMode ? 'calc(100vh - 28px)' : '100%',
                 zIndex: 1,
                 display: 'grid',
                 gridTemplateColumns: isMacMode
-                    ? 'repeat(auto-fill, 100px)'
+                    ? `repeat(${desktopGridMetrics.columns}, minmax(0, 1fr))`
                     : (isTabletMode ? 'repeat(auto-fill, minmax(92px, 1fr))' : 'repeat(4, minmax(0, 1fr))'),
-                gap: isMacMode ? '24px' : '12px',
+                gap: isMacMode ? '12px' : '12px',
+                gridAutoRows: isMacMode ? '86px' : 'auto',
                 alignItems: 'start',
+                alignContent: 'start',
                 contentVisibility: 'auto'
+            }}
+                onDragOver={(e) => {
+                    if (!isTouchIjamMode && draggedIconType) {
+                        e.preventDefault();
+                    }
+                }}
+                onDrop={(e) => {
+                    if (isTouchIjamMode || !draggedIconType) return;
+                    e.preventDefault();
+                    setDraggedIconType(null);
+                    setDropTargetSlotIndex(null);
+                    setTimeout(() => setIsDraggingDesktopIcon(false), 80);
             }}>
-                {APP_REGISTRY.map(app => (
-                    <DesktopIcon
-                        key={app.type}
-                        label={app.label}
-                        icon={app.icon}
-                        color={app.color}
-                        onClick={() => openApp(app.type)}
-                        isPhoneMode={isPhoneMode}
-                        isTabletMode={isTabletMode}
-                    />
-                ))}
+                {Array.from({ length: desktopSlotCount }).map((_, slotIndex) => {
+                    const appType = desktopIconSlots[slotIndex] || null;
+                    const app = appType ? appByType[appType] : null;
+                    return (
+                        <div
+                            key={`desktop-slot-${slotIndex}`}
+                            onDragOver={(e) => {
+                                if (isTouchIjamMode || !draggedIconType) return;
+                                e.preventDefault();
+                                e.dataTransfer.dropEffect = 'move';
+                                setDropTargetSlotIndex(slotIndex);
+                            }}
+                            onDrop={(e) => {
+                                if (isTouchIjamMode || !draggedIconType) return;
+                                e.preventDefault();
+                                const sourceType = e.dataTransfer.getData('text/plain') || draggedIconType;
+                                moveDesktopIconToSlot(sourceType, slotIndex);
+                                setDraggedIconType(null);
+                                setDropTargetSlotIndex(null);
+                                setTimeout(() => setIsDraggingDesktopIcon(false), 80);
+                            }}
+                            style={{
+                                minHeight: isPhoneMode ? '78px' : '86px',
+                                height: isMacMode ? '86px' : 'auto',
+                                borderRadius: '12px',
+                                border: dropTargetSlotIndex === slotIndex
+                                    ? '1px dashed rgba(245,208,0,0.8)'
+                                    : '1px solid transparent',
+                                background: dropTargetSlotIndex === slotIndex
+                                    ? 'rgba(245,208,0,0.08)'
+                                    : 'transparent',
+                                display: 'flex',
+                                alignItems: 'flex-start',
+                                justifyContent: 'flex-start'
+                            }}
+                        >
+                            {app ? (
+                                <DesktopIcon
+                                    label={app.label}
+                                    icon={app.icon}
+                                    imageSrc={app.desktopIconImage}
+                                    iconScale={app.desktopIconScale || 1}
+                                    color={app.color}
+                                    onClick={() => {
+                                        if (isDraggingDesktopIcon) return;
+                                        openApp(app.type);
+                                    }}
+                                    isPhoneMode={isPhoneMode}
+                                    isTabletMode={isTabletMode}
+                                    draggable={!isTouchIjamMode}
+                                    onDragStart={(e) => {
+                                        setIsDraggingDesktopIcon(true);
+                                        setDraggedIconType(app.type);
+                                        e.dataTransfer.effectAllowed = 'move';
+                                        e.dataTransfer.setData('text/plain', app.type);
+                                    }}
+                                    onDragOver={(e) => {
+                                        if (isTouchIjamMode || draggedIconType === app.type) return;
+                                        e.preventDefault();
+                                        e.dataTransfer.dropEffect = 'move';
+                                    }}
+                                    onDrop={(e) => {
+                                        if (isTouchIjamMode || !draggedIconType) return;
+                                        e.preventDefault();
+                                        const sourceType = e.dataTransfer.getData('text/plain') || draggedIconType;
+                                        moveDesktopIconToSlot(sourceType, slotIndex);
+                                        setDraggedIconType(null);
+                                        setDropTargetSlotIndex(null);
+                                        setTimeout(() => setIsDraggingDesktopIcon(false), 80);
+                                    }}
+                                    onDragEnd={() => {
+                                        setDraggedIconType(null);
+                                        setDropTargetSlotIndex(null);
+                                        setTimeout(() => setIsDraggingDesktopIcon(false), 80);
+                                    }}
+                                    isDropTarget={dropTargetSlotIndex === slotIndex}
+                                />
+                            ) : null}
+                        </div>
+                    );
+                })}
             </div>
 
             {/* Application Windows */}
@@ -4396,17 +4844,19 @@ YOU DID IT. APP DEPLOYED!`);
                     onResize={(w, h) => resizeApp('mission', w, h)}
                 >
                     <div style={{ padding: '14px', color: '#fff', overflowY: 'auto', height: '100%' }}>
-                        <KrackedMissionConsole
-                            currentUser={currentUser}
-                            userRank={userRank}
-                            userVibes={userVibes}
-                            completedLessonsCount={completedLessons.length}
-                            totalLessons={lessons.length}
-                            focusedWindowLabel={focusedWindowLabel}
-                            openWindowsCount={openWindowsCount}
-                            missionEvents={missionEvents}
-                            latestMissionEvent={latestMissionEvent}
-                        />
+                        <Suspense fallback={<WindowModuleLoader label="MISSION_CONSOLE" />}>
+                            <KrackedMissionConsole
+                                currentUser={currentUser}
+                                userRank={userRank}
+                                userVibes={userVibes}
+                                completedLessonsCount={completedLessons.length}
+                                totalLessons={lessons.length}
+                                focusedWindowLabel={focusedWindowLabel}
+                                openWindowsCount={openWindowsCount}
+                                missionEvents={missionEvents}
+                                latestMissionEvent={latestMissionEvent}
+                            />
+                        </Suspense>
                     </div>
                 </WindowFrame>
             )}
@@ -4482,34 +4932,38 @@ YOU DID IT. APP DEPLOYED!`);
             {/* KDAcademy Window */}
             {windowStates.kdacademy?.isOpen && (
                 <WindowFrame {...mobileWindowProps} winState={windowStates.kdacademy} title="KDACADEMY // LEARN + BUILD" AppIcon={Globe} onClose={() => closeApp('kdacademy')} onMinimize={() => minimizeApp('kdacademy')} onMaximize={() => maximizeApp('kdacademy')} onFocus={() => focusApp('kdacademy')} onMove={(x, y) => moveApp('kdacademy', x, y)} onResize={(w, h) => resizeApp('kdacademy', w, h)}>
-                    <KrackedKdAcademy
-                        activeTab={kdacademyTab}
-                        onTabChange={setKdacademyTab}
-                        activeLesson={activeLesson}
-                        frontendLessons={academyPaths.frontend}
-                        backendLessons={academyPaths.backend}
-                        onOpenLesson={(lessonId) => openLessonInKdacademy(lessonId, 'workshop')}
-                        onOpenLiveSite={() => openExternal(kdacademyUrl)}
-                        userRank={userRank}
-                        userVibes={userVibes}
-                        completedLessonsCount={completedLessons.length}
-                        builderName={profileForm.username}
-                        workshopPane={
-                            <KrackedIjamTerminal
-                                terminalLog={terminalLog}
-                                terminalBusy={terminalBusy}
-                                terminalInput={terminalInput}
-                                setTerminalInput={setTerminalInput}
-                                executeTerminalCommand={executeTerminalCommand}
-                                terminalOutputRef={terminalOutputRef}
-                                userRank={userRank}
-                                userVibes={userVibes}
-                                chatPrefill={ijamChatPrefill}
-                                onChatPrefill={setIjamChatPrefill}
-                                onChatPrefillConsumed={() => setIjamChatPrefill('')}
-                            />
-                        }
-                    />
+                    <Suspense fallback={<WindowModuleLoader label="KDACADEMY" />}>
+                        <KrackedKdAcademy
+                            activeTab={kdacademyTab}
+                            onTabChange={setKdacademyTab}
+                            activeLesson={activeLesson}
+                            frontendLessons={academyPaths.frontend}
+                            backendLessons={academyPaths.backend}
+                            onOpenLesson={(lessonId) => openLessonInKdacademy(lessonId, 'workshop')}
+                            onOpenLiveSite={() => openExternal(kdacademyUrl)}
+                            userRank={userRank}
+                            userVibes={userVibes}
+                            completedLessonsCount={completedLessons.length}
+                            builderName={profileForm.username}
+                            workshopPane={(
+                                <Suspense fallback={<WindowModuleLoader label="IJAM_TERMINAL" />}>
+                                    <KrackedIjamTerminal
+                                        terminalLog={terminalLog}
+                                        terminalBusy={terminalBusy}
+                                        terminalInput={terminalInput}
+                                        setTerminalInput={setTerminalInput}
+                                        executeTerminalCommand={executeTerminalCommand}
+                                        terminalOutputRef={terminalOutputRef}
+                                        userRank={userRank}
+                                        userVibes={userVibes}
+                                        chatPrefill={ijamChatPrefill}
+                                        onChatPrefill={setIjamChatPrefill}
+                                        onChatPrefillConsumed={() => setIjamChatPrefill('')}
+                                    />
+                                </Suspense>
+                            )}
+                        />
+                    </Suspense>
                 </WindowFrame>
             )}
 
@@ -4668,7 +5122,9 @@ YOU DID IT. APP DEPLOYED!`);
             {windowStates.arcade?.isOpen && (
                 <WindowFrame {...mobileWindowProps} winState={windowStates.arcade} title="BUILDER_ARCADE // STUDIO" AppIcon={Gamepad2} onClose={() => closeApp('arcade')} onMinimize={() => minimizeApp('arcade')} onMaximize={() => maximizeApp('arcade')} onFocus={() => focusApp('arcade')} onMove={(x, y) => moveApp('arcade', x, y)} onResize={(w, h) => resizeApp('arcade', w, h)}>
                     <div style={{ flex: 1, minHeight: 0, background: '#f3f4f6', overflowY: 'auto' }}>
-                        <BuilderStudioLocal />
+                        <Suspense fallback={<WindowModuleLoader label="BUILDER_ARCADE" background="#f3f4f6" />}>
+                            <BuilderStudioLocal />
+                        </Suspense>
                     </div>
                 </WindowFrame>
             )}
@@ -4677,7 +5133,9 @@ YOU DID IT. APP DEPLOYED!`);
             {windowStates.simulator?.isOpen && (
                 <WindowFrame {...mobileWindowProps} winState={windowStates.simulator} title="VIBE_SIMULATOR // ARCHITECTURE" AppIcon={Activity} onClose={() => closeApp('simulator')} onMinimize={() => minimizeApp('simulator')} onMaximize={() => maximizeApp('simulator')} onFocus={() => focusApp('simulator')} onMove={(x, y) => moveApp('simulator', x, y)} onResize={(w, h) => resizeApp('simulator', w, h)}>
                     <div style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
-                        <VibeSimulator />
+                        <Suspense fallback={<WindowModuleLoader label="VIBE_SIMULATOR" />}>
+                            <VibeSimulator />
+                        </Suspense>
                     </div>
                 </WindowFrame>
             )}
@@ -4686,7 +5144,9 @@ YOU DID IT. APP DEPLOYED!`);
             {windowStates.mind_mapper?.isOpen && (
                 <WindowFrame {...mobileWindowProps} winState={windowStates.mind_mapper} title="MIND_MAPPER // IDEATION" AppIcon={Waypoints} onClose={() => closeApp('mind_mapper')} onMinimize={() => minimizeApp('mind_mapper')} onMaximize={() => maximizeApp('mind_mapper')} onFocus={() => focusApp('mind_mapper')} onMove={(x, y) => moveApp('mind_mapper', x, y)} onResize={(w, h) => resizeApp('mind_mapper', w, h)}>
                     <div style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
-                        <MindMapperApp />
+                        <Suspense fallback={<WindowModuleLoader label="MIND_MAPPER" />}>
+                            <MindMapperApp />
+                        </Suspense>
                     </div>
                 </WindowFrame>
             )}
@@ -4695,7 +5155,9 @@ YOU DID IT. APP DEPLOYED!`);
             {windowStates.prompt_forge?.isOpen && (
                 <WindowFrame {...mobileWindowProps} winState={windowStates.prompt_forge} title="PROMPT_FORGE // MASTER PROMPT" AppIcon={Wand2} onClose={() => closeApp('prompt_forge')} onMinimize={() => minimizeApp('prompt_forge')} onMaximize={() => maximizeApp('prompt_forge')} onFocus={() => focusApp('prompt_forge')} onMove={(x, y) => moveApp('prompt_forge', x, y)} onResize={(w, h) => resizeApp('prompt_forge', w, h)}>
                     <div style={{ flex: 1, minHeight: 0, background: '#0b1220', overflow: 'hidden' }}>
-                        <PromptForgeApp />
+                        <Suspense fallback={<WindowModuleLoader label="PROMPT_FORGE" />}>
+                            <PromptForgeApp />
+                        </Suspense>
                     </div>
                 </WindowFrame>
             )}
@@ -4861,6 +5323,121 @@ YOU DID IT. APP DEPLOYED!`);
 
             {/* macOS-style Menu Bar — top */}
             {isMacMode && (
+                <div
+                    data-mac-menu-root
+                    style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        height: '28px',
+                        background: 'rgba(7,11,20,0.92)',
+                        borderBottom: '1px solid rgba(245,208,0,0.12)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        padding: '0 10px',
+                        zIndex: 500,
+                        fontFamily: 'monospace',
+                        backdropFilter: `blur(20px) saturate(1.3) brightness(${Math.max(0.7, uiBrightness / 100)})`,
+                        WebkitBackdropFilter: `blur(20px) saturate(1.3) brightness(${Math.max(0.7, uiBrightness / 100)})`
+                    }}
+                >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '2px', minWidth: 0 }}>
+                        {macMenus.map((menu) => (
+                            <div key={menu.id} style={{ position: 'relative' }}>
+                                <button
+                                    type="button"
+                                    onClick={() => setActiveMacMenu((prev) => prev === menu.id ? null : menu.id)}
+                                    style={{
+                                        height: '22px',
+                                        padding: '0 8px',
+                                        borderRadius: '6px',
+                                        border: 'none',
+                                        background: activeMacMenu === menu.id ? 'rgba(255,255,255,0.14)' : 'transparent',
+                                        color: menu.accent || '#f8fafc',
+                                        fontSize: '11px',
+                                        fontWeight: menu.bold || menu.accent ? 800 : 600,
+                                        cursor: 'pointer',
+                                        whiteSpace: 'nowrap'
+                                    }}
+                                >
+                                    {menu.label}
+                                </button>
+                                {activeMacMenu === menu.id && (
+                                    <div style={{ position: 'absolute', top: '26px', left: 0, minWidth: '220px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(9,14,25,0.96)', boxShadow: '0 24px 48px rgba(0,0,0,0.45)', padding: '8px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                        {menu.items.map((item, index) => item.separator ? (
+                                            <div key={`${menu.id}-sep-${index}`} style={{ height: '1px', background: 'rgba(255,255,255,0.08)', margin: '4px 2px' }} />
+                                        ) : (
+                                            <button
+                                                key={`${menu.id}-${item.label}`}
+                                                type="button"
+                                                onClick={() => {
+                                                    item.action?.();
+                                                    setActiveMacMenu(null);
+                                                }}
+                                                style={{ border: 'none', background: 'transparent', color: '#e2e8f0', textAlign: 'left', fontSize: '11px', padding: '7px 10px', borderRadius: '8px', cursor: 'pointer' }}
+                                                onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(245,208,0,0.12)'; }}
+                                                onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+                                            >
+                                                {item.label}
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+
+                    <div style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', fontSize: '11px', fontWeight: 800, color: focusedWindow ? (APP_REGISTRY.find((a) => a.type === focusedWindow)?.color ?? '#cbd5e1') : 'rgba(255,255,255,0.35)', letterSpacing: '0.05em', whiteSpace: 'nowrap', pointerEvents: 'none' }}>
+                        {currentDesktopAppLabel}
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <div style={{ position: 'relative' }}>
+                            <button type="button" onClick={() => { setShowBatteryPopup((prev) => !prev); setShowControlCenter(false); setActiveMacMenu(null); }} style={{ height: '22px', padding: '0 8px', borderRadius: '8px', border: 'none', background: showBatteryPopup ? 'rgba(255,255,255,0.12)' : 'transparent', color: '#f8fafc', display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
+                                <span style={{ fontSize: '10px', fontWeight: 700 }}>{batteryLevel}%</span>
+                                <div style={{ width: '24px', height: '11px', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.5)', padding: '1px', position: 'relative' }}>
+                                    <div style={{ width: `${batteryLevel}%`, height: '100%', borderRadius: '2px', background: batteryLevel > 50 ? '#22c55e' : batteryLevel > 20 ? '#f59e0b' : '#ef4444' }} />
+                                    <div style={{ position: 'absolute', right: '-3px', top: '3px', width: '2px', height: '4px', borderRadius: '0 2px 2px 0', background: 'rgba(255,255,255,0.6)' }} />
+                                </div>
+                            </button>
+                            {showBatteryPopup && (
+                                <div style={{ position: 'absolute', top: '26px', right: 0, width: '220px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(9,14,25,0.96)', boxShadow: '0 24px 48px rgba(0,0,0,0.45)', padding: '12px' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', fontWeight: 800, color: '#f8fafc' }}><span>Power</span><span>{batteryLevel}%</span></div>
+                                    <div style={{ marginTop: '10px', height: '10px', borderRadius: '999px', background: 'rgba(255,255,255,0.08)', overflow: 'hidden' }}><div style={{ width: `${batteryLevel}%`, height: '100%', background: batteryLevel > 50 ? '#22c55e' : batteryLevel > 20 ? '#f59e0b' : '#ef4444' }} /></div>
+                                    <div style={{ marginTop: '10px', fontSize: '10px', color: 'rgba(255,255,255,0.6)' }}>Power Source: Local Session</div>
+                                    <button type="button" onClick={() => { openApp('settings'); setShowBatteryPopup(false); }} style={{ marginTop: '10px', width: '100%', border: 'none', borderRadius: '8px', padding: '8px 10px', background: 'rgba(245,208,0,0.14)', color: '#f5d000', fontSize: '11px', cursor: 'pointer' }}>Power Preferences</button>
+                                </div>
+                            )}
+                        </div>
+                        <button type="button" onClick={() => setWifiEnabled((prev) => !prev)} style={{ height: '22px', width: '24px', borderRadius: '8px', border: 'none', background: wifiEnabled ? 'rgba(96,165,250,0.18)' : 'transparent', color: wifiEnabled ? '#93c5fd' : 'rgba(255,255,255,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}><Wifi size={14} /></button>
+                        <button type="button" onClick={() => { setIsStartMenuOpen(true); setShowBatteryPopup(false); setShowControlCenter(false); setActiveMacMenu(null); }} style={{ height: '22px', width: '24px', borderRadius: '8px', border: 'none', background: isStartMenuOpen ? 'rgba(255,255,255,0.12)' : 'transparent', color: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}><Search size={14} /></button>
+                        <div style={{ position: 'relative' }}>
+                            <button type="button" onClick={() => { setShowControlCenter((prev) => !prev); setShowBatteryPopup(false); setActiveMacMenu(null); }} style={{ height: '22px', width: '24px', borderRadius: '8px', border: 'none', background: showControlCenter ? 'rgba(255,255,255,0.12)' : 'transparent', color: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}><SlidersHorizontal size={14} /></button>
+                            {showControlCenter && (
+                                <div style={{ position: 'absolute', top: '26px', right: 0, width: '292px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(9,14,25,0.97)', boxShadow: '0 24px 48px rgba(0,0,0,0.45)', padding: '12px', display: 'grid', gap: '10px' }}>
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '8px' }}>
+                                        {[{ label: 'Wi-Fi', icon: Wifi, active: wifiEnabled, onClick: () => setWifiEnabled((prev) => !prev) }, { label: 'Bluetooth', icon: Bluetooth, active: bluetoothEnabled, onClick: () => setBluetoothEnabled((prev) => !prev) }, { label: 'AirDrop', icon: Sparkles, active: airdropEnabled, onClick: () => setAirdropEnabled((prev) => !prev) }, { label: 'Focus', icon: MoonStar, active: focusModeEnabled, onClick: () => setFocusModeEnabled((prev) => !prev) }].map((item) => {
+                                            const Icon = item.icon;
+                                            return <button key={item.label} type="button" onClick={item.onClick} style={{ border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '10px', background: item.active ? 'rgba(96,165,250,0.18)' : 'rgba(255,255,255,0.04)', color: '#f8fafc', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '8px', cursor: 'pointer' }}><Icon size={16} /><span style={{ fontSize: '11px', fontWeight: 700 }}>{item.label}</span></button>;
+                                        })}
+                                    </div>
+                                    <div style={{ borderRadius: '12px', background: 'rgba(255,255,255,0.04)', padding: '10px 12px' }}><div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#f8fafc' }}><SunMedium size={16} /><input type="range" min="40" max="100" step="1" value={uiBrightness} onChange={(e) => setUiBrightness(Number(e.target.value))} style={{ flex: 1 }} /><span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.6)' }}>{uiBrightness}%</span></div></div>
+                                    <div style={{ borderRadius: '12px', background: 'rgba(255,255,255,0.04)', padding: '10px 12px' }}><div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#f8fafc' }}><Volume2 size={16} /><input type="range" min="0" max="100" step="1" value={uiVolume} onChange={(e) => setUiVolume(Number(e.target.value))} style={{ flex: 1 }} /><span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.6)' }}>{uiVolume}%</span></div></div>
+                                    <button type="button" onClick={() => { openApp('settings'); setShowControlCenter(false); }} style={{ border: 'none', borderRadius: '12px', padding: '10px 12px', background: 'rgba(245,208,0,0.14)', color: '#f5d000', fontSize: '11px', fontWeight: 700, cursor: 'pointer', textAlign: 'left' }}>Open Control Preferences</button>
+                                </div>
+                            )}
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#f8fafc', paddingLeft: '4px' }}>
+                            <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.7)' }}>{systemDate}</span>
+                            <span style={{ fontSize: '11px', fontWeight: 800 }}>{systemTime}</span>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {false && isMacMode && (
                 <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '28px', background: 'rgba(7,11,20,0.96)', borderBottom: '1px solid rgba(245,208,0,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 12px', zIndex: 499, backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)' }}>
                     {/* Left: ⚡ IJAM_OS logo + macOS menu items */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>

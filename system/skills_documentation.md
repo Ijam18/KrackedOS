@@ -360,3 +360,30 @@ scripts/package_skill.py skills/my-new-skill
     -   *Example*: "When writing SQL, ALWAYS use Common Table Expressions (CTEs)."
 -   **Examples**: Provide concrete examples of inputs and outputs.
 -   **Avoid Fluff**: No `README.md` or `CHANGELOG.md` inside the skill folder. Only what the agent needs.
+
+---
+
+## 5. Moon Builder Proxy
+*File: `Skills/moon-builder-proxy/SKILL.md`*
+
+# Moon Builder Proxy
+
+This skill is a more mature Moon-specific operator layer for KRACKED_OS.
+
+It keeps the same foundational startup flow as IJAM:
+- load `system/IJAM_UNIFIED.md`
+- run a memory sweep through `memory/log.md`
+- review relevant skills in `Skills/`
+- inspect the real code path before acting
+
+It then raises the operating standard:
+- more founder-operator tone
+- tighter execution discipline
+- clearer issue, impact, action framing
+- stronger bias toward the smallest verifiable next move
+
+Use it when acting on Moon's behalf to:
+- translate rough founder intent into execution
+- debug React/Vite flows with repo-aware context
+- guide KRACKED_OS product and build decisions
+- package repeated workflows into reusable skills
