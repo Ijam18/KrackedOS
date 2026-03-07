@@ -4,6 +4,11 @@ import { Analytics } from '@vercel/analytics/react';
 import App from './App.jsx';
 import './index.css';
 
+if (import.meta.env.DEV) {
+  import('react-grab');
+  import('react-grab/dist/styles.css');
+}
+
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <App />

@@ -14,8 +14,8 @@ import {
 import { KRACKED_COLORS } from './theme';
 
 export const APP_REGISTRY = [
-  { type: 'files', label: 'FILES', icon: Folder, color: KRACKED_COLORS.accentYellow, defaultW: 820, defaultH: 540, title: 'FILE_EXPLORER // KRACKED_OS v3' },
-  { type: 'progress', label: 'STATS', icon: User, color: KRACKED_COLORS.accentGreen, defaultW: 700, defaultH: 580, title: 'BUILDER_STATS // PROGRESS' },
+  { type: 'files', label: 'FILES', icon: Folder, color: KRACKED_COLORS.accentYellow, defaultW: 820, defaultH: 540, title: 'FILE_EXPLORER // KRACKED_OS v3', desktopIconImage: '/icons/files-stack.png' },
+  { type: 'progress', label: 'STATS', icon: User, color: KRACKED_COLORS.accentGreen, defaultW: 700, defaultH: 580, title: 'BUILDER_STATS // PROGRESS', desktopIconImage: '/icons/profile-icon.png', desktopIconScale: 2 },
   { type: 'settings', label: 'SETTINGS', icon: Settings, color: KRACKED_COLORS.accentSlate, defaultW: 660, defaultH: 520, title: 'SYSTEM_SETTINGS // CONFIG' },
   { type: 'wallpaper', label: 'WALLPAPER', icon: Sparkles, color: KRACKED_COLORS.accentAmber, defaultW: 600, defaultH: 480, title: 'WALLPAPER_GALLERY // PERSONALIZE' },
   { type: 'kdacademy', label: 'KDACADEMY', icon: Globe, color: KRACKED_COLORS.accentEmerald, defaultW: 1240, defaultH: 780, title: 'KDACADEMY // LEARN + BUILD' },

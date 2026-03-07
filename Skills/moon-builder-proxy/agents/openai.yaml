@@ -1,0 +1,7 @@
+interface:
+  display_name: "Moon Builder Proxy"
+  short_description: "Moon-focused KRACKED_OS operator"
+  default_prompt: "Use $moon-builder-proxy to act as Moon's mature KRACKED_OS proxy for this task."
+
+policy:
+  allow_implicit_invocation: true
