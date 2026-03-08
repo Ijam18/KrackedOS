@@ -1,0 +1,447 @@
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Silkscreen:wght@700&family=VT323&display=swap');
+
+.boot-screen-root {
+    position: fixed;
+    inset: 0;
+    overflow: hidden;
+    z-index: 1000;
+    user-select: none;
+    color: #f8fafc;
+    font-family: 'Press Start 2P', monospace;
+    background: linear-gradient(180deg, #66d9e8 0%, #73e0d0 38%, #88e197 76%, #7fd868 100%);
+}
+
+.boot-scene {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+}
+
+.boot-layer {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: -128px;
+    width: calc(100% + 256px);
+    max-width: none;
+    height: 100%;
+    object-fit: cover;
+    image-rendering: pixelated;
+    pointer-events: none;
+    will-change: transform;
+}
+
+.boot-layer-sky {
+    opacity: 0.94;
+}
+
+.boot-layer-far {
+    opacity: 0.96;
+    object-position: 84% center;
+}
+
+.boot-halftone-band {
+    position: absolute;
+    inset: 0 0 auto;
+    height: 36%;
+    background-image: radial-gradient(rgba(24, 115, 133, 0.28) 1.5px, transparent 1.5px);
+    background-size: 8px 8px;
+    opacity: 0.42;
+    pointer-events: none;
+}
+
+.boot-layer-mid {
+    opacity: 0.98;
+    object-position: 86% center;
+}
+
+.boot-layer-front {
+    opacity: 1;
+    object-position: 83% center;
+}
+
+.boot-scene-shade {
+    position: absolute;
+    inset: 0;
+    background:
+        radial-gradient(circle at 50% 30%, rgba(255, 251, 207, 0.22) 0%, rgba(255, 251, 207, 0) 38%),
+        linear-gradient(180deg, rgba(9, 26, 31, 0.02) 0%, rgba(9, 29, 17, 0.14) 100%);
+    pointer-events: none;
+}
+
+.boot-scanlines {
+    position: absolute;
+    inset: 0;
+    background-image: repeating-linear-gradient(
+        0deg,
+        rgba(255, 255, 255, 0.03) 0 2px,
+        rgba(0, 0, 0, 0.03) 2px 4px
+    );
+    opacity: 0.28;
+    pointer-events: none;
+}
+
+.boot-scan-sweep {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: -18%;
+    height: 140px;
+    background: linear-gradient(
+        180deg,
+        rgba(255, 255, 255, 0) 0%,
+        rgba(255, 238, 143, 0.16) 50%,
+        rgba(255, 255, 255, 0) 100%
+    );
+    pointer-events: none;
+}
+
+.boot-horizon-glow {
+    position: absolute;
+    left: 50%;
+    bottom: 17%;
+    width: min(42vw, 560px);
+    height: 20%;
+    transform: translateX(-50%);
+    background: radial-gradient(circle, rgba(251, 245, 186, 0.24) 0%, rgba(251, 245, 186, 0) 72%);
+    pointer-events: none;
+}
+
+.boot-sparkle {
+    position: absolute;
+    background: #fff39f;
+    box-shadow: 0 0 12px rgba(255, 243, 159, 0.72);
+    pointer-events: none;
+}
+
+.boot-content {
+    position: relative;
+    z-index: 5;
+    width: min(760px, 100%);
+    margin: 0 auto;
+    padding: clamp(36px, 7vh, 70px) 22px 160px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+}
+
+.boot-brand {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    text-align: center;
+}
+
+.boot-brand-title {
+    width: min(380px, 78vw);
+    line-height: 0;
+}
+
+.boot-brand-logo {
+    display: block;
+    width: 100%;
+    height: auto;
+    max-width: none;
+    image-rendering: pixelated;
+}
+
+.boot-brand-subtitle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0;
+    font-size: clamp(10px, 1vw, 15px);
+    line-height: 1;
+    letter-spacing: 0.08em;
+}
+
+.boot-brand-subtitle-main {
+    color: #6ae765;
+    text-shadow:
+        1px 1px 0 #1b5d23,
+        2px 2px 0 rgba(11, 36, 13, 0.48);
+}
+
+.boot-brand-subtitle-accent {
+    color: #ecf5f8;
+    text-shadow:
+        1px 1px 0 #335367,
+        2px 2px 0 rgba(12, 31, 43, 0.45);
+}
+
+.boot-brand-stack {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+}
+
+.boot-brand-caption {
+    font-size: clamp(7px, 0.72vw, 11px);
+    line-height: 1.1;
+    color: #ecf7fb;
+    letter-spacing: 0.11em;
+    text-shadow:
+        1px 1px 0 #38515f,
+        2px 2px 0 rgba(16, 30, 39, 0.35);
+}
+
+.boot-tagline {
+    padding: 10px 14px;
+    background: rgba(23, 90, 95, 0.36);
+    border: 3px solid rgba(22, 80, 80, 0.5);
+    color: #ffd54a;
+    font-size: clamp(8px, 0.82vw, 12px);
+    text-shadow: 1px 1px 0 rgba(9, 16, 28, 0.85);
+    text-align: center;
+}
+
+.boot-panel {
+    position: relative;
+    width: min(680px, calc(100vw - 50px));
+    border: 6px solid #4b2a14;
+    background: #4a2814;
+    outline: 3px solid rgba(249, 224, 167, 0.18);
+    outline-offset: -9px;
+    box-shadow:
+        8px 8px 0 rgba(27, 14, 8, 0.56),
+        inset 0 0 0 3px rgba(255, 241, 188, 0.1);
+}
+
+.boot-close-button {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 26px;
+    height: 26px;
+    border: 3px solid #2a180d;
+    background: #f7de74;
+    color: #241406;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 10px;
+    line-height: 1;
+    cursor: pointer;
+    box-shadow: 2px 2px 0 rgba(19, 10, 5, 0.42);
+    z-index: 4;
+}
+
+.boot-panel-header {
+    height: 40px;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 0 12px;
+    background: linear-gradient(180deg, #6ad7aa 0%, #4fb98e 100%);
+    border-bottom: 4px solid #366952;
+}
+
+.boot-panel-orb {
+    width: 10px;
+    height: 10px;
+    background: #d8ffea;
+    border: 2px solid #326452;
+}
+
+.boot-panel-label {
+    margin-left: 6px;
+    color: #123421;
+    font-size: 8px;
+}
+
+.boot-panel-body {
+    display: flex;
+    min-height: 232px;
+}
+
+.boot-status-card {
+    width: 42%;
+    padding: 18px 12px 14px;
+    background: linear-gradient(180deg, #8d5b2c 0%, #754821 100%);
+    border-right: 4px solid #4b2a14;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    text-align: center;
+}
+
+.boot-time {
+    font-family: 'VT323', monospace;
+    font-size: clamp(44px, 5.2vw, 68px);
+    line-height: 0.88;
+    color: #fff5d6;
+    text-shadow: 3px 3px 0 rgba(51, 28, 11, 0.34);
+}
+
+.boot-date {
+    font-family: 'VT323', monospace;
+    font-size: clamp(20px, 2vw, 34px);
+    line-height: 0.92;
+    color: #fff2df;
+}
+
+.boot-status-pill {
+    padding: 8px 10px;
+    background: #d7f2b1;
+    border: 3px solid rgba(28, 68, 34, 0.32);
+    color: #1d4926;
+    font-size: clamp(6px, 0.56vw, 9px);
+    line-height: 1.3;
+}
+
+.boot-action-card {
+    flex: 1;
+    padding: 20px 16px;
+    background:
+        linear-gradient(180deg, rgba(255, 251, 224, 0.64) 0%, rgba(255, 247, 197, 0.3) 100%),
+        #eadfb7;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    text-align: center;
+}
+
+.boot-helper {
+    font-size: clamp(7px, 0.75vw, 10px);
+    color: #684b21;
+    letter-spacing: 0.05em;
+}
+
+.boot-enter-button {
+    width: clamp(150px, 23vw, 220px);
+    height: 72px;
+    border: 6px solid #442611;
+    background: linear-gradient(180deg, #fff194 0%, #ffe05a 52%, #f0b71b 100%);
+    color: #261506;
+    font-family: 'Press Start 2P', monospace;
+    font-size: clamp(10px, 0.95vw, 13px);
+    line-height: 1.25;
+    cursor: pointer;
+    box-shadow:
+        0 7px 0 #c78f14,
+        inset 0 2px 0 rgba(255, 255, 255, 0.52);
+}
+
+.boot-footer {
+    position: absolute;
+    left: 50%;
+    bottom: max(16px, env(safe-area-inset-bottom));
+    transform: translateX(-50%);
+    z-index: 6;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+
+.boot-progress-shell {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+}
+
+.boot-progress-label {
+    font-size: 7px;
+    color: #fff7bf;
+    text-shadow: 1px 1px 0 rgba(15, 23, 42, 0.8);
+}
+
+.boot-progress-track {
+    width: min(390px, calc(100vw - 44px));
+    display: grid;
+    grid-template-columns: repeat(20, 1fr);
+    gap: 2px;
+    padding: 4px;
+    border: 3px solid #2b1a0e;
+    background: rgba(15, 22, 27, 0.78);
+}
+
+.boot-progress-segment {
+    height: 10px;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.boot-progress-segment.is-filled {
+    background: linear-gradient(180deg, #fff29d 0%, #f5d000 60%, #c28f0d 100%);
+}
+
+@media (max-width: 768px) {
+    .boot-layer {
+        left: -80px;
+        width: calc(100% + 160px);
+    }
+
+    .boot-layer-far {
+        object-position: 80% center;
+    }
+
+    .boot-layer-mid {
+        object-position: 82% center;
+    }
+
+    .boot-layer-front {
+        object-position: 79% center;
+    }
+
+    .boot-content {
+        padding: 26px 15px 122px;
+        gap: 12px;
+    }
+
+    .boot-brand-title {
+        width: min(290px, 84vw);
+    }
+
+    .boot-brand-subtitle {
+        font-size: clamp(8px, 3vw, 10px);
+    }
+
+    .boot-brand-caption {
+        font-size: clamp(6px, 2.3vw, 8px);
+    }
+
+    .boot-tagline {
+        max-width: calc(100vw - 36px);
+        font-size: 7px;
+        line-height: 1.35;
+    }
+
+    .boot-panel {
+        width: calc(100vw - 28px);
+        max-width: 360px;
+    }
+
+    .boot-panel-body {
+        flex-direction: column;
+        min-height: 0;
+    }
+
+    .boot-status-card {
+        width: 100%;
+        min-height: 128px;
+        border-right: none;
+        border-bottom: 4px solid #4b2a14;
+    }
+
+    .boot-action-card {
+        min-height: 150px;
+        padding: 18px 14px;
+    }
+
+    .boot-enter-button {
+        width: 154px;
+        height: 58px;
+        border-width: 5px;
+        box-shadow: 0 5px 0 #c78f14;
+    }
+
+    .boot-progress-track {
+        width: min(280px, calc(100vw - 28px));
+    }
+
+}

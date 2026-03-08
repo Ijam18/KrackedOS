@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 64">
+  <defs>
+    <linearGradient id="kdFill" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#7bff69" />
+      <stop offset="100%" stop-color="#57e14f" />
+    </linearGradient>
+    <filter id="kdShadow" x="-15%" y="-15%" width="130%" height="145%">
+      <feDropShadow dx="0" dy="3" stdDeviation="0.5" flood-color="#0b3f17" flood-opacity="0.72" />
+    </filter>
+  </defs>
+  <g fill="url(#kdFill)" stroke="#0f561c" stroke-width="5" stroke-linejoin="round" stroke-linecap="round" filter="url(#kdShadow)">
+    <path transform="translate(2 8)" d="M30 0L8 22L30 44L42 32L28 22L42 12Z" />
+    <path transform="translate(56 8)" d="M0 0H16V20L32 0H54L34 23L56 48H34L16 31V48H0Z" />
+    <path transform="translate(128 8)" fill-rule="evenodd" d="M0 0H28C47 0 62 11 62 24C62 37 47 48 28 48H0ZM16 12V36H26C36 36 44 31 44 24C44 17 36 12 26 12Z" />
+    <path transform="translate(208 8)" d="M0 48L20 0H36L16 48Z" />
+    <path transform="translate(260 8)" d="M0 12L14 22L0 32L12 44L34 24L12 0Z" />
+  </g>
+</svg>

@@ -14,5 +14,15 @@ export const KRACKED_COLORS = {
   loadingBg: '#1a1a2e',
   loadingProgress: '#f5d000',
   loadingCardHover: 'rgba(245,208,0,0.15)',
-  loadingInactive: 'rgba(255,255,255,0.1)'
+  loadingInactive: 'rgba(255,255,255,0.1)',
+
+  // RPG Boot Screen
+  rpgPanelBg: '#d4a574',
+  rpgPanelBorder: '#5a3921',
+  rpgPanelHighlight: '#f5e6c8',
+  rpgButtonGreen: '#4a8c3f',
+  rpgButtonGreenLight: '#6ab85e',
+  rpgButtonGreenDark: '#2d5a26',
+  rpgGold: '#f5d000',
+  rpgGoldDark: '#b59b00',
 };
