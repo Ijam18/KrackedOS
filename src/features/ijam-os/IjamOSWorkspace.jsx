@@ -43,6 +43,15 @@ import MobileStatusBar from '../../components/MobileStatusBar';
 import { useIjamOSWindowManager } from './hooks/useIjamOSWindowManager';
 import { APP_REGISTRY } from './constants/appRegistry';
 import KrackedInteractiveLoading from './components/loading/KrackedInteractiveLoading';
+import SharedDesktopIcon from './components/DesktopIcon';
+import SharedWindowFrame from './components/WindowFrame';
+import {
+    BUILT_IN_WALLPAPERS,
+    DEFAULT_PERSONALIZATION,
+    WORKSPACE_PATHS,
+    getDefaultWallpaperId
+} from './os-core/constants';
+import { joinOsPath, normalizeOsPath } from './os-core/pathUtils';
 
 const BuilderStudioLocal = lazy(() => import('./components/BuilderStudioLocal'));
 const VibeSimulator = lazy(() => import('../../components/simulator/VibeSimulator'));
@@ -2364,6 +2373,35 @@ const RESOURCE_AI_MODES = [
     { id: 'plan', label: 'Implementation Plan' }
 ];
 
+const EXPLORER_TYPE_BADGES = {
+    drive: 'DRV',
+    folder: 'DIR',
+    lesson: 'LSN',
+    url: 'URL',
+    wallpaper: 'WLP',
+    image: 'IMG',
+    json: 'JSN',
+    file: 'FIL'
+};
+
+const EXPLORER_TYPE_LABELS = {
+    drive: 'System Drive',
+    folder: 'Folder',
+    lesson: 'Lesson File',
+    url: 'Shortcut',
+    wallpaper: 'Wallpaper',
+    image: 'Image',
+    json: 'JSON File',
+    file: 'File'
+};
+
+const WALLPAPER_FIT_OPTIONS = [
+    { id: 'fill', label: 'Fill' },
+    { id: 'fit', label: 'Fit' },
+    { id: 'stretch', label: 'Stretch' },
+    { id: 'center', label: 'Center' }
+];
+
 const trackResourceEvent = (eventName, meta = {}) => {
     try {
         const key = 'resource_ai_telemetry';
@@ -2444,25 +2482,10 @@ const buildIjamBotLessonBrief = ({ lesson, tips, tone }) => {
 
 // ─── IjamOS v3 App Registry ─────────────────────────────────────────────────
 // ─── Wallpaper Gallery Data ───────────────────────────────────────────────────
-const WALLPAPER_GALLERY = [
-    // Malaysia-Themed Wallpapers
-    { id: 'merdeka', name: 'Merdeka Red', type: 'gradient', colors: ['#DC2626', '#FFFFFF', '#FF0000'] },
-    { id: 'jalur', name: 'Jalur Gemilang', type: 'animated-gradient', colors: ['#010066', '#FFFFFF', '#CC0000'] },
-    { id: 'wau', name: 'Wau Kuning', type: 'gradient', colors: ['#FFCC00', '#FFD700', '#FFFAC0'] },
-    { id: 'kebaya', name: 'Kebaya', type: 'gradient', colors: ['#004488', '#0066CC', '#0099FF'] },
-    { id: 'tropic-rain', name: 'Tropic Rain', type: 'animated-gradient', colors: ['#0891B2', '#10B981', '#34D399'] },
-    { id: 'hibiscus', name: 'Hibiscus Morning', type: 'gradient', colors: ['#FF6B6B', '#FFE4E1', '#FFF0F5'] },
-    { id: 'sunset', name: 'Tropical Sunset', type: 'gradient', colors: ['#F97316', '#FDBA74', '#FCD34D'] },
-    { id: 'night', name: 'Tropical Night', type: 'gradient', colors: ['#0C1220', '#1E3A8A', '#3B82F6'] },
-    // Time-based Malaysia Wallpapers
-    { id: 'pagi-morning', name: 'Pagi (Morning)', type: 'time-based', times: '6-12', colors: ['#87CEEB', '#FFD166', '#FFF7ED'] },
-    { id: 'tengahari', name: 'Tengahari (Afternoon)', type: 'time-based', times: '12-15', colors: ['#FDBA74', '#FCD34D', '#FBBF24'] },
-    { id: 'petang', name: 'Petang (Evening)', type: 'time-based', times: '18-21', colors: ['#F97316', '#F59E0B', '#FBBF24'] },
-    { id: 'malam', name: 'Malam (Night)', type: 'time-based', times: '21-6', colors: ['#0C1220', '#1E3A8A', '#3B82F6'] },
-];
+const WALLPAPER_GALLERY = BUILT_IN_WALLPAPERS;
 
 // ─── IjamOS v3 Draggable Window Frame ───────────────────────────────────────
-const WindowFrame = ({
+const WindowFrameLegacy = ({
     winState,
     title,
     AppIcon,
@@ -2633,7 +2656,7 @@ const WindowFrame = ({
 };
 
 
-const DesktopIcon = ({
+const DesktopIconLegacy = ({
     label,
     icon: Icon,
     imageSrc,
@@ -2707,6 +2730,9 @@ const DesktopIcon = ({
     </button>
 );
 
+const WindowFrame = SharedWindowFrame;
+const DesktopIcon = SharedDesktopIcon;
+
 const StartMenuApp = ({ icon: Icon, label, onClick }) => (
     <button onClick={onClick}
         style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', background: 'transparent', border: 'none', cursor: 'pointer', padding: '12px', borderRadius: '8px', transition: 'background 0.2s' }}
@@ -2731,7 +2757,7 @@ const getInitialDesktopGridMetrics = () => {
     return { columns, rows };
 };
 
-const IjamOSWorkspace = ({ session, currentUser, isMobileView, deviceMode = 'desktop', ijamOsMode = 'mac_desktop', setPublicPage, setCurrentUser }) => {
+const IjamOSWorkspace = ({ runtime, session, currentUser, isMobileView, deviceMode = 'desktop', ijamOsMode = 'mac_desktop', setPublicPage, setCurrentUser }) => {
     const isMacMode = ijamOsMode === 'mac_desktop';
     const isPhoneMode = ijamOsMode === 'ios_phone';
     const isTabletMode = ijamOsMode === 'ios_tablet';
@@ -2927,6 +2953,10 @@ const IjamOSWorkspace = ({ session, currentUser, isMobileView, deviceMode = 'des
     const [explorerSearch, setExplorerSearch] = useState('');
     const [explorerSelected, setExplorerSelected] = useState(null);
     const [explorerView, setExplorerView] = useState('icons');
+    const [explorerItems, setExplorerItems] = useState([]);
+    const [explorerLoading, setExplorerLoading] = useState(false);
+    const [explorerError, setExplorerError] = useState('');
+    const explorerImportInputRef = useRef(null);
     const toggleStage = (stageName) => setCollapsedStages(prev => {
         const next = new Set(prev);
         next.has(stageName) ? next.delete(stageName) : next.add(stageName);
@@ -2953,35 +2983,35 @@ const IjamOSWorkspace = ({ session, currentUser, isMobileView, deviceMode = 'des
     const [systemDate, setSystemDate] = useState('');
 
     // Wallpaper state
-    const [currentWallpaper, setCurrentWallpaper] = useState(() => {
-        const saved = localStorage.getItem('vibe_wallpaper');
-        if (saved) return saved;
-        // Check for time-based wallpaper
-        const hour = new Date().getHours();
-        if (hour >= 6 && hour < 12) return 'morning';
-        if (hour >= 12 && hour < 18) return 'day';
-        if (hour >= 18 && hour < 21) return 'evening';
-        return 'night';
-    });
+    const [wallpaperGallery, setWallpaperGallery] = useState(BUILT_IN_WALLPAPERS);
+    const [wallpaperFit, setWallpaperFit] = useState(DEFAULT_PERSONALIZATION.fit);
+    const [wallpaperHistory, setWallpaperHistory] = useState([]);
+    const [currentWallpaper, setCurrentWallpaper] = useState(getDefaultWallpaperId());
+    const wallpaperImportInputRef = useRef(null);
 
     // Update time-based wallpaper hourly
     useEffect(() => {
-        const wallpaperData = WALLPAPER_GALLERY.find(w => w.id === currentWallpaper);
+        const wallpaperData = wallpaperGallery.find(w => w.id === currentWallpaper);
         if (wallpaperData?.type === 'time-based') {
             const interval = setInterval(() => {
                 const hour = new Date().getHours();
-                let newWallpaper = 'night';
-                if (hour >= 6 && hour < 12) newWallpaper = 'morning';
-                else if (hour >= 12 && hour < 18) newWallpaper = 'day';
-                else if (hour >= 18 && hour < 21) newWallpaper = 'evening';
+                let newWallpaper = 'malam';
+                if (hour >= 6 && hour < 12) newWallpaper = 'pagi-morning';
+                else if (hour >= 12 && hour < 18) newWallpaper = 'tengahari';
+                else if (hour >= 18 && hour < 21) newWallpaper = 'petang';
 
                 if (newWallpaper !== currentWallpaper) {
                     setCurrentWallpaper(newWallpaper);
+                    if (runtime) {
+                        runtime.wallpaper.setCurrent(newWallpaper, wallpaperFit).catch((error) => {
+                            console.error('Failed to sync time-based wallpaper:', error);
+                        });
+                    }
                 }
             }, 60000); // Check every minute
             return () => clearInterval(interval);
         }
-    }, [currentWallpaper]);
+    }, [currentWallpaper, runtime, wallpaperFit, wallpaperGallery]);
 
     const kdacademyUrl = 'https://kdacademy.up.railway.app/';
 
@@ -3031,6 +3061,69 @@ const IjamOSWorkspace = ({ session, currentUser, isMobileView, deviceMode = 'des
 
     const { speakText, playKeystroke, playSuccess, playError } = useSoundEffects();
 
+    const refreshWallpaperState = useCallback(async () => {
+        if (!runtime) return;
+        const [wallpapers, currentState] = await Promise.all([
+            runtime.wallpaper.list(),
+            runtime.wallpaper.getCurrent()
+        ]);
+
+        setWallpaperGallery(Array.isArray(wallpapers) && wallpapers.length ? wallpapers : BUILT_IN_WALLPAPERS);
+        setWallpaperFit(currentState?.fit || DEFAULT_PERSONALIZATION.fit);
+        setWallpaperHistory(currentState?.history || []);
+        if (currentState?.wallpaper?.id) {
+            setCurrentWallpaper(currentState.wallpaper.id);
+        }
+    }, [runtime]);
+
+    const markWorkspaceSessionBooted = useCallback(async () => {
+        if (!runtime) return;
+        const currentSession = await runtime.settings.loadSession().catch(() => null);
+        await runtime.settings.saveSession({
+            ...(currentSession || {}),
+            isBooted: true,
+            lastBootedAt: new Date().toISOString(),
+            lastRuntimeMode: runtime.mode
+        });
+    }, [runtime]);
+
+    const resetWorkspaceSession = useCallback(async ({ reload = true } = {}) => {
+        if (runtime) {
+            const currentSession = await runtime.settings.loadSession().catch(() => null);
+            await runtime.settings.saveSession({
+                ...(currentSession || {}),
+                isBooted: false,
+                lastRuntimeMode: runtime.mode
+            });
+        }
+
+        if (reload && typeof window !== 'undefined') {
+            window.location.reload();
+        }
+    }, [runtime]);
+
+    useEffect(() => {
+        if (!runtime) return;
+        let active = true;
+
+        Promise.all([
+            runtime.settings.loadSession(),
+            runtime.settings.loadCommunityResources(),
+            refreshWallpaperState()
+        ]).then(([sessionState, resources]) => {
+            if (!active) return;
+            setIsBooted(Boolean(sessionState?.isBooted));
+            setCommunityResources(Array.isArray(resources) ? resources : []);
+        }).catch(() => {
+            if (!active) return;
+            setCommunityResources([]);
+        });
+
+        return () => {
+            active = false;
+        };
+    }, [refreshWallpaperState, runtime]);
+
     useEffect(() => {
         if (currentUser) {
             setProfileForm({
@@ -3044,8 +3137,8 @@ const IjamOSWorkspace = ({ session, currentUser, isMobileView, deviceMode = 'des
                 aboutYourself: currentUser.about_yourself || '',
                 programGoal: currentUser.program_goal || ''
             });
-            setShowcaseUrl(currentUser.showcase_image || localStorage.getItem('ijamos_showcase_url') || '');
-            setWebsiteUrl(currentUser.website_url || localStorage.getItem('ijamos_website_url') || '');
+            setShowcaseUrl(currentUser.showcase_image || '');
+            setWebsiteUrl(currentUser.website_url || '');
         }
     }, [currentUser]);
 
@@ -3070,42 +3163,63 @@ const IjamOSWorkspace = ({ session, currentUser, isMobileView, deviceMode = 'des
                 updated_at: new Date().toISOString()
             };
 
-            localStorage.setItem('ijamos_profile', JSON.stringify(nextUser));
+            if (runtime) {
+                await runtime.settings.saveProfile(nextUser);
+            }
             if (setCurrentUser) setCurrentUser(nextUser);
 
-            appendTerminal('system', '[?] Profile configurations saved locally.');
-            alert('Settings saved successfully (local mode)!');
+            appendTerminal('system', '[OK] Profile configurations saved to workspace.');
+            alert('Settings saved successfully!');
         } catch (err) {
             console.error('Save failed:', err);
-            appendTerminal('system', '[!] Failed to save local configs.');
+            appendTerminal('system', '[!] Failed to save workspace configs.');
             alert('Save failed: ' + err.message);
         } finally {
             setIsSavingSettings(false);
         }
     };
 
-    const handleSetWallpaper = (wallpaperId) => {
+    const handleSetWallpaper = async (wallpaperId, fitMode = wallpaperFit) => {
         setCurrentWallpaper(wallpaperId);
-        localStorage.setItem('vibe_wallpaper', wallpaperId);
+        setWallpaperFit(fitMode);
+        if (runtime) {
+            await runtime.wallpaper.setCurrent(wallpaperId, fitMode);
+            await refreshWallpaperState();
+        }
         playSuccess();
         appendTerminal('system', `[✓] Wallpaper changed to: ${wallpaperId}`);
     };
 
-    const getWallpaperStyle = (wallpaper) => {
+    const getWallpaperStyle = (wallpaper, options = {}) => {
         if (!wallpaper) return {};
+        const fitMode = options.fit || wallpaperFit;
+        const backgroundSize = options.preview
+            ? 'cover'
+            : fitMode === 'fit'
+                ? 'contain'
+                : fitMode === 'stretch'
+                    ? '100% 100%'
+                    : fitMode === 'center'
+                        ? 'auto'
+                        : 'cover';
 
         switch (wallpaper.type) {
             case 'image':
                 return {
                     backgroundImage: `url(${wallpaper.src})`,
-                    backgroundSize: 'cover',
-                    backgroundPosition: 'center'
+                    backgroundSize,
+                    backgroundPosition: 'center',
+                    backgroundRepeat: 'no-repeat',
+                    backgroundColor: '#020617'
                 };
             case 'gradient':
             case 'animated-gradient':
                 const colors = wallpaper.colors || [];
                 return {
                     background: `linear-gradient(135deg, ${colors.join(', ')})`,
+                    ...(wallpaper.type === 'animated-gradient' && {
+                        backgroundSize: '200% 200%'
+                    }),
                     ...(wallpaper.type === 'animated-gradient' && {
                         animation: 'gradientShift 10s ease infinite'
                     })
@@ -3119,6 +3233,76 @@ const IjamOSWorkspace = ({ session, currentUser, isMobileView, deviceMode = 'des
                 return {};
         }
     };
+
+    const applyWallpaperSelection = useCallback(async (wallpaperId, fitMode = wallpaperFit) => {
+        try {
+            setCurrentWallpaper(wallpaperId);
+            setWallpaperFit(fitMode);
+            if (runtime) {
+                await runtime.wallpaper.setCurrent(wallpaperId, fitMode);
+                await refreshWallpaperState();
+            }
+            playSuccess();
+            appendTerminal('system', `[OK] Wallpaper changed to: ${wallpaperId}`);
+        } catch (error) {
+            console.error('Wallpaper update failed:', error);
+            playError();
+            alert(`Failed to change wallpaper: ${error.message}`);
+        }
+    }, [playError, playSuccess, refreshWallpaperState, runtime, wallpaperFit]);
+
+    const resolveWallpaperStyle = useCallback((wallpaper, options = {}) => {
+        if (!wallpaper) return {};
+        const fitMode = options.fit || wallpaperFit;
+        const backgroundSize = options.preview
+            ? 'cover'
+            : fitMode === 'fit'
+                ? 'contain'
+                : fitMode === 'stretch'
+                    ? '100% 100%'
+                    : fitMode === 'center'
+                        ? 'auto'
+                        : 'cover';
+
+        switch (wallpaper.type) {
+            case 'image':
+                return {
+                    backgroundImage: `url(${wallpaper.src})`,
+                    backgroundSize,
+                    backgroundPosition: 'center',
+                    backgroundRepeat: 'no-repeat',
+                    backgroundColor: '#020617'
+                };
+            case 'gradient':
+            case 'animated-gradient':
+                return {
+                    background: `linear-gradient(135deg, ${(wallpaper.colors || []).join(', ')})`,
+                    ...(wallpaper.type === 'animated-gradient' && {
+                        backgroundSize: '200% 200%',
+                        animation: 'gradientShift 10s ease infinite'
+                    })
+                };
+            case 'time-based':
+                return {
+                    background: `linear-gradient(135deg, ${(wallpaper.colors || []).join(', ')})`,
+                    transition: 'background 1s ease'
+                };
+            default:
+                return {};
+        }
+    }, [wallpaperFit]);
+
+    const completeBootSequence = useCallback(async () => {
+        setIsBooted(true);
+        setIsOnboarding(true);
+        setOnboardingStep(1);
+        await markWorkspaceSessionBooted();
+        setTerminalLog([
+            { role: 'system', text: 'SYSTEM ONLINE. ONBOARDING SEQUENCE INITIATED.' },
+            { role: 'assistant', text: 'yo WELCOME BRO! aku KRACKED_BOT. sebelum kita start, aku nak check vibe kau sikit.' },
+            { role: 'assistant', text: 'QUESTION 1: Kalau nak AI buat UI lawa, kau kena bagi "Master Prompt" yang detail atau suruh dia "buat web lawa" saje?' }
+        ]);
+    }, [markWorkspaceSessionBooted]);
 
     const handleImageUpload = async (event) => {
         try {
@@ -3134,23 +3318,33 @@ const IjamOSWorkspace = ({ session, currentUser, isMobileView, deviceMode = 'des
             });
 
             setShowcaseUrl(dataUrl);
-            localStorage.setItem('ijamos_showcase_url', dataUrl);
+            const extension = (file.name.split('.').pop() || 'png').toLowerCase();
+            const showcasePath = joinOsPath(WORKSPACE_PATHS.documents, `showcase-image.${extension}`);
+            if (runtime) {
+                await runtime.fs.write(showcasePath, dataUrl, {
+                    mimeType: file.type || 'image/png',
+                    fileKind: 'image',
+                    meta: {
+                        logicalType: 'showcase-image'
+                    }
+                });
+            }
 
-            const savedProfileRaw = localStorage.getItem('ijamos_profile');
-            const savedProfile = savedProfileRaw ? JSON.parse(savedProfileRaw) : {};
             const nextUser = {
                 ...(currentUser || {}),
-                ...savedProfile,
                 showcase_image: dataUrl,
+                showcase_image_path: showcasePath,
                 updated_at: new Date().toISOString()
             };
-            localStorage.setItem('ijamos_profile', JSON.stringify(nextUser));
+            if (runtime) {
+                await runtime.settings.saveProfile(nextUser);
+            }
             if (setCurrentUser) setCurrentUser(nextUser);
 
-            appendTerminal('system', '[?] Showcase image saved to local storage.');
+            appendTerminal('system', '[OK] Showcase image saved to workspace.');
         } catch (error) {
             console.error('Upload Error:', error);
-            alert('Error saving image locally: ' + error.message);
+            alert('Error saving image to workspace: ' + error.message);
         } finally {
             setIsUploading(false);
         }
@@ -3158,20 +3352,17 @@ const IjamOSWorkspace = ({ session, currentUser, isMobileView, deviceMode = 'des
 
     const handleSaveWebsiteUrl = async () => {
         try {
-            localStorage.setItem('ijamos_website_url', websiteUrl || '');
-
-            const savedProfileRaw = localStorage.getItem('ijamos_profile');
-            const savedProfile = savedProfileRaw ? JSON.parse(savedProfileRaw) : {};
             const nextUser = {
                 ...(currentUser || {}),
-                ...savedProfile,
                 website_url: websiteUrl || '',
                 updated_at: new Date().toISOString()
             };
-            localStorage.setItem('ijamos_profile', JSON.stringify(nextUser));
+            if (runtime) {
+                await runtime.settings.saveProfile(nextUser);
+            }
             if (setCurrentUser) setCurrentUser(nextUser);
 
-            alert('Website URL saved locally!');
+            alert('Website URL saved to workspace!');
         } catch (e) {
             alert('Error saving URL: ' + e.message);
         }
@@ -3304,49 +3495,40 @@ const IjamOSWorkspace = ({ session, currentUser, isMobileView, deviceMode = 'des
     }, [appTypeList]);
 
     useEffect(() => {
-        if (desktopSlotsLoadedRef.current) return;
-        try {
-            const rawSlots = localStorage.getItem('ijamos_desktop_icon_slots');
-            if (rawSlots) {
-                const parsedSlots = JSON.parse(rawSlots);
-                if (Array.isArray(parsedSlots)) {
-                    setDesktopIconSlots(normalizeDesktopSlots(parsedSlots, Math.max(desktopSlotCount, parsedSlots.length)));
-                    desktopSlotsLoadedRef.current = true;
-                    desktopSlotsHydratedRef.current = true;
-                    return;
-                }
-            }
-            const rawOrder = localStorage.getItem('ijamos_desktop_icon_order');
-            if (!rawOrder) {
+        if (desktopSlotsLoadedRef.current || !runtime) return;
+        let active = true;
+
+        runtime.settings.loadDesktopLayout()
+            .then((layout) => {
+                if (!active) return;
+                const persistedSlots = Array.isArray(layout?.slots) && layout.slots.length
+                    ? layout.slots
+                    : Array.isArray(layout?.legacyOrder)
+                        ? layout.legacyOrder
+                        : [];
+                setDesktopIconSlots(normalizeDesktopSlots(persistedSlots, Math.max(desktopSlotCount, persistedSlots.length || desktopSlotCount)));
+                desktopSlotsLoadedRef.current = true;
+                desktopSlotsHydratedRef.current = true;
+            })
+            .catch(() => {
+                if (!active) return;
                 setDesktopIconSlots(normalizeDesktopSlots([], desktopSlotCount));
                 desktopSlotsLoadedRef.current = true;
                 desktopSlotsHydratedRef.current = true;
-                return;
-            }
-            const parsedOrder = JSON.parse(rawOrder);
-            if (Array.isArray(parsedOrder) && parsedOrder.length) {
-                setDesktopIconSlots(normalizeDesktopSlots(parsedOrder, desktopSlotCount));
-            } else {
-                setDesktopIconSlots(normalizeDesktopSlots([], desktopSlotCount));
-            }
-            desktopSlotsLoadedRef.current = true;
-            desktopSlotsHydratedRef.current = true;
-        } catch {
-            // Ignore broken local storage payloads.
-            setDesktopIconSlots(normalizeDesktopSlots([], desktopSlotCount));
-            desktopSlotsLoadedRef.current = true;
-            desktopSlotsHydratedRef.current = true;
-        }
-    }, [desktopSlotCount, normalizeDesktopSlots]);
+            });
+
+        return () => {
+            active = false;
+        };
+    }, [desktopSlotCount, normalizeDesktopSlots, runtime]);
 
     useEffect(() => {
-        if (!desktopSlotsHydratedRef.current) return;
-        try {
-            localStorage.setItem('ijamos_desktop_icon_slots', JSON.stringify(desktopIconSlots));
-        } catch {
-            // Ignore storage failures.
-        }
-    }, [desktopIconSlots]);
+        if (!desktopSlotsHydratedRef.current || !runtime) return;
+        runtime.settings.saveDesktopLayout({
+            slots: desktopIconSlots,
+            legacyOrder: desktopIconSlots.filter(Boolean)
+        }).catch(() => {});
+    }, [desktopIconSlots, runtime]);
 
     useEffect(() => {
         setDesktopIconSlots((prev) => normalizeDesktopSlots(prev, desktopSlotCount));
@@ -3374,18 +3556,15 @@ const IjamOSWorkspace = ({ session, currentUser, isMobileView, deviceMode = 'des
     const lessons = teachingTone === 'formal' ? LESSONS_FORMAL : LESSONS_IJAM;
 
     useEffect(() => {
-        try {
-            const raw = localStorage.getItem('ijamos_community_resources');
-            if (raw) {
-                const parsed = JSON.parse(raw);
-                setCommunityResources(Array.isArray(parsed) ? parsed : []);
-            } else {
-                setCommunityResources([]);
-            }
-        } catch {
-            setCommunityResources([]);
-        }
-    }, []);
+        runtime?.fs?.bindMountData?.({ lessons });
+    }, [lessons, runtime]);
+
+    useEffect(() => {
+        if (!runtime) return;
+        runtime.settings.loadCommunityResources()
+            .then((resources) => setCommunityResources(Array.isArray(resources) ? resources : []))
+            .catch(() => setCommunityResources([]));
+    }, [runtime]);
 
     const filteredLessons = useMemo(() => {
         const query = search.toLowerCase().trim();
@@ -3490,6 +3669,271 @@ const IjamOSWorkspace = ({ session, currentUser, isMobileView, deviceMode = 'des
         window.open(normalized, '_blank', 'noopener,noreferrer');
         addVibes(10, "Resource Studied");
     };
+
+    const pathSegmentsToAbsolutePath = useCallback((segments) => {
+        if (!Array.isArray(segments) || !segments.length) return null;
+        if (segments.length === 1 && segments[0] === 'C:') return 'C:\\';
+        return normalizeOsPath(segments.join('\\'));
+    }, []);
+
+    const absolutePathToSegments = useCallback((path) => {
+        const normalized = normalizeOsPath(path);
+        return normalized.split('\\').filter(Boolean);
+    }, []);
+
+    const currentExplorerAbsolutePath = useMemo(
+        () => pathSegmentsToAbsolutePath(explorerPath),
+        [explorerPath, pathSegmentsToAbsolutePath]
+    );
+
+    const explorerInTrash = useMemo(
+        () => currentExplorerAbsolutePath && normalizeOsPath(currentExplorerAbsolutePath).toLowerCase() === WORKSPACE_PATHS.trash.toLowerCase(),
+        [currentExplorerAbsolutePath]
+    );
+
+    const explorerPathIsWritable = useMemo(() => {
+        if (!currentExplorerAbsolutePath || currentExplorerAbsolutePath === 'C:\\') return false;
+        const normalized = normalizeOsPath(currentExplorerAbsolutePath).toLowerCase();
+        const readonlyRoots = [
+            WORKSPACE_PATHS.lessonsMount.toLowerCase(),
+            WORKSPACE_PATHS.builtInWallpapers.toLowerCase()
+        ];
+        if (readonlyRoots.some((rootPath) => normalized === rootPath || normalized.startsWith(`${rootPath}\\`))) {
+            return false;
+        }
+        return normalized.startsWith(WORKSPACE_PATHS.root.toLowerCase());
+    }, [currentExplorerAbsolutePath]);
+
+    const mapFsEntryToExplorerItem = useCallback((entry) => {
+        const logicalType = entry.meta?.logicalType || entry.fileKind || entry.type;
+        const displayName = entry.type === 'file' && entry.ext && entry.name.toLowerCase().endsWith(entry.ext)
+            ? entry.name.slice(0, entry.name.length - entry.ext.length)
+            : entry.name;
+
+        return {
+            id: entry.path,
+            path: entry.path,
+            name: displayName,
+            rawName: entry.name,
+            type: entry.type === 'directory'
+                ? 'folder'
+                : logicalType === 'lesson'
+                    ? 'lesson'
+                    : logicalType === 'url'
+                        ? 'url'
+                        : logicalType === 'wallpaper'
+                            ? 'wallpaper'
+                            : logicalType === 'image' || entry.fileKind === 'image'
+                                ? 'image'
+                                : logicalType === 'json'
+                                    ? 'json'
+                                    : 'file',
+            ext: entry.ext || '',
+            data: {
+                source: entry.source,
+                readonly: entry.readonly,
+                updatedAt: entry.updatedAt,
+                path: entry.path,
+                lessonId: entry.meta?.lessonId || entry.meta?.lesson?.id || null,
+                lesson: entry.meta?.lesson || null,
+                url: entry.meta?.resource?.url || entry.meta?.url || '',
+                stage: entry.meta?.lesson?.stage || entry.meta?.stage || null,
+                summary: entry.meta?.lesson?.summary || entry.meta?.resource?.description || '',
+                description: entry.meta?.resource?.description || '',
+                wallpaperId: entry.meta?.wallpaperId || null,
+                wallpaper: entry.meta?.wallpaper || null,
+                originalPath: entry.meta?.originalPath || null,
+                content: entry.content || ''
+            }
+        };
+    }, []);
+
+    const refreshExplorerItems = useCallback(async () => {
+        if (!runtime) return;
+        setExplorerLoading(true);
+        setExplorerError('');
+
+        try {
+            let nextItems = [];
+
+            if (explorerSearch.trim()) {
+                const searchResults = await runtime.fs.search(explorerSearch, [WORKSPACE_PATHS.root, WORKSPACE_PATHS.lessonsMount]);
+                nextItems = searchResults.map(mapFsEntryToExplorerItem);
+            } else if (!explorerPath.length) {
+                nextItems = [{ id: 'drive-C', name: 'C:\\', type: 'drive', path: 'C:\\', label: 'KRACKED_OS Host Drive', data: {} }];
+            } else if (explorerPath.length === 1 && explorerPath[0] === 'C:') {
+                nextItems = [{
+                    id: 'folder-kracked-os',
+                    name: 'KRACKED_OS',
+                    type: 'folder',
+                    path: WORKSPACE_PATHS.root,
+                    label: 'Workspace Root',
+                    ext: '',
+                    data: {
+                        source: 'workspace',
+                        readonly: false,
+                        summary: 'Primary KRACKED_OS workspace root.'
+                    }
+                }];
+            } else {
+                const absolutePath = pathSegmentsToAbsolutePath(explorerPath);
+                const entries = await runtime.fs.list(absolutePath);
+                nextItems = entries.map(mapFsEntryToExplorerItem);
+            }
+
+            setExplorerItems(nextItems);
+            setExplorerSelected((prev) => (prev && nextItems.some((item) => item.id === prev.id) ? prev : null));
+        } catch (error) {
+            console.error('Explorer refresh failed:', error);
+            setExplorerItems([]);
+            setExplorerError(error.message || 'Failed to load explorer items.');
+        } finally {
+            setExplorerLoading(false);
+        }
+    }, [explorerPath, explorerSearch, mapFsEntryToExplorerItem, runtime, pathSegmentsToAbsolutePath]);
+
+    useEffect(() => {
+        if (!runtime || !windowStates.files?.isOpen) return;
+        refreshExplorerItems();
+    }, [refreshExplorerItems, runtime, windowStates.files?.isOpen]);
+
+    const navigateExplorer = useCallback((pathOrSegments) => {
+        const nextSegments = Array.isArray(pathOrSegments) ? pathOrSegments : absolutePathToSegments(pathOrSegments);
+        setExplorerPath(nextSegments);
+        setExplorerSelected(null);
+        setExplorerSearch('');
+    }, [absolutePathToSegments]);
+
+    const handleExplorerClick = useCallback((item) => {
+        if (item.type === 'drive') {
+            navigateExplorer(['C:']);
+            return;
+        }
+        if (item.type === 'folder') {
+            navigateExplorer(item.path || [...explorerPath, item.name]);
+            return;
+        }
+        setExplorerSelected((prev) => (prev?.id === item.id ? null : item));
+    }, [explorerPath, navigateExplorer]);
+
+    const openExplorerItem = useCallback(async (item) => {
+        if (!item) return;
+        if (item.type === 'lesson' && item.data?.lessonId) {
+            openLessonInKdacademy(item.data.lessonId, 'workshop');
+            return;
+        }
+        if (item.type === 'url' && item.data?.url) {
+            openExternal(item.data.url);
+            return;
+        }
+        if ((item.type === 'wallpaper' || item.type === 'image') && item.data?.wallpaperId) {
+            await applyWallpaperSelection(item.data.wallpaperId);
+        }
+    }, [applyWallpaperSelection, openLessonInKdacademy]);
+
+    const readUploadFile = useCallback((file) => {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = () => reject(reader.error || new Error(`Failed to read ${file.name}`));
+            if (file.type.startsWith('image/')) {
+                reader.readAsDataURL(file);
+            } else {
+                reader.readAsText(file);
+            }
+        });
+    }, []);
+
+    const handleExplorerImport = useCallback(() => {
+        if (!explorerPathIsWritable) return;
+        explorerImportInputRef.current?.click();
+    }, [explorerPathIsWritable]);
+
+    const handleExplorerFilesSelected = useCallback(async (event) => {
+        try {
+            if (!runtime || !currentExplorerAbsolutePath || !event.target.files?.length) return;
+            for (const file of Array.from(event.target.files)) {
+                const content = await readUploadFile(file);
+                await runtime.fs.write(joinOsPath(currentExplorerAbsolutePath, file.name), content, {
+                    mimeType: file.type || 'text/plain',
+                    ext: file.name.includes('.') ? `.${file.name.split('.').pop().toLowerCase()}` : '',
+                    fileKind: file.type.startsWith('image/') ? 'image' : 'file',
+                    meta: {
+                        logicalType: file.type.startsWith('image/') ? 'image' : 'file'
+                    }
+                });
+            }
+            await refreshExplorerItems();
+        } catch (error) {
+            alert(`Import failed: ${error.message}`);
+        } finally {
+            if (event.target) {
+                event.target.value = '';
+            }
+        }
+    }, [currentExplorerAbsolutePath, readUploadFile, refreshExplorerItems, runtime]);
+
+    const handleExplorerNewFolder = useCallback(async () => {
+        if (!runtime || !currentExplorerAbsolutePath || !explorerPathIsWritable) return;
+        const nextName = window.prompt('New folder name');
+        if (!nextName) return;
+        await runtime.fs.mkdir(joinOsPath(currentExplorerAbsolutePath, nextName));
+        await refreshExplorerItems();
+    }, [currentExplorerAbsolutePath, explorerPathIsWritable, refreshExplorerItems, runtime]);
+
+    const handleExplorerRename = useCallback(async () => {
+        if (!runtime || !explorerSelected?.path || explorerSelected?.data?.readonly) return;
+        const nextName = window.prompt('Rename item', explorerSelected.rawName || explorerSelected.name);
+        if (!nextName) return;
+        await runtime.fs.rename(explorerSelected.path, nextName);
+        setExplorerSelected(null);
+        await refreshExplorerItems();
+    }, [explorerSelected, refreshExplorerItems, runtime]);
+
+    const handleExplorerDelete = useCallback(async () => {
+        if (!runtime || !explorerSelected?.path || explorerSelected?.data?.readonly) return;
+        if (!window.confirm(`Move "${explorerSelected.rawName || explorerSelected.name}" to Trash?`)) return;
+        await runtime.fs.moveToTrash(explorerSelected.path);
+        setExplorerSelected(null);
+        await refreshExplorerItems();
+    }, [explorerSelected, refreshExplorerItems, runtime]);
+
+    const handleExplorerRestore = useCallback(async (targetItem = explorerSelected) => {
+        if (!runtime || !targetItem?.path) return;
+        await runtime.fs.restoreFromTrash(targetItem.path);
+        setExplorerSelected(null);
+        await refreshExplorerItems();
+    }, [explorerSelected, refreshExplorerItems, runtime]);
+
+    const handleWallpaperImport = useCallback(() => {
+        wallpaperImportInputRef.current?.click();
+    }, []);
+
+    const handleWallpaperFilesSelected = useCallback(async (event) => {
+        try {
+            if (!runtime || !event.target.files?.length) return;
+
+            for (const file of Array.from(event.target.files)) {
+                await runtime.wallpaper.import(file);
+            }
+
+            await refreshWallpaperState();
+
+            const browsingWallpapers = currentExplorerAbsolutePath
+                && normalizeOsPath(currentExplorerAbsolutePath).toLowerCase().startsWith(WORKSPACE_PATHS.wallpapers.toLowerCase());
+
+            if (windowStates.files?.isOpen && browsingWallpapers) {
+                await refreshExplorerItems();
+            }
+        } catch (error) {
+            console.error('Wallpaper import failed:', error);
+            alert(`Wallpaper import failed: ${error.message}`);
+        } finally {
+            if (event.target) {
+                event.target.value = '';
+            }
+        }
+    }, [currentExplorerAbsolutePath, refreshExplorerItems, refreshWallpaperState, runtime, windowStates.files?.isOpen]);
 
     useEffect(() => {
         setAssistantMessages([
@@ -3702,9 +4146,7 @@ const IjamOSWorkspace = ({ session, currentUser, isMobileView, deviceMode = 'des
         setIsBooted(true);
         setIsOnboarding(true);
         setOnboardingStep(1);
-        if (typeof window !== 'undefined') {
-            localStorage.setItem('vibe_os_booted', 'true');
-        }
+        void markWorkspaceSessionBooted();
         setTerminalLog([
             { role: 'system', text: 'SYSTEM ONLINE. ONBOARDING SEQUENCE INITIATED.' },
             { role: 'assistant', text: 'yo WELCOME BRO! aku KRACKED_BOT. sebelum kita start, aku nak check vibe kau sikit.' },
@@ -3837,7 +4279,7 @@ YOU DID IT. APP DEPLOYED!`);
                 clearInterval(holdIntervalRef.current);
                 setIsHolding(false);
                 setHoldProgress(0);
-                confirmBoot();
+                void completeBootSequence();
             }
         }, 16);
     };
@@ -3850,34 +4292,13 @@ YOU DID IT. APP DEPLOYED!`);
     // Get wallpaper background style for desktop (must be called before any conditional returns)
     const wallpaperStyle = useMemo(() => {
         if (!isMacMode) return {};
-        const wallpaper = WALLPAPER_GALLERY.find(w => w.id === currentWallpaper);
+        const wallpaper = wallpaperGallery.find(w => w.id === currentWallpaper);
         if (!wallpaper) return { background: '#0b131e' };
-
-        switch (wallpaper.type) {
-            case 'image':
-                return {
-                    backgroundImage: `url(${wallpaper.src})`,
-                    backgroundSize: 'cover',
-                    backgroundPosition: 'center'
-                };
-            case 'gradient':
-                return {
-                    background: `linear-gradient(135deg, ${wallpaper.colors.join(', ')})`
-                };
-            case 'animated-gradient':
-                return {
-                    background: `linear-gradient(135deg, ${wallpaper.colors.join(', ')})`,
-                    backgroundSize: '200% 200%',
-                    animation: 'gradientShift 10s ease infinite'
-                };
-            case 'time-based':
-                return {
-                    background: `linear-gradient(135deg, ${wallpaper.colors.join(', ')})`
-                };
-            default:
-                return { background: '#0b131e' };
-        }
-    }, [isMacMode, currentWallpaper]);
+        return {
+            background: '#0b131e',
+            ...resolveWallpaperStyle(wallpaper, { fit: wallpaperFit })
+        };
+    }, [currentWallpaper, isMacMode, resolveWallpaperStyle, wallpaperFit, wallpaperGallery]);
     const macMenus = useMemo(() => ([
         {
             id: 'system',
@@ -3891,9 +4312,9 @@ YOU DID IT. APP DEPLOYED!`);
                 { separator: true },
                 { label: 'Sleep', action: () => closeAllApps() },
                 { label: 'Restart', action: () => window.location.reload() },
-                { label: 'Shut Down', action: () => { localStorage.removeItem('vibe_os_booted'); window.location.reload(); } },
+                { label: 'Shut Down', action: () => { void resetWorkspaceSession(); } },
                 { separator: true },
-                { label: 'Lock Screen', action: () => { localStorage.removeItem('vibe_os_booted'); window.location.reload(); } },
+                { label: 'Lock Screen', action: () => { void resetWorkspaceSession(); } },
                 { label: 'Log Out', action: () => exitIjamOS() }
             ]
         },
@@ -3973,7 +4394,7 @@ YOU DID IT. APP DEPLOYED!`);
 
 
 
-                    onConfirmBoot={confirmBoot}
+                    onConfirmBoot={completeBootSequence}
                     systemTime={systemTime}
                     systemDate={systemDate}
                 />
@@ -4453,64 +4874,89 @@ YOU DID IT. APP DEPLOYED!`);
 
             {/* 2. Resource Explorer Window */}
             {windowStates.files?.isOpen && (() => {
-                const allStages = [...new Set(lessons.map(l => l.stage).filter(Boolean))];
-
-                const navTo = (path) => { setExplorerPath(path); setExplorerSelected(null); setExplorerSearch(''); };
-
-                const getItems = () => {
-                    if (explorerSearch.trim()) {
-                        const q = explorerSearch.toLowerCase();
-                        return [
-                            ...lessons.filter(l => l.title.toLowerCase().includes(q) || (l.summary || '').toLowerCase().includes(q))
-                                .map(l => ({ id: `lesson-${l.id}`, name: l.title, type: 'lesson', ext: '.lesson', data: l })),
-                            ...dbLibraryItems.filter(r => (r.title || '').toLowerCase().includes(q) || (r.description || '').toLowerCase().includes(q))
-                                .map(r => ({ id: `url-${r.id}`, name: r.title, type: 'url', ext: '.url', data: r }))
-                        ];
-                    }
-                    if (explorerPath.length === 0) return [{ id: 'drive-C', name: 'C:\\', type: 'drive', label: 'KRACKED_OS System Drive' }];
-                    if (explorerPath.length === 1) return [
-                        ...allStages.map(s => ({ id: `folder-${s}`, name: s, type: 'folder' })),
-                        ...(dbLibraryItems.length ? [{ id: 'folder-COMMUNITY', name: 'COMMUNITY_RESOURCES', type: 'folder' }] : [])
-                    ];
-                    if (explorerPath.length === 2) {
-                        const f = explorerPath[1];
-                        if (f === 'COMMUNITY_RESOURCES') return dbLibraryItems.map(r => ({ id: `url-${r.id}`, name: r.title, type: 'url', ext: '.url', data: r }));
-                        return lessons.filter(l => l.stage === f).map(l => ({ id: `lesson-${l.id}`, name: l.title, type: 'lesson', ext: '.lesson', data: l }));
-                    }
-                    return [];
+                const items = explorerItems;
+                const currentPathLabel = currentExplorerAbsolutePath || 'This PC';
+                const allStages = ['Desktop', 'Documents', 'Wallpapers', 'Community', 'Lessons', 'Trash'];
+                const shortcutPathMap = {
+                    Desktop: absolutePathToSegments(WORKSPACE_PATHS.desktop),
+                    Documents: absolutePathToSegments(WORKSPACE_PATHS.documents),
+                    Wallpapers: absolutePathToSegments(WORKSPACE_PATHS.wallpapers),
+                    Community: absolutePathToSegments(WORKSPACE_PATHS.community),
+                    Lessons: absolutePathToSegments(WORKSPACE_PATHS.lessonsMount),
+                    Trash: absolutePathToSegments(WORKSPACE_PATHS.trash)
                 };
-
-                const items = getItems();
-
-                const handleClick = (item) => {
-                    if (item.type === 'drive') { navTo(['C:']); return; }
-                    if (item.type === 'folder') { navTo([...explorerPath, item.name]); return; }
-                    setExplorerSelected(prev => prev?.id === item.id ? null : item);
-                };
-
-                const openItem = (item) => {
-                    if (!item) return;
-                    if (item.type === 'lesson') {
-                        openLessonInKdacademy(item.data.id, 'workshop');
+                const navTo = (path) => {
+                    if (Array.isArray(path) && path.length === 2 && path[0] === 'C:' && shortcutPathMap[path[1]]) {
+                        navigateExplorer(shortcutPathMap[path[1]]);
+                        return;
                     }
-                    if (item.type === 'url') openExternal(item.data.url);
+                    navigateExplorer(path);
                 };
+                const handleClick = (item) => handleExplorerClick(item);
+                const openItem = (item) => openExplorerItem(item);
+
 
                 const ICON = { drive: '💾', folder: '📁', lesson: '📄', url: '🔗' };
                 const TYPE_LABEL = { drive: 'Local Disk', folder: 'File Folder', lesson: 'Lesson File', url: 'URL Shortcut' };
 
                 const sidebarBtnStyle = (active) => ({
-                    width: '100%', textAlign: 'left', background: active ? '#1e293b' : 'transparent',
-                    border: 'none', borderRadius: '4px', padding: '5px 8px', cursor: 'pointer',
-                    fontFamily: 'monospace', fontSize: '12px', color: active ? '#f5d000' : '#94a3b8',
-                    display: 'flex', alignItems: 'center', gap: '7px', lineHeight: 1.3
+                    width: '100%',
+                    textAlign: 'left',
+                    background: active ? '#13233f' : 'transparent',
+                    border: 'none',
+                    borderRadius: '8px',
+                    padding: '7px 9px',
+                    cursor: 'pointer',
+                    fontFamily: 'monospace',
+                    fontSize: '12px',
+                    color: active ? '#f5d000' : '#94a3b8',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    lineHeight: 1.3
                 });
-
+                const toolbarButtonStyle = (active = true, accent = false) => ({
+                    background: accent ? '#f5d000' : '#111827',
+                    color: accent ? '#0b1220' : (active ? '#e2e8f0' : '#475569'),
+                    border: `1px solid ${accent ? '#f5d000' : '#334155'}`,
+                    borderRadius: '6px',
+                    padding: '6px 10px',
+                    fontFamily: 'monospace',
+                    fontSize: '11px',
+                    fontWeight: 800,
+                    cursor: active ? 'pointer' : 'default',
+                    opacity: active ? 1 : 0.5
+                });
+                const badgeStyle = (selected) => ({
+                    minWidth: '34px',
+                    padding: '4px 6px',
+                    borderRadius: '999px',
+                    border: `1px solid ${selected ? '#7dd3fc' : '#334155'}`,
+                    color: selected ? '#e0f2fe' : '#94a3b8',
+                    background: selected ? 'rgba(14,165,233,0.18)' : 'rgba(15,23,42,0.78)',
+                    fontFamily: 'monospace',
+                    fontSize: '9px',
+                    fontWeight: 900,
+                    letterSpacing: '0.08em',
+                    textAlign: 'center'
+                });
+                const sidebarItems = [
+                    { id: 'this-pc', label: 'This PC', path: [], active: !explorerPath.length },
+                    { id: 'drive-c', label: 'C:\\', path: ['C:'], active: explorerPath.length === 1 && explorerPath[0] === 'C:' },
+                    { id: 'workspace-root', label: 'KRACKED_OS', path: absolutePathToSegments(WORKSPACE_PATHS.root), active: normalizeOsPath(currentExplorerAbsolutePath || '') === WORKSPACE_PATHS.root },
+                    { id: 'desktop', label: 'Desktop', path: absolutePathToSegments(WORKSPACE_PATHS.desktop), active: normalizeOsPath(currentExplorerAbsolutePath || '') === WORKSPACE_PATHS.desktop },
+                    { id: 'documents', label: 'Documents', path: absolutePathToSegments(WORKSPACE_PATHS.documents), active: normalizeOsPath(currentExplorerAbsolutePath || '') === WORKSPACE_PATHS.documents },
+                    { id: 'wallpapers', label: 'Wallpapers', path: absolutePathToSegments(WORKSPACE_PATHS.wallpapers), active: normalizeOsPath(currentExplorerAbsolutePath || '') === WORKSPACE_PATHS.wallpapers },
+                    { id: 'community', label: 'Community', path: absolutePathToSegments(WORKSPACE_PATHS.community), active: normalizeOsPath(currentExplorerAbsolutePath || '') === WORKSPACE_PATHS.community },
+                    { id: 'lessons', label: 'Lessons', path: absolutePathToSegments(WORKSPACE_PATHS.lessonsMount), active: normalizeOsPath(currentExplorerAbsolutePath || '') === WORKSPACE_PATHS.lessonsMount },
+                    { id: 'trash', label: 'Trash', path: absolutePathToSegments(WORKSPACE_PATHS.trash), active: explorerInTrash }
+                ];
                 const itemIsSelected = (item) => explorerSelected?.id === item.id;
 
                 return (
                     <WindowFrame {...mobileWindowProps} winState={windowStates.files} title="FILE_EXPLORER // KRACKED_OS v3" AppIcon={Folder} onClose={() => { closeApp('files'); setExplorerPath([]); setExplorerSearch(''); setExplorerSelected(null); }} onMinimize={() => minimizeApp('files')} onMaximize={() => maximizeApp('files')} onFocus={() => focusApp('files')} onMove={(x, y) => moveApp('files', x, y)} onResize={(w, h) => resizeApp('files', w, h)}>
                         <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
+                            <input ref={explorerImportInputRef} type="file" multiple style={{ display: 'none' }} onChange={handleExplorerFilesSelected} />
 
                             {/* ── TOOLBAR ── */}
                             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 10px', borderBottom: '2px solid #1e293b', background: '#0b1220', flexShrink: 0, flexWrap: 'wrap' }}>
@@ -4537,6 +4983,11 @@ YOU DID IT. APP DEPLOYED!`);
                                     <input value={explorerSearch} onChange={e => { setExplorerSearch(e.target.value); setExplorerSelected(null); }} placeholder="Search files..."
                                         style={{ background: 'transparent', border: 'none', outline: 'none', color: '#e2e8f0', fontFamily: 'monospace', fontSize: '12px', width: '120px' }} />
                                     {explorerSearch && <button onClick={() => setExplorerSearch('')} style={{ background: 'none', border: 'none', color: '#475569', cursor: 'pointer', fontSize: '12px', padding: 0, lineHeight: 1 }}>✕</button>}
+                                </div>
+                                <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+                                    <button onClick={refreshExplorerItems} style={toolbarButtonStyle(true)}>REFRESH</button>
+                                    <button onClick={handleExplorerNewFolder} disabled={!explorerPathIsWritable} style={toolbarButtonStyle(explorerPathIsWritable)}>NEW FOLDER</button>
+                                    <button onClick={handleExplorerImport} disabled={!explorerPathIsWritable} style={toolbarButtonStyle(explorerPathIsWritable)}>IMPORT</button>
                                 </div>
                                 {/* View toggle */}
                                 <div style={{ display: 'flex', border: '1px solid #334155', borderRadius: '4px', overflow: 'hidden' }}>
@@ -4568,7 +5019,7 @@ YOU DID IT. APP DEPLOYED!`);
                                             </button>
                                         ))}
                                         {dbLibraryItems.length > 0 && (
-                                            <button onClick={() => navTo(['C:', 'COMMUNITY_RESOURCES'])} style={sidebarBtnStyle(explorerPath[1] === 'COMMUNITY_RESOURCES')}>🌐 Community</button>
+                                            <button onClick={() => navTo(['C:', 'Community'])} style={sidebarBtnStyle(explorerPath[1] === 'Community')}>🌐 Community</button>
                                         )}
                                     </aside>
                                 )}
@@ -4603,7 +5054,7 @@ YOU DID IT. APP DEPLOYED!`);
                                                             style={{ background: itemIsSelected(item) ? '#1e3a5f' : 'transparent', border: `1px solid ${itemIsSelected(item) ? '#3b82f6' : 'transparent'}`, borderRadius: '8px', padding: '10px 6px', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}
                                                             onMouseEnter={e => { if (!itemIsSelected(item)) e.currentTarget.style.background = '#0f2039'; }}
                                                             onMouseLeave={e => { if (!itemIsSelected(item)) e.currentTarget.style.background = 'transparent'; }}>
-                                                            <span style={{ fontSize: '28px', lineHeight: 1 }}>{ICON[item.type]}</span>
+                                                            <span style={{ fontSize: '28px', lineHeight: 1 }}>{ICON[item.type] || 'FIL'}</span>
                                                             <span style={{ fontFamily: 'monospace', fontSize: '11px', color: '#e2e8f0', textAlign: 'center', wordBreak: 'break-word', lineHeight: 1.3, maxWidth: '80px' }}>
                                                                 {item.name.length > 28 ? item.name.slice(0, 26) + '…' : item.name}
                                                             </span>
@@ -4619,12 +5070,12 @@ YOU DID IT. APP DEPLOYED!`);
                                                             onMouseEnter={e => { if (!itemIsSelected(item)) e.currentTarget.style.background = '#0f2039'; }}
                                                             onMouseLeave={e => { if (!itemIsSelected(item)) e.currentTarget.style.background = i % 2 === 0 ? 'rgba(6,17,26,0.7)' : 'transparent'; }}>
                                                             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', overflow: 'hidden' }}>
-                                                                <span style={{ fontSize: '15px', flexShrink: 0 }}>{ICON[item.type]}</span>
+                                                            <span style={{ fontSize: '15px', flexShrink: 0 }}>{ICON[item.type] || 'FIL'}</span>
                                                                 <span style={{ fontFamily: 'monospace', fontSize: '13px', color: '#e2e8f0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.name}</span>
                                                             </div>
-                                                            <span style={{ fontFamily: 'monospace', fontSize: '11px', color: '#334155' }}>{TYPE_LABEL[item.type]}</span>
+                                                            <span style={{ fontFamily: 'monospace', fontSize: '11px', color: '#334155' }}>{TYPE_LABEL[item.type] || 'File'}</span>
                                                             <span style={{ fontFamily: 'monospace', fontSize: '11px', color: '#475569', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                                                {item.data?.stage || (item.type === 'url' ? 'Community' : item.type === 'folder' ? `${lessons.filter(l => l.stage === item.name).length} items` : 'C:\\')}
+                                                                {item.data?.path || item.data?.stage || currentPathLabel}
                                                             </span>
                                                         </button>
                                                     ))}
@@ -4636,10 +5087,10 @@ YOU DID IT. APP DEPLOYED!`);
                                     {/* Right detail panel */}
                                     {explorerSelected && !isNarrowScreen && (
                                         <aside style={{ width: '210px', flexShrink: 0, borderLeft: '2px solid #1e293b', background: '#06111a', padding: '16px 14px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                                            <div style={{ textAlign: 'center', fontSize: '44px', lineHeight: 1 }}>{ICON[explorerSelected.type]}</div>
+                                            <div style={{ textAlign: 'center', fontSize: '44px', lineHeight: 1 }}>{ICON[explorerSelected.type] || 'FIL'}</div>
                                             <div>
                                                 <div style={{ fontFamily: 'monospace', fontSize: '13px', fontWeight: 900, color: '#e2e8f0', wordBreak: 'break-word', lineHeight: 1.4 }}>{explorerSelected.name}</div>
-                                                <div style={{ fontFamily: 'monospace', fontSize: '10px', color: '#334155', marginTop: '3px' }}>{explorerSelected.ext || TYPE_LABEL[explorerSelected.type]}</div>
+                                                <div style={{ fontFamily: 'monospace', fontSize: '10px', color: '#334155', marginTop: '3px' }}>{explorerSelected.ext || TYPE_LABEL[explorerSelected.type] || 'File'}</div>
                                             </div>
                                             {explorerSelected.data?.stage && (
                                                 <div style={{ padding: '6px 8px', background: '#1e293b', borderRadius: '4px' }}>
@@ -4663,16 +5114,28 @@ YOU DID IT. APP DEPLOYED!`);
                                                 </div>
                                             )}
                                             <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                                {explorerSelected.type === 'lesson' && (
+                                                {explorerSelected.type !== 'folder' && explorerSelected.type !== 'drive' && (
                                                     <button onClick={() => openItem(explorerSelected)}
                                                         style={{ background: '#f5d000', border: '2px solid #0b1220', color: '#0b1220', padding: '9px', fontWeight: 900, fontFamily: 'monospace', fontSize: '12px', cursor: 'pointer', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
-                                                        <Terminal size={12} /> OPEN IN TERMINAL
+                                                        {explorerSelected.type === 'url' ? <ExternalLink size={12} /> : <Terminal size={12} />} OPEN
                                                     </button>
                                                 )}
-                                                {explorerSelected.type === 'url' && explorerSelected.data?.url && (
-                                                    <button onClick={() => openItem(explorerSelected)}
-                                                        style={{ background: '#86efac', border: '2px solid #0b1220', color: '#0b1220', padding: '9px', fontWeight: 900, fontFamily: 'monospace', fontSize: '12px', cursor: 'pointer', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
-                                                        <ExternalLink size={12} /> OPEN EXTERNAL
+                                                {!explorerSelected.data?.readonly && !explorerInTrash && (
+                                                    <>
+                                                        <button onClick={handleExplorerRename}
+                                                            style={{ background: '#111827', border: '1px solid #334155', color: '#fff', padding: '9px', fontWeight: 900, fontFamily: 'monospace', fontSize: '12px', cursor: 'pointer', borderRadius: '4px' }}>
+                                                            RENAME
+                                                        </button>
+                                                        <button onClick={handleExplorerDelete}
+                                                            style={{ background: '#3f1d1d', border: '1px solid #7f1d1d', color: '#fecaca', padding: '9px', fontWeight: 900, fontFamily: 'monospace', fontSize: '12px', cursor: 'pointer', borderRadius: '4px' }}>
+                                                            MOVE TO TRASH
+                                                        </button>
+                                                    </>
+                                                )}
+                                                {explorerInTrash && (
+                                                    <button onClick={() => handleExplorerRestore(explorerSelected)}
+                                                        style={{ background: '#052e16', border: '1px solid #166534', color: '#bbf7d0', padding: '9px', fontWeight: 900, fontFamily: 'monospace', fontSize: '12px', cursor: 'pointer', borderRadius: '4px' }}>
+                                                        RESTORE
                                                     </button>
                                                 )}
                                             </div>
@@ -4688,7 +5151,7 @@ YOU DID IT. APP DEPLOYED!`);
                                     {explorerSelected ? ` · ${explorerSelected.name}${explorerSelected.ext || ''} selected` : ''}
                                 </span>
                                 <span style={{ fontFamily: 'monospace', fontSize: '11px', color: '#1e3a5f' }}>
-                                    KRACKED_OS{explorerPath.length ? '\\' + explorerPath.join('\\') : ''}
+                                    {currentPathLabel} | {explorerPathIsWritable ? 'writable' : 'read-only'}
                                 </span>
                             </div>
                         </div>
@@ -4864,23 +5327,38 @@ YOU DID IT. APP DEPLOYED!`);
             {windowStates.wallpaper?.isOpen && (
                 <WindowFrame {...mobileWindowProps} winState={windowStates.wallpaper} title="WALLPAPER_GALLERY // PERSONALIZE" AppIcon={Sparkles} onClose={() => closeApp('wallpaper')} onMinimize={() => minimizeApp('wallpaper')} onMaximize={() => maximizeApp('wallpaper')} onFocus={() => focusApp('wallpaper')} onMove={(x, y) => moveApp('wallpaper', x, y)} onResize={(w, h) => resizeApp('wallpaper', w, h)}>
                     <div style={{ padding: '24px', color: '#fff', overflowY: 'auto', height: '100%' }}>
+                        <input ref={wallpaperImportInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleWallpaperFilesSelected} />
                         <div style={{ marginBottom: '20px' }}>
                             <div style={{ fontSize: '12px', color: '#f5d000', fontWeight: 900, letterSpacing: '0.1em', marginBottom: '8px' }}>CURRENT_WALLPAPER</div>
                             <div style={{ fontSize: '18px', fontWeight: 900, color: '#fff' }}>
-                                {WALLPAPER_GALLERY.find(w => w.id === currentWallpaper)?.name || 'Unknown'}
+                                {wallpaperGallery.find(w => w.id === currentWallpaper)?.name || 'Unknown'}
                             </div>
                         </div>
 
+                        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '18px' }}>
+                            <button onClick={handleWallpaperImport} style={{ background: '#f5d000', color: '#0b1220', border: 'none', borderRadius: '8px', padding: '10px 14px', fontFamily: 'monospace', fontWeight: 900, cursor: 'pointer' }}>
+                                IMPORT IMAGE
+                            </button>
+                            <button onClick={() => { openApp('files'); navigateExplorer(absolutePathToSegments(WORKSPACE_PATHS.wallpapers)); }} style={{ background: '#111827', color: '#e2e8f0', border: '1px solid #334155', borderRadius: '8px', padding: '10px 14px', fontFamily: 'monospace', fontWeight: 900, cursor: 'pointer' }}>
+                                OPEN WALLPAPER FOLDER
+                            </button>
+                            {WALLPAPER_FIT_OPTIONS.map((option) => (
+                                <button key={option.id} onClick={() => applyWallpaperSelection(currentWallpaper, option.id)} style={{ background: wallpaperFit === option.id ? '#f5d000' : '#111827', color: wallpaperFit === option.id ? '#0b1220' : '#e2e8f0', border: `1px solid ${wallpaperFit === option.id ? '#f5d000' : '#334155'}`, borderRadius: '999px', padding: '10px 12px', fontFamily: 'monospace', fontWeight: 900, cursor: 'pointer' }}>
+                                    {option.label}
+                                </button>
+                            ))}
+                        </div>
+
                         <div className="wallpaper-grid">
-                            {WALLPAPER_GALLERY.map((wallpaper, index) => {
+                            {wallpaperGallery.map((wallpaper) => {
                                 const isSelected = currentWallpaper === wallpaper.id;
-                                const wallpaperStyle = getWallpaperStyle(wallpaper);
+                                const wallpaperStyle = getWallpaperStyle(wallpaper, { preview: true, fit: wallpaperFit });
 
                                 return (
                                     <div
                                         key={wallpaper.id}
                                         className={`wallpaper-thumb ${isSelected ? 'selected' : ''}`}
-                                        onClick={() => handleSetWallpaper(wallpaper.id)}
+                                        onClick={() => applyWallpaperSelection(wallpaper.id, wallpaperFit)}
                                         style={{
                                             ...wallpaperStyle,
                                             position: 'relative'
@@ -5105,8 +5583,7 @@ YOU DID IT. APP DEPLOYED!`);
                                 type="button"
                                 onClick={() => {
                                     if (confirm('Clear local OS session?')) {
-                                        localStorage.removeItem('vibe_os_booted');
-                                        window.location.reload();
+                                        void resetWorkspaceSession();
                                     }
                                 }}
                                 style={{ background: 'transparent', color: '#94a3b8', border: '1px solid #1e293b', padding: '10px', borderRadius: '8px', fontSize: '11px', cursor: 'pointer', fontFamily: 'monospace' }}
@@ -5206,7 +5683,7 @@ YOU DID IT. APP DEPLOYED!`);
                             </div>
                             <button
                                 aria-label="Power off"
-                                onClick={() => { if (window.confirm('Power off KRACKED_OS session?')) { localStorage.removeItem('vibe_os_booted'); window.location.reload(); } }}
+                                onClick={() => { if (window.confirm('Power off KRACKED_OS session?')) { void resetWorkspaceSession(); } }}
                                 style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)', color: '#ef4444', width: '34px', height: '34px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.15s' }}
                                 onMouseEnter={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.3)'; }}
                                 onMouseLeave={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.15)'; }}
@@ -5483,13 +5960,3 @@ YOU DID IT. APP DEPLOYED!`);
 };
 
 export default IjamOSWorkspace;
-
-
-
-
-
-
-
-
-
-
