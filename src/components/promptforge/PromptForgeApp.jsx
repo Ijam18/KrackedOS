@@ -5,7 +5,7 @@ import {
     Settings2, TrendingUp, Rocket, Code2
 } from 'lucide-react';
 
-const STEPS = ['Role', 'Context', 'Features', 'Stack & Vibe', 'Output'];
+const STEPS = ['Role (R)', 'Objective (O)', 'Features & Constraints (F, C)', 'Tech Stack (T)', 'Output Format (O)'];
 const NB_FONT = "'Courier New', Courier, monospace";
 const UI_FONT = "system-ui, -apple-system, BlinkMacSystemFont, sans-serif";
 
@@ -142,6 +142,17 @@ const Popup = ({ onClose, children }) => (
     </div>
 );
 
+// ─── Info Alert / Prompting Tip ──────────────────────────────────────────────
+const TipCard = ({ title, children }) => (
+    <div style={{ background: 'rgba(245,208,0,0.05)', border: '1px solid rgba(245,208,0,0.3)', borderRadius: '8px', padding: '12px', marginBottom: '16px', display: 'flex', gap: '10px' }}>
+        <Zap size={18} color="#F5D000" style={{ flexShrink: 0, marginTop: '2px' }} />
+        <div>
+            <div style={{ fontSize: '11px', fontWeight: 900, color: '#F5D000', textTransform: 'uppercase', marginBottom: '4px', fontFamily: NB_FONT }}>AJWAD'S PROMPT TIP: {title}</div>
+            <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.7)', lineHeight: 1.5 }}>{children}</div>
+        </div>
+    </div>
+);
+
 // ─── Tag Chip ────────────────────────────────────────────────────────────────────
 const Chip = ({ label, onRemove, color = '#C8102E' }) => (
     <div style={{ background: color, border: '2px solid #121417', boxShadow: '2px 2px 0 #121417',
@@ -237,27 +248,33 @@ Build the simplest thing that SHIPS. Save clever for v2.
 ═══════════════════════════════════════════════════════════════════
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-APP BRIEF
+[R] ROLE: ${r.label}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Name:         ${safeAppName}
+Please adopt this persona carefully to guide your focus. Every decision you make should align with the expertise of a ${r.label}.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[O] OBJECTIVE & CONTEXT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+App Name:     ${safeAppName}
 Problem:      ${problemStatement || '[Solve a real user problem]'}
 Target Users: ${targetUsers || '[Define your user clearly]'}
 ${inspiration ? `Inspiration:  ${inspiration}` : ''}
 ${inspirationUrl ? `Reference:    ${inspirationUrl}${competitors ? `\n              Improve: ${competitors}` : ''}` : ''}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-MUST-BUILD FEATURES
+[F & C] FEATURES AND CONSTRAINTS
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+MUST-BUILD FEATURES:
 ${mustHaveTags.length ? mustHaveTags.map(f => `► ${f}`).join('\n') : '► [Define your core features]'}
 
-Nice to Have (build after MVP ships):
+NICE TO HAVE (Build after MVP ships):
 ${niceToHaveTags.length ? niceToHaveTags.map(f => `  · ${f}`).join('\n') : '  · None specified'}
 
-${uniqueFeature ? `Unique Differentiator: ${uniqueFeature}` : ''}
-${techConstraints ? `Constraints: ${techConstraints}` : ''}
+${uniqueFeature ? `UNIQUE DIFFERENTIATOR:\n${uniqueFeature}\n` : ''}
+${techConstraints ? `CONSTRAINTS (Adhere strictly):\n${techConstraints}\n` : ''}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-TECH STACK
+[T] TECH STACK
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ${stack.length ? stack.map(t => `► ${t}`).join('\n') : '► React\n► Vite\n► Supabase'}
 
@@ -292,8 +309,10 @@ ${slug}/
 └── vite.config.js
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-ENVIRONMENT VARIABLES (.env.local)
+ENVIRONMENT VARIABLES (.env)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Note: We separate variables between \`.env.local\` for development and \`.env.production\` for deployment to keep sensitive data secure.
+
 ${useSupabase ? `VITE_SUPABASE_URL=https://your-project.supabase.co
 VITE_SUPABASE_ANON_KEY=your_anon_key_here` : '# Add your backend env vars here'}
 ${useAI ? '\nVITE_OPENAI_API_KEY=sk-your-key-here' : ''}
@@ -344,8 +363,10 @@ ${mustHaveTags.length + 3}. <LoadingSpinner /> — consistent loading UI
 ${mustHaveTags.length + 4}. <ErrorBoundary /> — graceful error handling
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-BUILD SEQUENCE — FOLLOW EXACTLY
+[O] OUTPUT FORMAT & BUILD SEQUENCE — FOLLOW EXACTLY
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PROMPT LAYERING (Crucial): Do not build everything at once. We will separate implementation layer by layer.
+Focus on one single isolated element at a time to ensure high clarity and no ambiguity.
 STEP 1 → CONFIRM UNDERSTANDING
   · Restate the app brief in 2 sentences
   · List the 3 most important technical decisions
@@ -412,8 +433,8 @@ DEPLOY CHECKLIST (copy-paste when ready)
 □ Share your link — you shipped!
 
 ═══════════════════════════════════════════════════════════════════
-Built with Prompt Forge — IjamOS Builder Sprint 2026
-Powered by Antigravity x Claude
+Built with Prompt Forge — Based on ROFTCO Framework
+"Developer yang mahir prompting akan berada di hadapan." – Ajwad
 ═══════════════════════════════════════════════════════════════════`;
     };
 
@@ -440,8 +461,8 @@ Powered by Antigravity x Claude
                     <Wand2 size={28} strokeWidth={2.5} />
                 </div>
                 <div>
-                    <h2 style={{ fontSize: '18px', fontWeight: 900, color: '#F5D000', margin: 0, fontFamily: NB_FONT }}>[ PROMPT_FORGE ]</h2>
-                    <p style={{ margin: '3px 0 0', color: 'rgba(245,208,0,0.45)', fontSize: '12px' }}>Forge a master prompt → paste into Claude → ship a complete app.</p>
+                    <h2 style={{ fontSize: '18px', fontWeight: 900, color: '#F5D000', margin: 0, fontFamily: NB_FONT }}>[ PROMPT_FORGE: FRAMEWORK ROFTCO ]</h2>
+                    <p style={{ margin: '3px 0 0', color: 'rgba(245,208,0,0.45)', fontSize: '12px' }}>"Developer yang mahir prompting akan berada di hadapan." – Ajwad</p>
                 </div>
             </div>
 
@@ -460,7 +481,10 @@ Powered by Antigravity x Claude
             {/* ── STEP 0: Assign AI Role ─────────────────────────────────────────── */}
             {step === 0 && (
                 <div style={{ flex: 1 }}>
-                    <h3 style={{ fontSize: '15px', fontWeight: 900, color: '#F5D000', marginBottom: '6px', fontFamily: NB_FONT }}>1. ASSIGN AI ROLE</h3>
+                    <TipCard title="R - ROLE">
+                        Define the role of the AI in the project. This helps in guiding the AI's focus and setting expectations for its output. AI functions based on the instructions given; quality instructions produce quality outputs.
+                    </TipCard>
+                    <h3 style={{ fontSize: '15px', fontWeight: 900, color: '#F5D000', marginBottom: '6px', fontFamily: NB_FONT }}>1. ROLE (R) - ASSIGN AI PERSONA</h3>
                     <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '12px', marginBottom: '16px' }}>Select the persona the AI should adopt. Click a card for details.</p>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
                         {ROLES.map(r => (
@@ -520,7 +544,10 @@ Powered by Antigravity x Claude
             {/* ── STEP 1: Define Context & MVP ──────────────────────────────────── */}
             {step === 1 && (
                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                    <h3 style={{ fontSize: '15px', fontWeight: 900, color: '#F5D000', marginBottom: '0', fontFamily: NB_FONT }}>2. DEFINE CONTEXT & MVP</h3>
+                    <TipCard title="O - OBJECTIVE">
+                        Clearly state the objective of your prompt. This ensures the AI understands the core goal, leading to much more accurate and relevant responses. Treat this prompt as a specification document for the AI.
+                    </TipCard>
+                    <h3 style={{ fontSize: '15px', fontWeight: 900, color: '#F5D000', marginBottom: '0', fontFamily: NB_FONT }}>2. OBJECTIVE (O) - DEFINE CONTEXT & GOAL</h3>
 
                     <div>
                         <FieldLabel>App Name</FieldLabel>
@@ -568,7 +595,11 @@ Powered by Antigravity x Claude
             {/* ── STEP 2: Feature Wishlist ──────────────────────────────────────── */}
             {step === 2 && (
                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '18px' }}>
-                    <h3 style={{ fontSize: '15px', fontWeight: 900, color: '#F5D000', marginBottom: '0', fontFamily: NB_FONT }}>3. FEATURE WISHLIST</h3>
+                    <TipCard title="F - FEATURES & C - CONSTRAINTS">
+                        <strong>Features:</strong> Detail specific capabilities needed to fulfill project objectives.<br/><br/>
+                        <strong>Constraints:</strong> Add constraints to focus the AI. Avoid ambiguity in your queries to get cleaner results. Constraints guide the boundary of development.
+                    </TipCard>
+                    <h3 style={{ fontSize: '15px', fontWeight: 900, color: '#F5D000', marginBottom: '0', fontFamily: NB_FONT }}>3. FEATURES & CONSTRAINTS (F & C)</h3>
 
                     {/* Must Have */}
                     <div>
@@ -617,7 +648,10 @@ Powered by Antigravity x Claude
             {/* ── STEP 3: Tech Stack & Design Vibe ─────────────────────────────── */}
             {step === 3 && (
                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                    <h3 style={{ fontSize: '15px', fontWeight: 900, color: '#F5D000', marginBottom: '0', fontFamily: NB_FONT }}>4. TECH STACK & DESIGN VIBE</h3>
+                    <TipCard title="T - TECH STACK">
+                        Identify tools and technology you want to build with. Choosing the right stack is critical to the efficiency and success of the project.
+                    </TipCard>
+                    <h3 style={{ fontSize: '15px', fontWeight: 900, color: '#F5D000', marginBottom: '0', fontFamily: NB_FONT }}>4. TECH STACK (T)</h3>
 
                     {/* Tech Stack */}
                     {TECH_CATEGORIES.map(cat => (
@@ -719,8 +753,11 @@ Powered by Antigravity x Claude
             {/* ── STEP 4: Master Prompt Output ─────────────────────────────────── */}
             {step === 4 && (
                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                    <TipCard title="O - OUTPUT FORMAT">
+                        <strong>Prompt Layering:</strong> Don't ask everything at once! Layer your prompts. Focus on one element at a time to keep interactions natural and prompts clear.
+                    </TipCard>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', gap: '8px', flexWrap: 'wrap' }}>
-                        <h3 style={{ fontSize: '15px', fontWeight: 900, color: '#22c55e', margin: 0, fontFamily: NB_FONT }}>5. MASTER PROMPT FORGED</h3>
+                        <h3 style={{ fontSize: '15px', fontWeight: 900, color: '#22c55e', margin: 0, fontFamily: NB_FONT }}>5. OUTPUT FORMAT (O) - MASTER PROMPT</h3>
                         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                             <button onClick={copyToClipboard}
                                 style={{ display: 'flex', alignItems: 'center', gap: '6px', background: copied ? '#22c55e' : '#F5D000',
