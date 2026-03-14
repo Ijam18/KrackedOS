@@ -1,10 +1,10 @@
 // Minimal Service Worker for PWA
-const CACHE_NAME = 'kracked-os-v1';
+const CACHE_NAME = 'kracked-os-v3';
 const ASSETS_TO_CACHE = [
     '/',
     '/index.html',
     '/manifest.json',
-    '/icons/kd-logo.svg'
+    '/icons/KDOS.png?v=3'
 ];
 
 self.addEventListener('install', (event) => {

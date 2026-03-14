@@ -10,16 +10,16 @@
     "scope": "/",
     "icons": [
         {
-            "src": "/icons/kd-logo.svg",
+            "src": "/icons/KDOS.png?v=3",
             "sizes": "512x512",
-            "type": "image/svg+xml",
+            "type": "image/png",
             "purpose": "any"
         },
         {
-            "src": "/icons/kd-logo.svg",
+            "src": "/icons/KDOS.png?v=3",
             "sizes": "192x192",
-            "type": "image/svg+xml",
-            "purpose": "maskable"
+            "type": "image/png",
+            "purpose": "any maskable"
         }
     ],
     "categories": [

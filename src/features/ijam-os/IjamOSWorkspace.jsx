@@ -11,6 +11,7 @@ import {
     ArrowLeft,
     ExternalLink,
     BookOpen,
+    FileText,
     Users,
     Bot,
     Terminal,
@@ -28,11 +29,11 @@ import {
     Waypoints,
     Wand2,
     Wifi,
-    Bluetooth,
     SlidersHorizontal,
+    Bluetooth,
+    MoonStar,
     SunMedium,
-    Volume2,
-    MoonStar
+    Volume2
 } from 'lucide-react';
 import { callNvidiaLLM, localIntelligence, ZARULIJAM_SYSTEM_PROMPT } from '../../lib/nvidia';
 import { useWeather } from '../../utils/useWeather';
@@ -43,6 +44,18 @@ import MobileStatusBar from '../../components/MobileStatusBar';
 import { useIjamOSWindowManager } from './hooks/useIjamOSWindowManager';
 import { APP_REGISTRY } from './constants/appRegistry';
 import KrackedInteractiveLoading from './components/loading/KrackedInteractiveLoading';
+import DesktopIcon from './components/DesktopIcon';
+import WindowFrame from './components/WindowFrame';
+import FilesWindowContent, { VsCodeExplorerIcon } from './components/windows/FilesWindowContent';
+import SettingsWindowContent from './components/windows/SettingsWindowContent';
+import {
+    BUILT_IN_WALLPAPERS,
+    DEFAULT_PERSONALIZATION,
+    WORKSPACE_PATHS,
+    getDefaultWallpaperId,
+    normalizeLegacyWallpaperId
+} from './os-core/constants';
+import { basenameFromPath, dirnameFromPath, extnameFromPath, joinOsPath, normalizeOsPath } from './os-core/pathUtils';
 
 const BuilderStudioLocal = lazy(() => import('./components/BuilderStudioLocal'));
 const VibeSimulator = lazy(() => import('../../components/simulator/VibeSimulator'));
@@ -51,6 +64,7 @@ const PromptForgeApp = lazy(() => import('../../components/promptforge/PromptFor
 const KrackedMissionConsole = lazy(() => import('./components/windows/KrackedMissionConsole'));
 const KrackedIjamTerminal = lazy(() => import('./components/windows/KrackedIjamTerminal'));
 const KrackedKdAcademy = lazy(() => import('./components/windows/KrackedKdAcademy'));
+const BLANK_BITMAP_DATA_URL = 'data:image/bmp;base64,Qk06AAAAAAAAADYAAAAoAAAAAQAAAAEAAAABABgAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAA////AA==';
 
 function WindowModuleLoader({ label, background = '#0b1220' }) {
     return (
@@ -2286,9 +2300,9 @@ const LESSON_MEDIA = {
 };
 
 const sectionStyle = {
-    paddingTop: 0,
-    paddingBottom: 0,
-    minHeight: '100vh',
+    paddingTop: '36px',
+    paddingBottom: '70px',
+    minHeight: '80vh',
     background: 'radial-gradient(circle at 10% 10%, #fff8dc 0%, #fff0b3 40%, #ffe6d5 100%)'
 };
 
@@ -2462,7 +2476,7 @@ const WALLPAPER_GALLERY = [
 ];
 
 // ─── IjamOS v3 Draggable Window Frame ───────────────────────────────────────
-const WindowFrame = ({
+const LegacyWindowFrame = ({
     winState,
     title,
     AppIcon,
@@ -2633,75 +2647,32 @@ const WindowFrame = ({
 };
 
 
-const DesktopIcon = ({
-    label,
-    icon: Icon,
-    imageSrc,
-    iconScale = 1,
-    onClick,
-    color = '#f5d000',
-    isPhoneMode = false,
-    isTabletMode = false,
-    draggable = false,
-    onDragStart,
-    onDragOver,
-    onDrop,
-    onDragEnd,
-    isDropTarget = false
-}) => (
-    <button
-        onClick={onClick}
-        draggable={draggable}
-        onDragStart={onDragStart}
-        onDragOver={onDragOver}
-        onDrop={onDrop}
-        onDragEnd={onDragEnd}
+const LegacyDesktopIcon = ({ label, icon: Icon, onClick, color = '#f5d000', isPhoneMode = false, isTabletMode = false }) => (
+    <button onClick={onClick}
         style={{
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
-            gap: isPhoneMode ? '0px' : '1px',
+            gap: isPhoneMode ? '6px' : '8px',
             background: 'transparent',
             border: 'none',
             cursor: 'pointer',
             padding: isPhoneMode ? '8px 6px' : (isTabletMode ? '10px' : '12px'),
             borderRadius: '12px',
-            transition: 'background 0.2s',
-            outline: isDropTarget ? '2px dashed rgba(245,208,0,0.85)' : 'none',
-            outlineOffset: isDropTarget ? '3px' : 0
+            transition: 'background 0.2s'
         }}
         onMouseOver={(e) => e.currentTarget.style.background = 'rgba(245,208,0,0.12)'}
         onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}
     >
         <div style={{
-            background: 'transparent',
-            border: 'none',
+            background: '#0b1220',
+            border: `2px solid ${color}`,
             color,
-            padding: 0,
+            padding: isPhoneMode ? '10px' : '12px',
             borderRadius: '14px',
-            boxShadow: 'none',
-            width: isPhoneMode ? '56px' : '68px',
-            height: isPhoneMode ? '56px' : '68px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
+            boxShadow: '4px 4px 0 rgba(0,0,0,0.4)'
         }}>
-            {imageSrc ? (
-                <img
-                    src={imageSrc}
-                    alt={`${label} icon`}
-                    style={{
-                        width: isPhoneMode ? '50px' : '64px',
-                        height: isPhoneMode ? '50px' : '64px',
-                        objectFit: 'contain',
-                        imageRendering: 'auto',
-                        transform: `scale(${iconScale})`,
-                        transformOrigin: 'center center'
-                    }}
-                />
-            ) : (
-                <Icon size={isPhoneMode ? 34 : 42} />
-            )}
+            <Icon size={isPhoneMode ? 24 : 32} />
         </div>
         <span style={{ color: '#fff', fontSize: isPhoneMode ? '10px' : '11px', fontWeight: 800, fontFamily: 'monospace', textShadow: '1px 1px 4px #000' }}>{label}</span>
     </button>
@@ -2718,20 +2689,7 @@ const StartMenuApp = ({ icon: Icon, label, onClick }) => (
     </button>
 );
 
-const getInitialDesktopGridMetrics = () => {
-    if (typeof window === 'undefined') return { columns: 1, rows: 1 };
-    const COL_WIDTH = 100;
-    const COL_GAP = 12;
-    const ROW_HEIGHT = 86;
-    const ROW_GAP = 12;
-    const width = Math.max(320, window.innerWidth - 40);
-    const height = Math.max(220, window.innerHeight - 28 - 12 - 24);
-    const columns = Math.max(1, Math.floor((width + COL_GAP) / (COL_WIDTH + COL_GAP)));
-    const rows = Math.max(1, Math.floor((height + ROW_GAP) / (ROW_HEIGHT + ROW_GAP)));
-    return { columns, rows };
-};
-
-const IjamOSWorkspace = ({ session, currentUser, isMobileView, deviceMode = 'desktop', ijamOsMode = 'mac_desktop', setPublicPage, setCurrentUser }) => {
+const IjamOSWorkspace = ({ session, currentUser, isMobileView, deviceMode = 'desktop', ijamOsMode = 'mac_desktop', setPublicPage, setCurrentUser, runtime }) => {
     const isMacMode = ijamOsMode === 'mac_desktop';
     const isPhoneMode = ijamOsMode === 'ios_phone';
     const isTabletMode = ijamOsMode === 'ios_tablet';
@@ -2770,13 +2728,15 @@ const IjamOSWorkspace = ({ session, currentUser, isMobileView, deviceMode = 'des
     const [latestMissionEvent, setLatestMissionEvent] = useState(null);
     const [batteryPct, setBatteryPct] = useState('--%');
     const [desktopIconSlots, setDesktopIconSlots] = useState([]);
+    const [desktopFsItems, setDesktopFsItems] = useState([]);
     const [draggedIconType, setDraggedIconType] = useState(null);
     const [dropTargetSlotIndex, setDropTargetSlotIndex] = useState(null);
     const [isDraggingDesktopIcon, setIsDraggingDesktopIcon] = useState(false);
     const desktopSlotsLoadedRef = useRef(false);
     const desktopSlotsHydratedRef = useRef(false);
+    const sessionUiHydratedRef = useRef(false);
     const desktopIconsContainerRef = useRef(null);
-    const [desktopGridMetrics, setDesktopGridMetrics] = useState(getInitialDesktopGridMetrics);
+    const [desktopGridMetrics, setDesktopGridMetrics] = useState(null);
     const [activeMacMenu, setActiveMacMenu] = useState(null);
     const [showBatteryPopup, setShowBatteryPopup] = useState(false);
     const [showControlCenter, setShowControlCenter] = useState(false);
@@ -2812,6 +2772,25 @@ const IjamOSWorkspace = ({ session, currentUser, isMobileView, deviceMode = 'des
         ) navigator.vibrate(10);
     }, []);
 
+    const getRestoredWindowMetrics = useCallback((appCfg, savedState = {}, openCount = 0) => {
+        const vw = typeof window !== 'undefined' ? window.innerWidth : 1200;
+        const vh = typeof window !== 'undefined' ? window.innerHeight : 800;
+        const fallbackW = Math.min(appCfg.defaultW, vw - 60);
+        const fallbackH = Math.min(appCfg.defaultH, vh - 140);
+        const width = Math.max(320, Math.min(savedState?.w || fallbackW, vw - 24));
+        const height = Math.max(220, Math.min(savedState?.h || fallbackH, vh - 28));
+        const fallbackX = Math.max(16, (vw - width) / 2 + openCount * 22 - 44);
+        const fallbackY = Math.max(10, 30 + openCount * 22);
+
+        return {
+            x: Math.max(0, Math.min(savedState?.x ?? fallbackX, vw - 100)),
+            y: Math.max(0, Math.min(savedState?.y ?? fallbackY, vh - 60)),
+            w: width,
+            h: height,
+            isMaximized: Boolean(savedState?.isMaximized)
+        };
+    }, []);
+
     const openApp = useCallback((type) => {
         const appCfg = APP_REGISTRY.find(a => a.type === type);
         if (!appCfg) return;
@@ -2844,17 +2823,23 @@ const IjamOSWorkspace = ({ session, currentUser, isMobileView, deviceMode = 'des
                 if (prev[type]?.isOpen) {
                     return { ...prev, [type]: { ...prev[type], isMinimized: false, zIndex: newZ } };
                 }
-                const vw = typeof window !== 'undefined' ? window.innerWidth : 1200;
-                const vh = typeof window !== 'undefined' ? window.innerHeight : 800;
                 const openCount = Object.values(prev).filter(w => w.isOpen).length;
-                const w = Math.min(appCfg.defaultW, vw - 60);
-                const h = Math.min(appCfg.defaultH, vh - 140);
-                return { ...prev, [type]: { isOpen: true, isMinimized: false, isMaximized: false, x: Math.max(16, (vw - w) / 2 + openCount * 22 - 44), y: Math.max(10, 30 + openCount * 22), w, h, zIndex: newZ } };
+                const restoredMetrics = getRestoredWindowMetrics(appCfg, prev[type], openCount);
+                return {
+                    ...prev,
+                    [type]: {
+                        ...(prev[type] || {}),
+                        ...restoredMetrics,
+                        isOpen: true,
+                        isMinimized: false,
+                        zIndex: newZ
+                    }
+                };
             });
             setFocusedWindow(type);
             return newZ;
         });
-    }, [emitMissionEvent, getRoleHintFromApp, isTouchIjamMode]);
+    }, [emitMissionEvent, getRestoredWindowMetrics, getRoleHintFromApp, isTouchIjamMode]);
 
     const closeApp = useCallback((type) => {
         setWindowStates(prev => ({ ...prev, [type]: { ...(prev[type] || {}), isOpen: false } }));
@@ -2927,6 +2912,13 @@ const IjamOSWorkspace = ({ session, currentUser, isMobileView, deviceMode = 'des
     const [explorerSearch, setExplorerSearch] = useState('');
     const [explorerSelected, setExplorerSelected] = useState(null);
     const [explorerView, setExplorerView] = useState('icons');
+    const [explorerSort, setExplorerSort] = useState('name-asc');
+    const [showExplorerDetails, setShowExplorerDetails] = useState(true);
+    const [explorerItems, setExplorerItems] = useState([]);
+    const [explorerLoading, setExplorerLoading] = useState(false);
+    const [explorerError, setExplorerError] = useState('');
+    const [explorerClipboard, setExplorerClipboard] = useState(null);
+    const explorerImportInputRef = useRef(null);
     const toggleStage = (stageName) => setCollapsedStages(prev => {
         const next = new Set(prev);
         next.has(stageName) ? next.delete(stageName) : next.add(stageName);
@@ -2955,33 +2947,40 @@ const IjamOSWorkspace = ({ session, currentUser, isMobileView, deviceMode = 'des
     // Wallpaper state
     const [currentWallpaper, setCurrentWallpaper] = useState(() => {
         const saved = localStorage.getItem('vibe_wallpaper');
-        if (saved) return saved;
-        // Check for time-based wallpaper
-        const hour = new Date().getHours();
-        if (hour >= 6 && hour < 12) return 'morning';
-        if (hour >= 12 && hour < 18) return 'day';
-        if (hour >= 18 && hour < 21) return 'evening';
-        return 'night';
+        if (saved) return normalizeLegacyWallpaperId(saved);
+        return getDefaultWallpaperId();
     });
+    const [wallpaperGallery, setWallpaperGallery] = useState(() => (
+        Array.isArray(BUILT_IN_WALLPAPERS) && BUILT_IN_WALLPAPERS.length ? BUILT_IN_WALLPAPERS : []
+    ));
+    const [wallpaperFit, setWallpaperFit] = useState(DEFAULT_PERSONALIZATION.fit);
+    const [wallpaperHistory, setWallpaperHistory] = useState([]);
 
     // Update time-based wallpaper hourly
     useEffect(() => {
-        const wallpaperData = WALLPAPER_GALLERY.find(w => w.id === currentWallpaper);
-        if (wallpaperData?.type === 'time-based') {
-            const interval = setInterval(() => {
-                const hour = new Date().getHours();
-                let newWallpaper = 'night';
-                if (hour >= 6 && hour < 12) newWallpaper = 'morning';
-                else if (hour >= 12 && hour < 18) newWallpaper = 'day';
-                else if (hour >= 18 && hour < 21) newWallpaper = 'evening';
+        const wallpaperData = wallpaperGallery.find((wallpaper) => wallpaper.id === currentWallpaper);
+        if (wallpaperData?.type !== 'time-based') return undefined;
 
-                if (newWallpaper !== currentWallpaper) {
-                    setCurrentWallpaper(newWallpaper);
-                }
-            }, 60000); // Check every minute
-            return () => clearInterval(interval);
-        }
-    }, [currentWallpaper]);
+        const tick = () => {
+            const hour = new Date().getHours();
+            let nextWallpaperId = 'malam';
+            if (hour >= 6 && hour < 12) nextWallpaperId = 'pagi-morning';
+            else if (hour >= 12 && hour < 18) nextWallpaperId = 'tengahari';
+            else if (hour >= 18 && hour < 21) nextWallpaperId = 'petang';
+
+            if (nextWallpaperId === currentWallpaper) return;
+            setCurrentWallpaper(nextWallpaperId);
+            localStorage.setItem('vibe_wallpaper', nextWallpaperId);
+
+            if (runtime?.wallpaper?.setCurrent) {
+                void runtime.wallpaper.setCurrent(nextWallpaperId, wallpaperFit || DEFAULT_PERSONALIZATION.fit).catch(() => { });
+            }
+        };
+
+        tick();
+        const interval = setInterval(tick, 60000); // Check every minute
+        return () => clearInterval(interval);
+    }, [currentWallpaper, runtime, wallpaperFit, wallpaperGallery]);
 
     const kdacademyUrl = 'https://kdacademy.up.railway.app/';
 
@@ -3023,6 +3022,13 @@ const IjamOSWorkspace = ({ session, currentUser, isMobileView, deviceMode = 'des
         programGoal: ''
     });
     const [isSavingSettings, setIsSavingSettings] = useState(false);
+    const [terminalLog, setTerminalLog] = useState([
+        { role: 'system', text: 'KRACKED_TERMINAL booted.' },
+        { role: 'assistant', text: 'yo aku KRACKED_BOT. kita buat step by step je, chill.\ntanya je apa-apa pasal lesson ni.' }
+    ]);
+    const appendTerminal = (role, text) => {
+        setTerminalLog((prev) => [...prev, { role, text }]);
+    };
 
     // --- Stats Showcase States ---
     const [isUploading, setIsUploading] = useState(false);
@@ -3030,6 +3036,143 @@ const IjamOSWorkspace = ({ session, currentUser, isMobileView, deviceMode = 'des
     const [websiteUrl, setWebsiteUrl] = useState('');
 
     const { speakText, playKeystroke, playSuccess, playError } = useSoundEffects();
+
+    const refreshWallpaperState = useCallback(async () => {
+        if (!runtime) return;
+        const [wallpapers, currentState] = await Promise.all([
+            runtime.wallpaper.list(),
+            runtime.wallpaper.getCurrent()
+        ]);
+
+        setWallpaperGallery(Array.isArray(wallpapers) && wallpapers.length ? wallpapers : BUILT_IN_WALLPAPERS);
+        setWallpaperFit(currentState?.fit || DEFAULT_PERSONALIZATION.fit);
+        setWallpaperHistory(currentState?.history || []);
+        if (currentState?.wallpaper?.id) {
+            setCurrentWallpaper(currentState.wallpaper.id);
+        }
+    }, [runtime]);
+
+    const markWorkspaceSessionBooted = useCallback(async () => {
+        if (!runtime) return;
+        const currentSession = await runtime.settings.loadSession().catch(() => null);
+        await runtime.settings.saveSession({
+            ...(currentSession || {}),
+            isBooted: true,
+            lastBootedAt: new Date().toISOString(),
+            lastRuntimeMode: runtime.mode
+        });
+    }, [runtime]);
+
+    const resetWorkspaceSession = useCallback(async ({ reload = true } = {}) => {
+        if (runtime) {
+            const currentSession = await runtime.settings.loadSession().catch(() => null);
+            await runtime.settings.saveSession({
+                ...(currentSession || {}),
+                isBooted: false,
+                lastRuntimeMode: runtime.mode
+            });
+        }
+
+        if (reload && typeof window !== 'undefined') {
+            window.location.reload();
+        }
+    }, [runtime]);
+
+    useEffect(() => {
+        if (!runtime) return;
+        let active = true;
+
+        Promise.all([
+            runtime.settings.loadSession(),
+            runtime.settings.loadCommunityResources(),
+            refreshWallpaperState()
+        ]).then(([sessionState, resources]) => {
+            if (!active) return;
+            setIsBooted(Boolean(sessionState?.isBooted));
+            setCommunityResources(Array.isArray(resources) ? resources : []);
+            const savedWindowLayout = sessionState?.windowLayout;
+            if (savedWindowLayout && typeof savedWindowLayout === 'object') {
+                setWindowStates((prev) => {
+                    const next = { ...prev };
+                    APP_REGISTRY.forEach((app) => {
+                        const savedState = savedWindowLayout[app.type];
+                        if (!savedState) return;
+                        next[app.type] = {
+                            ...(next[app.type] || {}),
+                            ...savedState,
+                            isOpen: false,
+                            isMinimized: false,
+                            zIndex: next[app.type]?.zIndex || 0
+                        };
+                    });
+                    return next;
+                });
+            }
+
+            const explorerPreferences = sessionState?.explorerPreferences;
+            if (explorerPreferences && typeof explorerPreferences === 'object') {
+                if (Array.isArray(explorerPreferences.path)) {
+                    setExplorerPath(explorerPreferences.path.filter((segment) => typeof segment === 'string'));
+                }
+                if (explorerPreferences.view === 'icons' || explorerPreferences.view === 'list') {
+                    setExplorerView(explorerPreferences.view);
+                }
+                if (typeof explorerPreferences.showDetailsPane === 'boolean') {
+                    setShowExplorerDetails(explorerPreferences.showDetailsPane);
+                }
+                if (explorerPreferences.sort === 'name-asc' || explorerPreferences.sort === 'name-desc') {
+                    setExplorerSort(explorerPreferences.sort);
+                }
+            }
+
+            if (typeof sessionState?.windowZCounter === 'number') {
+                setZCounter(Math.max(100, sessionState.windowZCounter));
+            }
+            sessionUiHydratedRef.current = true;
+        }).catch(() => {
+            if (!active) return;
+            setCommunityResources([]);
+            sessionUiHydratedRef.current = true;
+        });
+
+        return () => {
+            active = false;
+        };
+    }, [refreshWallpaperState, runtime]);
+    useEffect(() => {
+        if (!runtime || !sessionUiHydratedRef.current) return;
+
+        const saveTimer = setTimeout(() => {
+            const windowLayout = APP_REGISTRY.reduce((acc, app) => {
+                const state = windowStates[app.type];
+                if (!state) return acc;
+                acc[app.type] = {
+                    x: typeof state.x === 'number' ? state.x : undefined,
+                    y: typeof state.y === 'number' ? state.y : undefined,
+                    w: typeof state.w === 'number' ? state.w : undefined,
+                    h: typeof state.h === 'number' ? state.h : undefined,
+                    isMaximized: Boolean(state.isMaximized)
+                };
+                return acc;
+            }, {});
+
+            runtime.settings.loadSession()
+                .then((currentSession) => runtime.settings.saveSession({
+                    ...(currentSession || {}),
+                    windowLayout,
+                    explorerPreferences: {
+                        path: explorerPath,
+                        view: explorerView,
+                        showDetailsPane: showExplorerDetails,
+                        sort: explorerSort
+                    },
+                    windowZCounter: zCounter
+                }))
+                .catch(() => {});
+        }, 150);
+
+        return () => clearTimeout(saveTimer);
+    }, [explorerPath, explorerSort, explorerView, runtime, showExplorerDetails, windowStates, zCounter]);
 
     useEffect(() => {
         if (currentUser) {
@@ -3084,6 +3227,31 @@ const IjamOSWorkspace = ({ session, currentUser, isMobileView, deviceMode = 'des
         }
     };
 
+    const applyWallpaperSelection = useCallback(async (wallpaperId, nextFit) => {
+        if (!wallpaperId) return;
+
+        const normalizedWallpaperId = normalizeLegacyWallpaperId(wallpaperId);
+        const resolvedFit = nextFit || wallpaperFit || DEFAULT_PERSONALIZATION.fit;
+
+        setCurrentWallpaper(normalizedWallpaperId);
+        localStorage.setItem('vibe_wallpaper', normalizedWallpaperId);
+
+        if (runtime?.wallpaper?.setCurrent) {
+            try {
+                await runtime.wallpaper.setCurrent(normalizedWallpaperId, resolvedFit);
+                await refreshWallpaperState();
+            } catch (error) {
+                console.error('Wallpaper update failed:', error);
+                playError();
+                appendTerminal('system', `[!] Wallpaper change failed: ${error?.message || String(error)}`);
+                return;
+            }
+        }
+
+        playSuccess();
+        appendTerminal('system', `[✓] Wallpaper changed to: ${normalizedWallpaperId}`);
+    }, [appendTerminal, playError, playSuccess, refreshWallpaperState, runtime, wallpaperFit]);
+
     const handleSetWallpaper = (wallpaperId) => {
         setCurrentWallpaper(wallpaperId);
         localStorage.setItem('vibe_wallpaper', wallpaperId);
@@ -3119,6 +3287,24 @@ const IjamOSWorkspace = ({ session, currentUser, isMobileView, deviceMode = 'des
                 return {};
         }
     };
+
+    const resolveWallpaperStyle = useCallback((wallpaper, { fit } = {}) => {
+        if (!wallpaper) return {};
+        const base = getWallpaperStyle(wallpaper);
+        if (wallpaper.type !== 'image') return base;
+
+        const resolvedFit = fit || wallpaper.fit || DEFAULT_PERSONALIZATION.fit;
+        if (resolvedFit === 'fit') {
+            return { ...base, backgroundSize: 'contain', backgroundRepeat: 'no-repeat' };
+        }
+        if (resolvedFit === 'stretch') {
+            return { ...base, backgroundSize: '100% 100%', backgroundRepeat: 'no-repeat' };
+        }
+        if (resolvedFit === 'tile') {
+            return { ...base, backgroundSize: 'auto', backgroundRepeat: 'repeat' };
+        }
+        return { ...base, backgroundSize: 'cover', backgroundRepeat: 'no-repeat' };
+    }, []);
 
     const handleImageUpload = async (event) => {
         try {
@@ -3218,12 +3404,32 @@ const IjamOSWorkspace = ({ session, currentUser, isMobileView, deviceMode = 'des
         () => Object.fromEntries(APP_REGISTRY.map((app) => [app.type, app])),
         []
     );
+    const desktopShortcutItems = useMemo(() => (
+        APP_REGISTRY.map((app) => ({
+            id: `desktop-shortcut:${app.type}`,
+            path: null,
+            name: app.label,
+            rawName: app.label,
+            type: 'app',
+            ext: '',
+            data: {
+                readonly: true,
+                appType: app.type,
+                desktopIconImage: app.desktopIconImage || '',
+                desktopIconScale: app.desktopIconScale || 1,
+                appIcon: app.icon,
+                color: app.color
+            }
+        }))
+    ), []);
+    const desktopGridColumns = desktopGridMetrics?.columns ?? 0;
+    const desktopGridRows = desktopGridMetrics?.rows ?? 0;
     const desktopSlotCount = useMemo(() => {
         if (isMacMode && !isTouchIjamMode) {
-            return Math.max(appTypeList.length, desktopGridMetrics.columns * desktopGridMetrics.rows);
+            return Math.max(appTypeList.length, desktopGridColumns * desktopGridRows);
         }
         return Math.max(24, appTypeList.length + 8);
-    }, [isMacMode, isTouchIjamMode, appTypeList.length, desktopGridMetrics.columns, desktopGridMetrics.rows]);
+    }, [isMacMode, isTouchIjamMode, appTypeList.length, desktopGridColumns, desktopGridRows]);
     const batteryLevel = useMemo(() => {
         const parsed = Number.parseInt(String(batteryPct).replace('%', ''), 10);
         if (Number.isNaN(parsed)) return 100;
@@ -3236,6 +3442,10 @@ const IjamOSWorkspace = ({ session, currentUser, isMobileView, deviceMode = 'des
     const recentApps = useMemo(
         () => APP_REGISTRY.filter((app) => windowStates[app.type]?.isOpen).slice(0, 4),
         [windowStates]
+    );
+    const desktopRenderableFsItems = useMemo(
+        () => [...desktopFsItems].sort((left, right) => left.name.localeCompare(right.name, undefined, { numeric: true, sensitivity: 'base' })),
+        [desktopFsItems]
     );
 
     useEffect(() => {
@@ -3264,7 +3474,7 @@ const IjamOSWorkspace = ({ session, currentUser, isMobileView, deviceMode = 'des
             const columns = Math.max(1, Math.floor((width + COL_GAP) / (COL_WIDTH + COL_GAP)));
             const rows = Math.max(1, Math.floor((height + ROW_GAP) / (ROW_HEIGHT + ROW_GAP)));
             setDesktopGridMetrics((prev) => (
-                prev.columns === columns && prev.rows === rows
+                prev && prev.columns === columns && prev.rows === rows
                     ? prev
                     : { columns, rows }
             ));
@@ -3302,51 +3512,65 @@ const IjamOSWorkspace = ({ session, currentUser, isMobileView, deviceMode = 'des
         }
         return normalized;
     }, [appTypeList]);
+    const desktopRenderSlotCount = useMemo(
+        () => Math.max(desktopSlotCount, appTypeList.length + desktopRenderableFsItems.length),
+        [appTypeList.length, desktopRenderableFsItems.length, desktopSlotCount]
+    );
+    const desktopCells = useMemo(() => {
+        const slots = normalizeDesktopSlots(desktopIconSlots, desktopRenderSlotCount);
+        let desktopItemCursor = 0;
+
+        return Array.from({ length: desktopRenderSlotCount }, (_, slotIndex) => {
+            const appType = slots[slotIndex] || null;
+            if (appType) {
+                return { kind: 'app', slotIndex, appType };
+            }
+
+            const desktopItem = desktopRenderableFsItems[desktopItemCursor] || null;
+            if (desktopItem) {
+                desktopItemCursor += 1;
+                return { kind: 'fs', slotIndex, item: desktopItem };
+            }
+
+            return { kind: 'empty', slotIndex };
+        });
+    }, [desktopIconSlots, desktopRenderSlotCount, desktopRenderableFsItems, normalizeDesktopSlots]);
 
     useEffect(() => {
-        if (desktopSlotsLoadedRef.current) return;
-        try {
-            const rawSlots = localStorage.getItem('ijamos_desktop_icon_slots');
-            if (rawSlots) {
-                const parsedSlots = JSON.parse(rawSlots);
-                if (Array.isArray(parsedSlots)) {
-                    setDesktopIconSlots(normalizeDesktopSlots(parsedSlots, Math.max(desktopSlotCount, parsedSlots.length)));
-                    desktopSlotsLoadedRef.current = true;
-                    desktopSlotsHydratedRef.current = true;
-                    return;
-                }
-            }
-            const rawOrder = localStorage.getItem('ijamos_desktop_icon_order');
-            if (!rawOrder) {
+        if (desktopSlotsLoadedRef.current || !runtime) return;
+        let active = true;
+
+        runtime.settings.loadDesktopLayout()
+            .then((layout) => {
+                if (!active) return;
+                const persistedSlots = Array.isArray(layout?.slots) && layout.slots.length
+                    ? layout.slots
+                    : Array.isArray(layout?.legacyOrder)
+                        ? layout.legacyOrder
+                        : [];
+                setDesktopIconSlots(normalizeDesktopSlots(persistedSlots, Math.max(desktopSlotCount, persistedSlots.length || desktopSlotCount)));
+                desktopSlotsLoadedRef.current = true;
+                desktopSlotsHydratedRef.current = true;
+            })
+            .catch(() => {
+                if (!active) return;
                 setDesktopIconSlots(normalizeDesktopSlots([], desktopSlotCount));
                 desktopSlotsLoadedRef.current = true;
                 desktopSlotsHydratedRef.current = true;
-                return;
-            }
-            const parsedOrder = JSON.parse(rawOrder);
-            if (Array.isArray(parsedOrder) && parsedOrder.length) {
-                setDesktopIconSlots(normalizeDesktopSlots(parsedOrder, desktopSlotCount));
-            } else {
-                setDesktopIconSlots(normalizeDesktopSlots([], desktopSlotCount));
-            }
-            desktopSlotsLoadedRef.current = true;
-            desktopSlotsHydratedRef.current = true;
-        } catch {
-            // Ignore broken local storage payloads.
-            setDesktopIconSlots(normalizeDesktopSlots([], desktopSlotCount));
-            desktopSlotsLoadedRef.current = true;
-            desktopSlotsHydratedRef.current = true;
-        }
-    }, [desktopSlotCount, normalizeDesktopSlots]);
+            });
+
+        return () => {
+            active = false;
+        };
+    }, [desktopSlotCount, normalizeDesktopSlots, runtime]);
 
     useEffect(() => {
-        if (!desktopSlotsHydratedRef.current) return;
-        try {
-            localStorage.setItem('ijamos_desktop_icon_slots', JSON.stringify(desktopIconSlots));
-        } catch {
-            // Ignore storage failures.
-        }
-    }, [desktopIconSlots]);
+        if (!desktopSlotsHydratedRef.current || !runtime) return;
+        runtime.settings.saveDesktopLayout({
+            slots: desktopIconSlots,
+            legacyOrder: desktopIconSlots.filter(Boolean)
+        }).catch(() => {});
+    }, [desktopIconSlots, runtime]);
 
     useEffect(() => {
         setDesktopIconSlots((prev) => normalizeDesktopSlots(prev, desktopSlotCount));
@@ -3491,6 +3715,514 @@ const IjamOSWorkspace = ({ session, currentUser, isMobileView, deviceMode = 'des
         addVibes(10, "Resource Studied");
     };
 
+    const pathSegmentsToAbsolutePath = useCallback((segments) => {
+        if (!Array.isArray(segments) || !segments.length) return null;
+        if (segments.length === 1 && segments[0] === 'C:') return 'C:\\';
+        return normalizeOsPath(segments.join('\\'));
+    }, []);
+
+    const absolutePathToSegments = useCallback((path) => {
+        const normalized = normalizeOsPath(path);
+        return normalized.split('\\').filter(Boolean);
+    }, []);
+
+    const currentExplorerAbsolutePath = useMemo(
+        () => pathSegmentsToAbsolutePath(explorerPath),
+        [explorerPath, pathSegmentsToAbsolutePath]
+    );
+    const currentExplorerNormalizedPath = useMemo(
+        () => currentExplorerAbsolutePath ? normalizeOsPath(currentExplorerAbsolutePath) : '',
+        [currentExplorerAbsolutePath]
+    );
+
+    const explorerInTrash = useMemo(
+        () => currentExplorerAbsolutePath && normalizeOsPath(currentExplorerAbsolutePath).toLowerCase() === WORKSPACE_PATHS.trash.toLowerCase(),
+        [currentExplorerAbsolutePath]
+    );
+
+    const explorerPathIsWritable = useMemo(() => {
+        if (!currentExplorerAbsolutePath || currentExplorerAbsolutePath === 'C:\\') return false;
+        const normalized = normalizeOsPath(currentExplorerAbsolutePath).toLowerCase();
+        const readonlyRoots = [
+            WORKSPACE_PATHS.lessonsMount.toLowerCase(),
+            WORKSPACE_PATHS.builtInWallpapers.toLowerCase()
+        ];
+        if (readonlyRoots.some((rootPath) => normalized === rootPath || normalized.startsWith(`${rootPath}\\`))) {
+            return false;
+        }
+        return normalized.startsWith(WORKSPACE_PATHS.root.toLowerCase());
+    }, [currentExplorerAbsolutePath]);
+
+    const mapFsEntryToExplorerItem = useCallback((entry) => {
+        const logicalType = entry.meta?.logicalType || entry.fileKind || entry.type;
+        const displayName = entry.type === 'file' && entry.ext && entry.name.toLowerCase().endsWith(entry.ext)
+            ? entry.name.slice(0, entry.name.length - entry.ext.length)
+            : entry.name;
+
+        return {
+            id: entry.path,
+            path: entry.path,
+            name: displayName,
+            rawName: entry.name,
+            type: entry.type === 'directory'
+                ? 'folder'
+                : logicalType === 'lesson'
+                    ? 'lesson'
+                    : logicalType === 'url'
+                        ? 'url'
+                        : logicalType === 'wallpaper'
+                            ? 'wallpaper'
+                            : logicalType === 'image' || entry.fileKind === 'image'
+                                ? 'image'
+                                : logicalType === 'json'
+                                    ? 'json'
+                                    : 'file',
+            ext: entry.ext || '',
+            data: {
+                source: entry.source,
+                readonly: entry.readonly,
+                updatedAt: entry.updatedAt,
+                path: entry.path,
+                mimeType: entry.mimeType || '',
+                fileKind: entry.fileKind || '',
+                meta: entry.meta || {},
+                lessonId: entry.meta?.lessonId || entry.meta?.lesson?.id || null,
+                lesson: entry.meta?.lesson || null,
+                url: entry.meta?.resource?.url || entry.meta?.url || '',
+                stage: entry.meta?.lesson?.stage || entry.meta?.stage || null,
+                summary: entry.meta?.lesson?.summary || entry.meta?.resource?.description || '',
+                description: entry.meta?.resource?.description || '',
+                wallpaperId: entry.meta?.wallpaperId || null,
+                wallpaper: entry.meta?.wallpaper || null,
+                originalPath: entry.meta?.originalPath || null,
+                content: entry.content || ''
+            }
+        };
+    }, []);
+
+    const refreshDesktopEntries = useCallback(async () => {
+        if (!runtime) return;
+        try {
+            const entries = await runtime.fs.list(WORKSPACE_PATHS.desktop);
+            setDesktopFsItems(entries.map(mapFsEntryToExplorerItem));
+        } catch {
+            setDesktopFsItems([]);
+        }
+    }, [mapFsEntryToExplorerItem, runtime]);
+
+    useEffect(() => {
+        if (!runtime) return;
+        refreshDesktopEntries();
+    }, [refreshDesktopEntries, runtime]);
+
+    const sortedExplorerItems = useMemo(() => {
+        const sorted = [...explorerItems].sort((left, right) => {
+            const leftFolderLike = left.type === 'folder' || left.type === 'drive';
+            const rightFolderLike = right.type === 'folder' || right.type === 'drive';
+            if (leftFolderLike !== rightFolderLike) {
+                return leftFolderLike ? -1 : 1;
+            }
+
+            const baseCompare = left.name.localeCompare(right.name, undefined, { numeric: true, sensitivity: 'base' });
+            return explorerSort === 'name-desc' ? -baseCompare : baseCompare;
+        });
+
+        return sorted;
+    }, [explorerItems, explorerSort]);
+
+    const refreshExplorerItems = useCallback(async () => {
+        if (!runtime) return;
+        setExplorerLoading(true);
+        setExplorerError('');
+
+        try {
+            let nextItems = [];
+
+            if (explorerSearch.trim()) {
+                const searchResults = await runtime.fs.search(explorerSearch, [WORKSPACE_PATHS.root, WORKSPACE_PATHS.lessonsMount]);
+                nextItems = searchResults.map(mapFsEntryToExplorerItem);
+            } else if (!explorerPath.length) {
+                nextItems = [{ id: 'drive-C', name: 'C:\\', type: 'drive', path: 'C:\\', label: 'KRACKED_OS Host Drive', data: {} }];
+            } else if (explorerPath.length === 1 && explorerPath[0] === 'C:') {
+                nextItems = [{
+                    id: 'folder-kracked-os',
+                    name: 'KRACKED_OS',
+                    type: 'folder',
+                    path: WORKSPACE_PATHS.root,
+                    label: 'Workspace Root',
+                    ext: '',
+                    data: {
+                        source: 'workspace',
+                        readonly: false,
+                        summary: 'Primary KRACKED_OS workspace root.'
+                    }
+                }];
+            } else {
+                const absolutePath = pathSegmentsToAbsolutePath(explorerPath);
+                const entries = await runtime.fs.list(absolutePath);
+                nextItems = entries.map(mapFsEntryToExplorerItem);
+                if (normalizeOsPath(absolutePath) === WORKSPACE_PATHS.desktop) {
+                    nextItems = [...desktopShortcutItems, ...nextItems];
+                }
+            }
+
+            setExplorerItems(nextItems);
+            setExplorerSelected((prev) => (prev && nextItems.some((item) => item.id === prev.id) ? prev : null));
+        } catch (error) {
+            console.error('Explorer refresh failed:', error);
+            setExplorerItems([]);
+            setExplorerError(error.message || 'Failed to load explorer items.');
+        } finally {
+            setExplorerLoading(false);
+        }
+    }, [desktopShortcutItems, explorerPath, explorerSearch, mapFsEntryToExplorerItem, runtime, pathSegmentsToAbsolutePath]);
+
+    useEffect(() => {
+        if (!runtime || !windowStates.files?.isOpen) return;
+        refreshExplorerItems();
+    }, [refreshExplorerItems, runtime, windowStates.files?.isOpen]);
+
+    const navigateExplorer = useCallback((pathOrSegments) => {
+        const nextSegments = Array.isArray(pathOrSegments) ? pathOrSegments : absolutePathToSegments(pathOrSegments);
+        setExplorerPath(nextSegments);
+        setExplorerSelected(null);
+        setExplorerSearch('');
+    }, [absolutePathToSegments]);
+
+    const handleExplorerClick = useCallback((item) => {
+        setExplorerSelected(item);
+    }, []);
+
+    const openExplorerItem = useCallback(async (item) => {
+        if (!item) return;
+        if (item.type === 'drive') {
+            navigateExplorer(['C:']);
+            return;
+        }
+        if (item.type === 'folder') {
+            navigateExplorer(item.path || [...explorerPath, item.name]);
+            return;
+        }
+        if (item.type === 'app' && item.data?.appType) {
+            openApp(item.data.appType);
+            return;
+        }
+        if (item.type === 'lesson' && item.data?.lessonId) {
+            openLessonInKdacademy(item.data.lessonId, 'workshop');
+            return;
+        }
+        if (item.type === 'url' && item.data?.url) {
+            openExternal(item.data.url);
+            return;
+        }
+        if ((item.type === 'wallpaper' || item.type === 'image') && item.data?.wallpaperId) {
+            await applyWallpaperSelection(item.data.wallpaperId);
+        }
+    }, [applyWallpaperSelection, explorerPath, navigateExplorer, openApp, openLessonInKdacademy]);
+
+    const getDesktopFsIcon = useCallback((item) => {
+        if (item.type === 'folder') return Folder;
+        if (item.type === 'url') return ExternalLink;
+        if (item.type === 'lesson') return BookOpen;
+        if (item.type === 'image' || item.type === 'wallpaper') return Sparkles;
+        return FileText;
+    }, []);
+
+    const handleDesktopFsItemOpen = useCallback(async (item) => {
+        if (!item) return;
+        if (item.type === 'folder' && item.path) {
+            openApp('files');
+            navigateExplorer(absolutePathToSegments(item.path));
+            return;
+        }
+        if (item.type === 'app') {
+            await openExplorerItem(item);
+            return;
+        }
+        if (item.type === 'url' || item.type === 'lesson' || item.type === 'image' || item.type === 'wallpaper') {
+            await openExplorerItem(item);
+            return;
+        }
+        openApp('files');
+        navigateExplorer(absolutePathToSegments(WORKSPACE_PATHS.desktop));
+    }, [absolutePathToSegments, navigateExplorer, openApp, openExplorerItem]);
+
+    const getExplorerUniquePath = useCallback(async (targetDirectory, sourceName) => {
+        if (!runtime) {
+            return joinOsPath(targetDirectory, sourceName);
+        }
+
+        const existingEntries = await runtime.fs.list(targetDirectory);
+        const existingNames = new Set(existingEntries.map((entry) => entry.name.toLowerCase()));
+        if (!existingNames.has(sourceName.toLowerCase())) {
+            return joinOsPath(targetDirectory, sourceName);
+        }
+
+        const sourceExt = extnameFromPath(sourceName);
+        const sourceBase = sourceExt ? sourceName.slice(0, sourceName.length - sourceExt.length) : sourceName;
+        let attempt = 1;
+
+        while (attempt < 200) {
+            const suffix = attempt === 1 ? ' - Copy' : ` - Copy (${attempt})`;
+            const candidateName = `${sourceBase}${suffix}${sourceExt}`;
+            if (!existingNames.has(candidateName.toLowerCase())) {
+                return joinOsPath(targetDirectory, candidateName);
+            }
+            attempt += 1;
+        }
+
+        return joinOsPath(targetDirectory, `${sourceBase}-${Date.now()}${sourceExt}`);
+    }, [runtime]);
+
+    const cloneExplorerEntry = useCallback(async (sourceItem, targetDirectory) => {
+        if (!runtime || !sourceItem?.path || !targetDirectory) return null;
+
+        const sourceName = sourceItem.rawName || basenameFromPath(sourceItem.path);
+        const targetPath = await getExplorerUniquePath(targetDirectory, sourceName);
+
+        if (sourceItem.type === 'folder') {
+            await runtime.fs.mkdir(targetPath);
+            const children = await runtime.fs.list(sourceItem.path);
+            for (const childEntry of children) {
+                await cloneExplorerEntry(mapFsEntryToExplorerItem(childEntry), targetPath);
+            }
+            return targetPath;
+        }
+
+        const content = await runtime.fs.read(sourceItem.path);
+        await runtime.fs.write(targetPath, content, {
+            mimeType: sourceItem.data?.mimeType || 'text/plain',
+            ext: sourceItem.ext || extnameFromPath(sourceName),
+            fileKind: sourceItem.data?.fileKind || sourceItem.type || 'file',
+            meta: sourceItem.data?.meta || {}
+        });
+        return targetPath;
+    }, [getExplorerUniquePath, mapFsEntryToExplorerItem, runtime]);
+
+    const handleExplorerCopy = useCallback(() => {
+        if (!explorerSelected?.path || explorerSelected?.type === 'drive') return;
+        setExplorerClipboard({
+            mode: 'copy',
+            item: explorerSelected
+        });
+    }, [explorerSelected]);
+
+    const handleExplorerCut = useCallback(() => {
+        if (!explorerSelected?.path || explorerSelected?.type === 'drive' || explorerSelected?.data?.readonly || explorerInTrash) return;
+        setExplorerClipboard({
+            mode: 'cut',
+            item: explorerSelected
+        });
+    }, [explorerInTrash, explorerSelected]);
+
+    const handleExplorerPaste = useCallback(async () => {
+        if (!runtime || !currentExplorerAbsolutePath || !explorerPathIsWritable || !explorerClipboard?.item?.path) return;
+
+        const clipboardItem = explorerClipboard.item;
+        const sourceParent = dirnameFromPath(clipboardItem.path);
+        if (explorerClipboard.mode === 'cut' && normalizeOsPath(sourceParent) === normalizeOsPath(currentExplorerAbsolutePath)) {
+            return;
+        }
+
+        await cloneExplorerEntry(clipboardItem, currentExplorerAbsolutePath);
+
+        if (explorerClipboard.mode === 'cut') {
+            await runtime.fs.moveToTrash(clipboardItem.path);
+            setExplorerClipboard(null);
+        }
+
+        setExplorerSelected(null);
+        await refreshExplorerItems();
+        await refreshDesktopEntries();
+    }, [cloneExplorerEntry, currentExplorerAbsolutePath, explorerClipboard, explorerPathIsWritable, refreshDesktopEntries, refreshExplorerItems, runtime]);
+
+    const readUploadFile = useCallback((file) => {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = () => reject(reader.error || new Error(`Failed to read ${file.name}`));
+            if (file.type.startsWith('image/')) {
+                reader.readAsDataURL(file);
+            } else {
+                reader.readAsText(file);
+            }
+        });
+    }, []);
+
+    const handleExplorerImport = useCallback(() => {
+        if (!explorerPathIsWritable) return;
+        explorerImportInputRef.current?.click();
+    }, [explorerPathIsWritable]);
+
+    const handleExplorerFilesSelected = useCallback(async (event) => {
+        try {
+            if (!runtime || !currentExplorerAbsolutePath || !event.target.files?.length) return;
+            for (const file of Array.from(event.target.files)) {
+                const content = await readUploadFile(file);
+                await runtime.fs.write(joinOsPath(currentExplorerAbsolutePath, file.name), content, {
+                    mimeType: file.type || 'text/plain',
+                    ext: file.name.includes('.') ? `.${file.name.split('.').pop().toLowerCase()}` : '',
+                    fileKind: file.type.startsWith('image/') ? 'image' : 'file',
+                    meta: {
+                        logicalType: file.type.startsWith('image/') ? 'image' : 'file'
+                    }
+                });
+            }
+            await refreshExplorerItems();
+            await refreshDesktopEntries();
+        } catch (error) {
+            alert(`Import failed: ${error.message}`);
+        } finally {
+            if (event.target) {
+                event.target.value = '';
+            }
+        }
+    }, [currentExplorerAbsolutePath, readUploadFile, refreshDesktopEntries, refreshExplorerItems, runtime]);
+
+    const handleExplorerNewFolder = useCallback(async () => {
+        if (!runtime || !currentExplorerAbsolutePath || !explorerPathIsWritable) return;
+        const nextName = window.prompt('New folder name');
+        if (!nextName) return;
+        await runtime.fs.mkdir(joinOsPath(currentExplorerAbsolutePath, nextName));
+        await refreshExplorerItems();
+        await refreshDesktopEntries();
+    }, [currentExplorerAbsolutePath, explorerPathIsWritable, refreshDesktopEntries, refreshExplorerItems, runtime]);
+
+    const handleExplorerCreateItem = useCallback(async (kind) => {
+        if (!runtime || !currentExplorerAbsolutePath || !explorerPathIsWritable) return;
+
+        const withExtension = (name, ext) => name.toLowerCase().endsWith(ext) ? name : `${name}${ext}`;
+
+        try {
+            if (kind === 'folder') {
+                await handleExplorerNewFolder();
+                return;
+            }
+
+            if (kind === 'shortcut') {
+                const shortcutNameInput = window.prompt('Shortcut name', 'New Shortcut');
+                if (!shortcutNameInput?.trim()) return;
+                const shortcutUrlInput = window.prompt('Shortcut URL', 'https://');
+                if (!shortcutUrlInput?.trim()) return;
+                const shortcutPath = await getExplorerUniquePath(currentExplorerAbsolutePath, withExtension(shortcutNameInput.trim(), '.url'));
+                const shortcutUrl = /^https?:\/\//i.test(shortcutUrlInput.trim()) ? shortcutUrlInput.trim() : `https://${shortcutUrlInput.trim()}`;
+                await runtime.fs.write(shortcutPath, `[InternetShortcut]\nURL=${shortcutUrl}\n`, {
+                    mimeType: 'text/plain',
+                    ext: '.url',
+                    fileKind: 'url',
+                    meta: {
+                        logicalType: 'url',
+                        url: shortcutUrl
+                    }
+                });
+            }
+
+            if (kind === 'bitmap') {
+                const bitmapNameInput = window.prompt('Bitmap image name', 'New Bitmap Image');
+                if (!bitmapNameInput?.trim()) return;
+                const bitmapPath = await getExplorerUniquePath(currentExplorerAbsolutePath, withExtension(bitmapNameInput.trim(), '.bmp'));
+                await runtime.fs.write(bitmapPath, BLANK_BITMAP_DATA_URL, {
+                    mimeType: 'image/bmp',
+                    ext: '.bmp',
+                    fileKind: 'image',
+                    meta: {
+                        logicalType: 'image'
+                    }
+                });
+            }
+
+            if (kind === 'text') {
+                const textNameInput = window.prompt('Text document name', 'New Text Document');
+                if (!textNameInput?.trim()) return;
+                const textPath = await getExplorerUniquePath(currentExplorerAbsolutePath, withExtension(textNameInput.trim(), '.txt'));
+                await runtime.fs.write(textPath, '', {
+                    mimeType: 'text/plain',
+                    ext: '.txt',
+                    fileKind: 'file',
+                    meta: {
+                        logicalType: 'file'
+                    }
+                });
+            }
+
+            if (kind === 'zip') {
+                const zipNameInput = window.prompt('Compressed folder name', 'Compressed Folder');
+                if (!zipNameInput?.trim()) return;
+                const zipPath = await getExplorerUniquePath(currentExplorerAbsolutePath, withExtension(zipNameInput.trim(), '.zip'));
+                await runtime.fs.write(zipPath, '', {
+                    mimeType: 'application/zip',
+                    ext: '.zip',
+                    fileKind: 'file',
+                    meta: {
+                        logicalType: 'file'
+                    }
+                });
+            }
+
+            setExplorerSelected(null);
+            await refreshExplorerItems();
+            await refreshDesktopEntries();
+        } catch (error) {
+            alert(`Unable to create item: ${error.message}`);
+        }
+    }, [currentExplorerAbsolutePath, explorerPathIsWritable, getExplorerUniquePath, handleExplorerNewFolder, refreshDesktopEntries, refreshExplorerItems, runtime]);
+
+    const handleExplorerRename = useCallback(async () => {
+        if (!runtime || !explorerSelected?.path || explorerSelected?.data?.readonly) return;
+        const nextName = window.prompt('Rename item', explorerSelected.rawName || explorerSelected.name);
+        if (!nextName) return;
+        await runtime.fs.rename(explorerSelected.path, nextName);
+        setExplorerSelected(null);
+        await refreshExplorerItems();
+        await refreshDesktopEntries();
+    }, [explorerSelected, refreshDesktopEntries, refreshExplorerItems, runtime]);
+
+    const handleExplorerDelete = useCallback(async () => {
+        if (!runtime || !explorerSelected?.path || explorerSelected?.data?.readonly) return;
+        if (!window.confirm(`Move "${explorerSelected.rawName || explorerSelected.name}" to Trash?`)) return;
+        await runtime.fs.moveToTrash(explorerSelected.path);
+        setExplorerSelected(null);
+        await refreshExplorerItems();
+        await refreshDesktopEntries();
+    }, [explorerSelected, refreshDesktopEntries, refreshExplorerItems, runtime]);
+
+    const handleExplorerRestore = useCallback(async (targetItem = explorerSelected) => {
+        if (!runtime || !targetItem?.path) return;
+        await runtime.fs.restoreFromTrash(targetItem.path);
+        setExplorerSelected(null);
+        await refreshExplorerItems();
+        await refreshDesktopEntries();
+    }, [explorerSelected, refreshDesktopEntries, refreshExplorerItems, runtime]);
+
+    const handleWallpaperImport = useCallback(() => {
+        wallpaperImportInputRef.current?.click();
+    }, []);
+
+    const handleWallpaperFilesSelected = useCallback(async (event) => {
+        try {
+            if (!runtime || !event.target.files?.length) return;
+
+            for (const file of Array.from(event.target.files)) {
+                await runtime.wallpaper.import(file);
+            }
+
+            await refreshWallpaperState();
+
+            const browsingWallpapers = currentExplorerAbsolutePath
+                && normalizeOsPath(currentExplorerAbsolutePath).toLowerCase().startsWith(WORKSPACE_PATHS.wallpapers.toLowerCase());
+
+            if (windowStates.files?.isOpen && browsingWallpapers) {
+                await refreshExplorerItems();
+            }
+        } catch (error) {
+            console.error('Wallpaper import failed:', error);
+            alert(`Wallpaper import failed: ${error.message}`);
+        } finally {
+            if (event.target) {
+                event.target.value = '';
+            }
+        }
+    }, [currentExplorerAbsolutePath, refreshExplorerItems, refreshWallpaperState, runtime, windowStates.files?.isOpen]);
     useEffect(() => {
         setAssistantMessages([
             {
@@ -3587,10 +4319,6 @@ const IjamOSWorkspace = ({ session, currentUser, isMobileView, deviceMode = 'des
     const [completedLessons, setCompletedLessons] = useState([]);
     const [isNarrowScreen, setIsNarrowScreen] = useState(typeof window !== 'undefined' ? window.innerWidth < 980 : false);
     const terminalOutputRef = useRef(null);
-    const [terminalLog, setTerminalLog] = useState([
-        { role: 'system', text: 'KRACKED_TERMINAL booted.' },
-        { role: 'assistant', text: 'yo aku KRACKED_BOT. kita buat step by step je, chill.\ntanya je apa-apa pasal lesson ni.' }
-    ]);
 
     useEffect(() => {
         if (terminalOutputRef.current) {
@@ -3604,9 +4332,6 @@ const IjamOSWorkspace = ({ session, currentUser, isMobileView, deviceMode = 'des
         return () => window.removeEventListener('resize', onResize);
     }, []);
 
-    const appendTerminal = (role, text) => {
-        setTerminalLog((prev) => [...prev, { role, text }]);
-    };
 
     const runTerminalAi = async (mode, userInput) => {
         setTerminalBusy(true);
@@ -3850,38 +4575,17 @@ YOU DID IT. APP DEPLOYED!`);
     // Get wallpaper background style for desktop (must be called before any conditional returns)
     const wallpaperStyle = useMemo(() => {
         if (!isMacMode) return {};
-        const wallpaper = WALLPAPER_GALLERY.find(w => w.id === currentWallpaper);
+        const wallpaper = wallpaperGallery.find((w) => w.id === currentWallpaper);
         if (!wallpaper) return { background: '#0b131e' };
-
-        switch (wallpaper.type) {
-            case 'image':
-                return {
-                    backgroundImage: `url(${wallpaper.src})`,
-                    backgroundSize: 'cover',
-                    backgroundPosition: 'center'
-                };
-            case 'gradient':
-                return {
-                    background: `linear-gradient(135deg, ${wallpaper.colors.join(', ')})`
-                };
-            case 'animated-gradient':
-                return {
-                    background: `linear-gradient(135deg, ${wallpaper.colors.join(', ')})`,
-                    backgroundSize: '200% 200%',
-                    animation: 'gradientShift 10s ease infinite'
-                };
-            case 'time-based':
-                return {
-                    background: `linear-gradient(135deg, ${wallpaper.colors.join(', ')})`
-                };
-            default:
-                return { background: '#0b131e' };
-        }
-    }, [isMacMode, currentWallpaper]);
+        return {
+            background: '#0b131e',
+            ...resolveWallpaperStyle(wallpaper, { fit: wallpaperFit })
+        };
+    }, [currentWallpaper, isMacMode, resolveWallpaperStyle, wallpaperFit, wallpaperGallery]);
     const macMenus = useMemo(() => ([
         {
             id: 'system',
-            label: '⚡ KRACKED_OS',
+            label: 'KRACKED_OS',
             accent: '#f5d000',
             items: [
                 { label: 'About This Mac', action: () => { setIsStartMenuOpen(true); setStartMenuSearch(''); } },
@@ -3891,9 +4595,9 @@ YOU DID IT. APP DEPLOYED!`);
                 { separator: true },
                 { label: 'Sleep', action: () => closeAllApps() },
                 { label: 'Restart', action: () => window.location.reload() },
-                { label: 'Shut Down', action: () => { localStorage.removeItem('vibe_os_booted'); window.location.reload(); } },
+                { label: 'Shut Down', action: () => { void resetWorkspaceSession(); } },
                 { separator: true },
-                { label: 'Lock Screen', action: () => { localStorage.removeItem('vibe_os_booted'); window.location.reload(); } },
+                { label: 'Lock Screen', action: () => { void resetWorkspaceSession(); } },
                 { label: 'Log Out', action: () => exitIjamOS() }
             ]
         },
@@ -3954,7 +4658,7 @@ YOU DID IT. APP DEPLOYED!`);
                 { label: 'Search Apps', action: () => { setIsStartMenuOpen(true); setStartMenuSearch(''); } }
             ]
         }
-    ]), [recentApps, focusedWindow, currentDesktopAppLabel, openApp, closeAllApps, focusApp, minimizeApp, closeApp, exitIjamOS, setKdacademyTab]);
+    ]), [closeAllApps, closeApp, currentDesktopAppLabel, exitIjamOS, focusApp, minimizeApp, openApp, recentApps, resetWorkspaceSession]);
 
     if (!isBooted) {
         return (
@@ -3982,19 +4686,7 @@ YOU DID IT. APP DEPLOYED!`);
     }
 
     return (
-        <section
-            id="resources-page"
-            style={{
-                ...sectionStyle,
-                ...wallpaperStyle,
-                width: '100%',
-                minWidth: '100%',
-                height: '100vh',
-                minHeight: '100vh',
-                overflow: 'hidden',
-                position: 'relative'
-            }}
-        >
+        <section id="resources-page" style={{ ...sectionStyle, ...wallpaperStyle, height: '100vh', overflow: 'hidden', position: 'relative' }}>
             {isTouchIjamMode && (
                 <div style={{ position: 'absolute', top: 'max(2px, env(safe-area-inset-top, 0px))', left: 10, right: 10, zIndex: 1200 }}>
                     <MobileStatusBar
@@ -4055,45 +4747,25 @@ YOU DID IT. APP DEPLOYED!`);
             <div style={{ position: 'absolute', inset: 0, opacity: 0.1, backgroundImage: 'radial-gradient(#f5d000 0.5px, transparent 0.5px)', backgroundSize: '24px 24px', pointerEvents: 'none' }} />
 
             {/* Desktop Icons Container */}
-            <div
-                ref={desktopIconsContainerRef}
-                style={{
-                position: 'absolute',
-                top: isMacMode ? '28px' : 0,
-                right: 0,
-                bottom: 0,
-                left: 0,
-                width: '100%',
-                maxWidth: '100%',
-                margin: 0,
-                padding: isPhoneMode ? '58px 10px 96px' : (isTabletMode ? '62px 14px 104px' : '12px 20px 24px'),
-                height: isMacMode ? 'calc(100vh - 28px)' : '100%',
+            <div style={{
+                maxWidth: isMacMode ? '1280px' : '100%',
+                margin: '0 auto',
+                padding: isPhoneMode ? '58px 10px 96px' : (isTabletMode ? '62px 14px 104px' : '36px 20px 110px'),
+                height: '100%',
+                position: 'relative',
                 zIndex: 1,
                 display: 'grid',
                 gridTemplateColumns: isMacMode
-                    ? `repeat(${desktopGridMetrics.columns}, minmax(0, 1fr))`
+                    ? 'repeat(auto-fill, 100px)'
                     : (isTabletMode ? 'repeat(auto-fill, minmax(92px, 1fr))' : 'repeat(4, minmax(0, 1fr))'),
-                gap: isMacMode ? '12px' : '12px',
-                gridAutoRows: isMacMode ? '86px' : 'auto',
+                gap: isMacMode ? '24px' : '12px',
                 alignItems: 'start',
-                alignContent: 'start',
                 contentVisibility: 'auto'
-            }}
-                onDragOver={(e) => {
-                    if (!isTouchIjamMode && draggedIconType) {
-                        e.preventDefault();
-                    }
-                }}
-                onDrop={(e) => {
-                    if (isTouchIjamMode || !draggedIconType) return;
-                    e.preventDefault();
-                    setDraggedIconType(null);
-                    setDropTargetSlotIndex(null);
-                    setTimeout(() => setIsDraggingDesktopIcon(false), 80);
             }}>
-                {Array.from({ length: desktopSlotCount }).map((_, slotIndex) => {
-                    const appType = desktopIconSlots[slotIndex] || null;
-                    const app = appType ? appByType[appType] : null;
+                {desktopCells.map((cell) => {
+                    const slotIndex = cell.slotIndex;
+                    const app = cell.kind === 'app' ? appByType[cell.appType] : null;
+                    const desktopItem = cell.kind === 'fs' ? cell.item : null;
                     return (
                         <div
                             key={`desktop-slot-${slotIndex}`}
@@ -4167,6 +4839,20 @@ YOU DID IT. APP DEPLOYED!`);
                                         setTimeout(() => setIsDraggingDesktopIcon(false), 80);
                                     }}
                                     isDropTarget={dropTargetSlotIndex === slotIndex}
+                                />
+                            ) : desktopItem ? (
+                                <DesktopIcon
+                                    label={desktopItem.name}
+                                    icon={getDesktopFsIcon(desktopItem)}
+                                    iconNode={<VsCodeExplorerIcon item={desktopItem} size={isPhoneMode ? 50 : 64} />}
+                                    color={desktopItem.type === 'folder' ? '#f5d000' : '#bfdbfe'}
+                                    onClick={() => {
+                                        if (isDraggingDesktopIcon) return;
+                                        void handleDesktopFsItemOpen(desktopItem);
+                                    }}
+                                    isPhoneMode={isPhoneMode}
+                                    isTabletMode={isTabletMode}
+                                    draggable={false}
                                 />
                             ) : null}
                         </div>
@@ -4452,9 +5138,8 @@ YOU DID IT. APP DEPLOYED!`);
             )}
 
             {/* 2. Resource Explorer Window */}
-            {windowStates.files?.isOpen && (() => {
+            {false && windowStates.files?.isOpen && (() => {
                 const allStages = [...new Set(lessons.map(l => l.stage).filter(Boolean))];
-
                 const navTo = (path) => { setExplorerPath(path); setExplorerSelected(null); setExplorerSearch(''); };
 
                 const getItems = () => {
@@ -4505,11 +5190,10 @@ YOU DID IT. APP DEPLOYED!`);
                     fontFamily: 'monospace', fontSize: '12px', color: active ? '#f5d000' : '#94a3b8',
                     display: 'flex', alignItems: 'center', gap: '7px', lineHeight: 1.3
                 });
-
                 const itemIsSelected = (item) => explorerSelected?.id === item.id;
 
                 return (
-                    <WindowFrame {...mobileWindowProps} winState={windowStates.files} title="FILE_EXPLORER // KRACKED_OS v3" AppIcon={Folder} onClose={() => { closeApp('files'); setExplorerPath([]); setExplorerSearch(''); setExplorerSelected(null); }} onMinimize={() => minimizeApp('files')} onMaximize={() => maximizeApp('files')} onFocus={() => focusApp('files')} onMove={(x, y) => moveApp('files', x, y)} onResize={(w, h) => resizeApp('files', w, h)}>
+                    <WindowFrame {...mobileWindowProps} winState={windowStates.files} title="Files" AppIcon={Folder} onClose={() => { closeApp('files'); setExplorerPath([]); setExplorerSearch(''); setExplorerSelected(null); }} onMinimize={() => minimizeApp('files')} onMaximize={() => maximizeApp('files')} onFocus={() => focusApp('files')} onMove={(x, y) => moveApp('files', x, y)} onResize={(w, h) => resizeApp('files', w, h)}>
                         <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
 
                             {/* ── TOOLBAR ── */}
@@ -4696,9 +5380,116 @@ YOU DID IT. APP DEPLOYED!`);
                 );
             })()}
 
+            {windowStates.files?.isOpen && (() => {
+                const canCopySelected = Boolean(explorerSelected?.path && explorerSelected?.type !== 'drive');
+                const canCutSelected = Boolean(explorerSelected?.path && explorerSelected?.type !== 'drive' && !explorerSelected?.data?.readonly && !explorerInTrash);
+                const currentPathLabel = currentExplorerAbsolutePath || 'This PC';
+                const shortcutPathMap = {
+                    Desktop: absolutePathToSegments(WORKSPACE_PATHS.desktop),
+                    Documents: absolutePathToSegments(WORKSPACE_PATHS.documents),
+                    Wallpapers: absolutePathToSegments(WORKSPACE_PATHS.wallpapers),
+                    Community: absolutePathToSegments(WORKSPACE_PATHS.community),
+                    Lessons: absolutePathToSegments(WORKSPACE_PATHS.lessonsMount),
+                    Trash: absolutePathToSegments(WORKSPACE_PATHS.trash)
+                };
+                const navTo = (path) => {
+                    if (Array.isArray(path) && path.length === 2 && path[0] === 'C:' && shortcutPathMap[path[1]]) {
+                        navigateExplorer(shortcutPathMap[path[1]]);
+                        return;
+                    }
+                    navigateExplorer(path);
+                };
+                const explorerBreadcrumbs = [
+                    { label: 'This PC', path: [] },
+                    ...explorerPath.map((segment, index) => ({
+                        label: segment,
+                        path: explorerPath.slice(0, index + 1)
+                    }))
+                ];
+                const explorerNavSections = [
+                    {
+                        id: 'pinned',
+                        label: 'Pinned',
+                        items: [
+                            { id: 'this-pc', label: 'This PC', path: [], active: !explorerPath.length, icon: 'pc' },
+                            { id: 'drive-c', label: 'Local Disk (C:)', path: ['C:'], active: explorerPath.length === 1 && explorerPath[0] === 'C:', icon: 'drive' },
+                            { id: 'workspace-root', label: 'KRACKED_OS', path: absolutePathToSegments(WORKSPACE_PATHS.root), active: currentExplorerNormalizedPath === WORKSPACE_PATHS.root, icon: 'workspace' }
+                        ]
+                    },
+                    {
+                        id: 'workspace',
+                        label: 'Workspace',
+                        items: [
+                            { id: 'desktop', label: 'Desktop', path: absolutePathToSegments(WORKSPACE_PATHS.desktop), active: currentExplorerNormalizedPath === WORKSPACE_PATHS.desktop, icon: 'desktop' },
+                            { id: 'documents', label: 'Documents', path: absolutePathToSegments(WORKSPACE_PATHS.documents), active: currentExplorerNormalizedPath === WORKSPACE_PATHS.documents, icon: 'folder' },
+                            { id: 'wallpapers', label: 'Wallpapers', path: absolutePathToSegments(WORKSPACE_PATHS.wallpapers), active: currentExplorerNormalizedPath === WORKSPACE_PATHS.wallpapers, icon: 'wallpapers' },
+                            ...(dbLibraryItems.length > 0 ? [{ id: 'community', label: 'Community', path: absolutePathToSegments(WORKSPACE_PATHS.community), active: currentExplorerNormalizedPath === WORKSPACE_PATHS.community, icon: 'community' }] : []),
+                            { id: 'lessons', label: 'Lessons', path: absolutePathToSegments(WORKSPACE_PATHS.lessonsMount), active: currentExplorerNormalizedPath === WORKSPACE_PATHS.lessonsMount, icon: 'lessons' },
+                            { id: 'trash', label: 'Trash', path: absolutePathToSegments(WORKSPACE_PATHS.trash), active: explorerInTrash, icon: 'trash' }
+                        ]
+                    }
+                ];
+
+                return (
+                    <WindowFrame {...mobileWindowProps} winState={windowStates.files} title="Files" AppIcon={Folder} onClose={() => { closeApp('files'); setExplorerPath([]); setExplorerSearch(''); setExplorerSelected(null); }} onMinimize={() => minimizeApp('files')} onMaximize={() => maximizeApp('files')} onFocus={() => focusApp('files')} onMove={(x, y) => moveApp('files', x, y)} onResize={(w, h) => resizeApp('files', w, h)}>
+                        <FilesWindowContent
+                            importInputRef={explorerImportInputRef}
+                            onFilesSelected={handleExplorerFilesSelected}
+                            breadcrumbs={explorerBreadcrumbs}
+                            onNavigate={navTo}
+                            canGoBack={explorerPath.length > 0}
+                            onBack={() => navTo(explorerPath.slice(0, -1))}
+                            onUp={() => navTo(explorerPath.slice(0, -1))}
+                            onHome={() => navTo([])}
+                            searchValue={explorerSearch}
+                            onSearchChange={(value) => {
+                                setExplorerSearch(value);
+                                setExplorerSelected(null);
+                            }}
+                            onClearSearch={() => {
+                                setExplorerSearch('');
+                                setExplorerSelected(null);
+                            }}
+                            onRefresh={refreshExplorerItems}
+                            onNewFolder={handleExplorerNewFolder}
+                            onCreateItem={handleExplorerCreateItem}
+                            onImport={handleExplorerImport}
+                            canWrite={explorerPathIsWritable}
+                            view={explorerView}
+                            onViewChange={setExplorerView}
+                            sortLabel={explorerSort === 'name-desc' ? 'Z-A' : 'A-Z'}
+                            navSections={explorerNavSections}
+                            items={sortedExplorerItems}
+                            selectedItem={explorerSelected}
+                            onItemClick={handleExplorerClick}
+                            onOpenItem={openExplorerItem}
+                            onItemContextMenu={(event, item) => {
+                                event.preventDefault();
+                                setExplorerSelected(item);
+                            }}
+                            onCopy={handleExplorerCopy}
+                            onCut={handleExplorerCut}
+                            onPaste={handleExplorerPaste}
+                            onSortToggle={() => setExplorerSort((prev) => (prev === 'name-asc' ? 'name-desc' : 'name-asc'))}
+                            onRename={handleExplorerRename}
+                            onDelete={handleExplorerDelete}
+                            onRestore={handleExplorerRestore}
+                            isTrash={explorerInTrash}
+                            isNarrowScreen={isNarrowScreen}
+                            currentPathLabel={currentPathLabel}
+                            canCopySelected={canCopySelected}
+                            canCutSelected={canCutSelected}
+                            canPaste={Boolean(explorerClipboard?.item?.path && explorerPathIsWritable)}
+                            showDetailsPane={showExplorerDetails}
+                            onToggleDetails={() => setShowExplorerDetails((prev) => !prev)}
+                        />
+                    </WindowFrame>
+                );
+            })()}
+
             {/* 3. Settings/Stats Window */}
             {windowStates.progress?.isOpen && (
-                <WindowFrame {...mobileWindowProps} winState={windowStates.progress} title="BUILDER_STATS // PROGRESS" AppIcon={User} onClose={() => closeApp('progress')} onMinimize={() => minimizeApp('progress')} onMaximize={() => maximizeApp('progress')} onFocus={() => focusApp('progress')} onMove={(x, y) => moveApp('progress', x, y)} onResize={(w, h) => resizeApp('progress', w, h)}>
+                <WindowFrame {...mobileWindowProps} winState={windowStates.progress} title="Stats" AppIcon={User} onClose={() => closeApp('progress')} onMinimize={() => minimizeApp('progress')} onMaximize={() => maximizeApp('progress')} onFocus={() => focusApp('progress')} onMove={(x, y) => moveApp('progress', x, y)} onResize={(w, h) => resizeApp('progress', w, h)}>
                     <div style={{ padding: '24px', color: '#fff', overflowY: 'auto', height: '100%' }}>
                         {/* Builder Identity Card */}
                         <div style={{ background: 'linear-gradient(45deg, #0b1220 0%, #1e293b 100%)', border: '3px solid #f5d000', borderRadius: '16px', padding: '24px', marginBottom: '30px', display: 'flex', alignItems: 'center', gap: '20px', boxShadow: '8px 8px 0 #0b1220' }}>
@@ -4834,7 +5625,7 @@ YOU DID IT. APP DEPLOYED!`);
                 <WindowFrame
                     {...mobileWindowProps}
                     winState={windowStates.mission}
-                    title="MISSION_CONSOLE // KRACKED_OS"
+                    title="Mission"
                     AppIcon={APP_REGISTRY.find((app) => app.type === 'mission')?.icon || Bot}
                     onClose={() => closeApp('mission')}
                     onMinimize={() => minimizeApp('mission')}
@@ -4844,43 +5635,41 @@ YOU DID IT. APP DEPLOYED!`);
                     onResize={(w, h) => resizeApp('mission', w, h)}
                 >
                     <div style={{ padding: '14px', color: '#fff', overflowY: 'auto', height: '100%' }}>
-                        <Suspense fallback={<WindowModuleLoader label="MISSION_CONSOLE" />}>
-                            <KrackedMissionConsole
-                                currentUser={currentUser}
-                                userRank={userRank}
-                                userVibes={userVibes}
-                                completedLessonsCount={completedLessons.length}
-                                totalLessons={lessons.length}
-                                focusedWindowLabel={focusedWindowLabel}
-                                openWindowsCount={openWindowsCount}
-                                missionEvents={missionEvents}
-                                latestMissionEvent={latestMissionEvent}
-                            />
-                        </Suspense>
+                        <KrackedMissionConsole
+                            currentUser={currentUser}
+                            userRank={userRank}
+                            userVibes={userVibes}
+                            completedLessonsCount={completedLessons.length}
+                            totalLessons={lessons.length}
+                            focusedWindowLabel={focusedWindowLabel}
+                            openWindowsCount={openWindowsCount}
+                            missionEvents={missionEvents}
+                            latestMissionEvent={latestMissionEvent}
+                        />
                     </div>
                 </WindowFrame>
             )}
             {/* Wallpaper Gallery Window */}
             {windowStates.wallpaper?.isOpen && (
-                <WindowFrame {...mobileWindowProps} winState={windowStates.wallpaper} title="WALLPAPER_GALLERY // PERSONALIZE" AppIcon={Sparkles} onClose={() => closeApp('wallpaper')} onMinimize={() => minimizeApp('wallpaper')} onMaximize={() => maximizeApp('wallpaper')} onFocus={() => focusApp('wallpaper')} onMove={(x, y) => moveApp('wallpaper', x, y)} onResize={(w, h) => resizeApp('wallpaper', w, h)}>
+                <WindowFrame {...mobileWindowProps} winState={windowStates.wallpaper} title="Wallpaper" AppIcon={Sparkles} onClose={() => closeApp('wallpaper')} onMinimize={() => minimizeApp('wallpaper')} onMaximize={() => maximizeApp('wallpaper')} onFocus={() => focusApp('wallpaper')} onMove={(x, y) => moveApp('wallpaper', x, y)} onResize={(w, h) => resizeApp('wallpaper', w, h)}>
                     <div style={{ padding: '24px', color: '#fff', overflowY: 'auto', height: '100%' }}>
                         <div style={{ marginBottom: '20px' }}>
                             <div style={{ fontSize: '12px', color: '#f5d000', fontWeight: 900, letterSpacing: '0.1em', marginBottom: '8px' }}>CURRENT_WALLPAPER</div>
                             <div style={{ fontSize: '18px', fontWeight: 900, color: '#fff' }}>
-                                {WALLPAPER_GALLERY.find(w => w.id === currentWallpaper)?.name || 'Unknown'}
+                                {wallpaperGallery.find((wallpaper) => wallpaper.id === currentWallpaper)?.name || 'Unknown'}
                             </div>
                         </div>
 
                         <div className="wallpaper-grid">
-                            {WALLPAPER_GALLERY.map((wallpaper, index) => {
+                            {wallpaperGallery.map((wallpaper, index) => {
                                 const isSelected = currentWallpaper === wallpaper.id;
-                                const wallpaperStyle = getWallpaperStyle(wallpaper);
+                                const wallpaperStyle = resolveWallpaperStyle(wallpaper, { fit: wallpaperFit });
 
                                 return (
                                     <div
                                         key={wallpaper.id}
                                         className={`wallpaper-thumb ${isSelected ? 'selected' : ''}`}
-                                        onClick={() => handleSetWallpaper(wallpaper.id)}
+                                        onClick={() => { void applyWallpaperSelection(wallpaper.id); }}
                                         style={{
                                             ...wallpaperStyle,
                                             position: 'relative'
@@ -4931,7 +5720,7 @@ YOU DID IT. APP DEPLOYED!`);
 
             {/* KDAcademy Window */}
             {windowStates.kdacademy?.isOpen && (
-                <WindowFrame {...mobileWindowProps} winState={windowStates.kdacademy} title="KDACADEMY // LEARN + BUILD" AppIcon={Globe} onClose={() => closeApp('kdacademy')} onMinimize={() => minimizeApp('kdacademy')} onMaximize={() => maximizeApp('kdacademy')} onFocus={() => focusApp('kdacademy')} onMove={(x, y) => moveApp('kdacademy', x, y)} onResize={(w, h) => resizeApp('kdacademy', w, h)}>
+                <WindowFrame {...mobileWindowProps} winState={windowStates.kdacademy} title="KDacademy" AppIcon={Globe} onClose={() => closeApp('kdacademy')} onMinimize={() => minimizeApp('kdacademy')} onMaximize={() => maximizeApp('kdacademy')} onFocus={() => focusApp('kdacademy')} onMove={(x, y) => moveApp('kdacademy', x, y)} onResize={(w, h) => resizeApp('kdacademy', w, h)}>
                     <Suspense fallback={<WindowModuleLoader label="KDACADEMY" />}>
                         <KrackedKdAcademy
                             activeTab={kdacademyTab}
@@ -4967,8 +5756,8 @@ YOU DID IT. APP DEPLOYED!`);
                 </WindowFrame>
             )}
 
-            {windowStates.settings?.isOpen && (
-                <WindowFrame {...mobileWindowProps} winState={windowStates.settings} title="SYSTEM_SETTINGS // CONFIG" AppIcon={Settings} onClose={() => closeApp('settings')} onMinimize={() => minimizeApp('settings')} onMaximize={() => maximizeApp('settings')} onFocus={() => focusApp('settings')} onMove={(x, y) => moveApp('settings', x, y)} onResize={(w, h) => resizeApp('settings', w, h)}>
+            {false && windowStates.settings?.isOpen && (
+                <WindowFrame {...mobileWindowProps} winState={windowStates.settings} title="Settings" AppIcon={Settings} onClose={() => closeApp('settings')} onMinimize={() => minimizeApp('settings')} onMaximize={() => maximizeApp('settings')} onFocus={() => focusApp('settings')} onMove={(x, y) => moveApp('settings', x, y)} onResize={(w, h) => resizeApp('settings', w, h)}>
                     <div style={{ padding: '24px', color: '#fff', overflowY: 'auto', height: '100%' }}>
                         <form onSubmit={handleSaveSettings} style={{ maxWidth: '600px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '24px' }}>
 
@@ -5118,53 +5907,62 @@ YOU DID IT. APP DEPLOYED!`);
                 </WindowFrame>
             )}
 
+            {windowStates.settings?.isOpen && (
+                <WindowFrame {...mobileWindowProps} winState={windowStates.settings} title="Settings" AppIcon={Settings} onClose={() => closeApp('settings')} onMinimize={() => minimizeApp('settings')} onMaximize={() => maximizeApp('settings')} onFocus={() => focusApp('settings')} onMove={(x, y) => moveApp('settings', x, y)} onResize={(w, h) => resizeApp('settings', w, h)}>
+                    <SettingsWindowContent
+                        profileForm={profileForm}
+                        setProfileForm={setProfileForm}
+                        onSubmit={handleSaveSettings}
+                        isSaving={isSavingSettings}
+                        onReset={() => {
+                            if (window.confirm('Clear local OS session?')) {
+                                void resetWorkspaceSession();
+                            }
+                        }}
+                        isNarrowScreen={isNarrowScreen}
+                    />
+                </WindowFrame>
+            )}
+
             {/* 6. Arcade Window */}
             {windowStates.arcade?.isOpen && (
-                <WindowFrame {...mobileWindowProps} winState={windowStates.arcade} title="BUILDER_ARCADE // STUDIO" AppIcon={Gamepad2} onClose={() => closeApp('arcade')} onMinimize={() => minimizeApp('arcade')} onMaximize={() => maximizeApp('arcade')} onFocus={() => focusApp('arcade')} onMove={(x, y) => moveApp('arcade', x, y)} onResize={(w, h) => resizeApp('arcade', w, h)}>
+                <WindowFrame {...mobileWindowProps} winState={windowStates.arcade} title="Arcade" AppIcon={Gamepad2} onClose={() => closeApp('arcade')} onMinimize={() => minimizeApp('arcade')} onMaximize={() => maximizeApp('arcade')} onFocus={() => focusApp('arcade')} onMove={(x, y) => moveApp('arcade', x, y)} onResize={(w, h) => resizeApp('arcade', w, h)}>
                     <div style={{ flex: 1, minHeight: 0, background: '#f3f4f6', overflowY: 'auto' }}>
-                        <Suspense fallback={<WindowModuleLoader label="BUILDER_ARCADE" background="#f3f4f6" />}>
-                            <BuilderStudioLocal />
-                        </Suspense>
+                        <BuilderStudioLocal />
                     </div>
                 </WindowFrame>
             )}
 
             {/* 7. Simulator Window */}
             {windowStates.simulator?.isOpen && (
-                <WindowFrame {...mobileWindowProps} winState={windowStates.simulator} title="VIBE_SIMULATOR // ARCHITECTURE" AppIcon={Activity} onClose={() => closeApp('simulator')} onMinimize={() => minimizeApp('simulator')} onMaximize={() => maximizeApp('simulator')} onFocus={() => focusApp('simulator')} onMove={(x, y) => moveApp('simulator', x, y)} onResize={(w, h) => resizeApp('simulator', w, h)}>
+                <WindowFrame {...mobileWindowProps} winState={windowStates.simulator} title="Simulator" AppIcon={Activity} onClose={() => closeApp('simulator')} onMinimize={() => minimizeApp('simulator')} onMaximize={() => maximizeApp('simulator')} onFocus={() => focusApp('simulator')} onMove={(x, y) => moveApp('simulator', x, y)} onResize={(w, h) => resizeApp('simulator', w, h)}>
                     <div style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
-                        <Suspense fallback={<WindowModuleLoader label="VIBE_SIMULATOR" />}>
-                            <VibeSimulator />
-                        </Suspense>
+                        <VibeSimulator />
                     </div>
                 </WindowFrame>
             )}
 
             {/* 8. Mind Mapper Window */}
             {windowStates.mind_mapper?.isOpen && (
-                <WindowFrame {...mobileWindowProps} winState={windowStates.mind_mapper} title="MIND_MAPPER // IDEATION" AppIcon={Waypoints} onClose={() => closeApp('mind_mapper')} onMinimize={() => minimizeApp('mind_mapper')} onMaximize={() => maximizeApp('mind_mapper')} onFocus={() => focusApp('mind_mapper')} onMove={(x, y) => moveApp('mind_mapper', x, y)} onResize={(w, h) => resizeApp('mind_mapper', w, h)}>
+                <WindowFrame {...mobileWindowProps} winState={windowStates.mind_mapper} title="Mind Map" AppIcon={Waypoints} onClose={() => closeApp('mind_mapper')} onMinimize={() => minimizeApp('mind_mapper')} onMaximize={() => maximizeApp('mind_mapper')} onFocus={() => focusApp('mind_mapper')} onMove={(x, y) => moveApp('mind_mapper', x, y)} onResize={(w, h) => resizeApp('mind_mapper', w, h)}>
                     <div style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
-                        <Suspense fallback={<WindowModuleLoader label="MIND_MAPPER" />}>
-                            <MindMapperApp />
-                        </Suspense>
+                        <MindMapperApp />
                     </div>
                 </WindowFrame>
             )}
 
             {/* 9. Prompt Forge Window */}
             {windowStates.prompt_forge?.isOpen && (
-                <WindowFrame {...mobileWindowProps} winState={windowStates.prompt_forge} title="PROMPT_FORGE // MASTER PROMPT" AppIcon={Wand2} onClose={() => closeApp('prompt_forge')} onMinimize={() => minimizeApp('prompt_forge')} onMaximize={() => maximizeApp('prompt_forge')} onFocus={() => focusApp('prompt_forge')} onMove={(x, y) => moveApp('prompt_forge', x, y)} onResize={(w, h) => resizeApp('prompt_forge', w, h)}>
+                <WindowFrame {...mobileWindowProps} winState={windowStates.prompt_forge} title="Prompt Forge" AppIcon={Wand2} onClose={() => closeApp('prompt_forge')} onMinimize={() => minimizeApp('prompt_forge')} onMaximize={() => maximizeApp('prompt_forge')} onFocus={() => focusApp('prompt_forge')} onMove={(x, y) => moveApp('prompt_forge', x, y)} onResize={(w, h) => resizeApp('prompt_forge', w, h)}>
                     <div style={{ flex: 1, minHeight: 0, background: '#0b1220', overflow: 'hidden' }}>
-                        <Suspense fallback={<WindowModuleLoader label="PROMPT_FORGE" />}>
-                            <PromptForgeApp />
-                        </Suspense>
+                        <PromptForgeApp />
                     </div>
                 </WindowFrame>
             )}
 
             {/* 4. Recycle Bin Window */}
             {windowStates.trash?.isOpen && (
-                <WindowFrame {...mobileWindowProps} winState={windowStates.trash} title="RECYCLE_BIN // DELETED CONTENT" AppIcon={Trash2} onClose={() => closeApp('trash')} onMinimize={() => minimizeApp('trash')} onMaximize={() => maximizeApp('trash')} onFocus={() => focusApp('trash')} onMove={(x, y) => moveApp('trash', x, y)} onResize={(w, h) => resizeApp('trash', w, h)}>
+                <WindowFrame {...mobileWindowProps} winState={windowStates.trash} title="Recycle Bin" AppIcon={Trash2} onClose={() => closeApp('trash')} onMinimize={() => minimizeApp('trash')} onMaximize={() => maximizeApp('trash')} onFocus={() => focusApp('trash')} onMove={(x, y) => moveApp('trash', x, y)} onResize={(w, h) => resizeApp('trash', w, h)}>
                     <div style={{ padding: '60px 20px', textAlign: 'center', color: '#64748b' }}>
                         <Trash2 size={48} style={{ marginBottom: '20px', opacity: 0.3 }} />
                         <div style={{ fontFamily: 'monospace', fontWeight: 900, fontSize: '14px' }}>BOX IS CURRENTLY EMPTY</div>
@@ -5350,8 +6148,8 @@ YOU DID IT. APP DEPLOYED!`);
                                     type="button"
                                     onClick={() => setActiveMacMenu((prev) => prev === menu.id ? null : menu.id)}
                                     style={{
-                                        height: '22px',
-                                        padding: '0 8px',
+                                        height: '28px',
+                                        padding: '0 12px',
                                         borderRadius: '6px',
                                         border: 'none',
                                         background: activeMacMenu === menu.id ? 'rgba(255,255,255,0.14)' : 'transparent',
@@ -5359,10 +6157,15 @@ YOU DID IT. APP DEPLOYED!`);
                                         fontSize: '11px',
                                         fontWeight: menu.bold || menu.accent ? 800 : 600,
                                         cursor: 'pointer',
-                                        whiteSpace: 'nowrap'
+                                        whiteSpace: 'nowrap',
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center'
                                     }}
                                 >
-                                    {menu.label}
+                                    {menu.id === 'system' ? (
+                                        <img src="/icons/KDOS.png" alt="KDOS" style={{ width: '24px', height: '24px', objectFit: 'contain', display: 'block', transform: 'translateY(1px)' }} />
+                                    ) : menu.label}
                                 </button>
                                 {activeMacMenu === menu.id && (
                                     <div style={{ position: 'absolute', top: '26px', left: 0, minWidth: '220px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(9,14,25,0.96)', boxShadow: '0 24px 48px rgba(0,0,0,0.45)', padding: '8px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
@@ -5445,7 +6248,7 @@ YOU DID IT. APP DEPLOYED!`);
                             onClick={() => setIsStartMenuOpen(!isStartMenuOpen)}
                             style={{ background: isStartMenuOpen ? 'rgba(245,208,0,0.15)' : 'transparent', border: 'none', borderRadius: '4px', color: '#f5d000', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px', fontFamily: 'monospace', fontSize: '11px', fontWeight: 900, padding: '2px 8px', transition: 'background 0.15s', letterSpacing: '0.04em' }}
                         >
-                            ⚡ KRACKED_OS
+                            <img src="/icons/KDOS.png" alt="KDOS" style={{ width: '14px', height: '14px', objectFit: 'contain', display: 'block' }} />
                         </button>
                         {['File', 'View', 'Window', 'Help'].map(item => (
                             <button key={item}
