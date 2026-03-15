@@ -5635,17 +5635,19 @@ YOU DID IT. APP DEPLOYED!`);
                     onResize={(w, h) => resizeApp('mission', w, h)}
                 >
                     <div style={{ padding: '14px', color: '#fff', overflowY: 'auto', height: '100%' }}>
-                        <KrackedMissionConsole
-                            currentUser={currentUser}
-                            userRank={userRank}
-                            userVibes={userVibes}
-                            completedLessonsCount={completedLessons.length}
-                            totalLessons={lessons.length}
-                            focusedWindowLabel={focusedWindowLabel}
-                            openWindowsCount={openWindowsCount}
-                            missionEvents={missionEvents}
-                            latestMissionEvent={latestMissionEvent}
-                        />
+                        <Suspense fallback={<WindowModuleLoader label="MISSION_CONSOLE" background="transparent" />}>
+                            <KrackedMissionConsole
+                                currentUser={currentUser}
+                                userRank={userRank}
+                                userVibes={userVibes}
+                                completedLessonsCount={completedLessons.length}
+                                totalLessons={lessons.length}
+                                focusedWindowLabel={focusedWindowLabel}
+                                openWindowsCount={openWindowsCount}
+                                missionEvents={missionEvents}
+                                latestMissionEvent={latestMissionEvent}
+                            />
+                        </Suspense>
                     </div>
                 </WindowFrame>
             )}
@@ -5928,7 +5930,9 @@ YOU DID IT. APP DEPLOYED!`);
             {windowStates.arcade?.isOpen && (
                 <WindowFrame {...mobileWindowProps} winState={windowStates.arcade} title="Arcade" AppIcon={Gamepad2} onClose={() => closeApp('arcade')} onMinimize={() => minimizeApp('arcade')} onMaximize={() => maximizeApp('arcade')} onFocus={() => focusApp('arcade')} onMove={(x, y) => moveApp('arcade', x, y)} onResize={(w, h) => resizeApp('arcade', w, h)}>
                     <div style={{ flex: 1, minHeight: 0, background: '#f3f4f6', overflowY: 'auto' }}>
-                        <BuilderStudioLocal />
+                        <Suspense fallback={<WindowModuleLoader label="BUILDER_STUDIO" background="#f3f4f6" />}>
+                            <BuilderStudioLocal />
+                        </Suspense>
                     </div>
                 </WindowFrame>
             )}
@@ -5937,7 +5941,9 @@ YOU DID IT. APP DEPLOYED!`);
             {windowStates.simulator?.isOpen && (
                 <WindowFrame {...mobileWindowProps} winState={windowStates.simulator} title="Simulator" AppIcon={Activity} onClose={() => closeApp('simulator')} onMinimize={() => minimizeApp('simulator')} onMaximize={() => maximizeApp('simulator')} onFocus={() => focusApp('simulator')} onMove={(x, y) => moveApp('simulator', x, y)} onResize={(w, h) => resizeApp('simulator', w, h)}>
                     <div style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
-                        <VibeSimulator />
+                        <Suspense fallback={<WindowModuleLoader label="SIMULATOR" />}>
+                            <VibeSimulator />
+                        </Suspense>
                     </div>
                 </WindowFrame>
             )}
@@ -5946,7 +5952,9 @@ YOU DID IT. APP DEPLOYED!`);
             {windowStates.mind_mapper?.isOpen && (
                 <WindowFrame {...mobileWindowProps} winState={windowStates.mind_mapper} title="Mind Map" AppIcon={Waypoints} onClose={() => closeApp('mind_mapper')} onMinimize={() => minimizeApp('mind_mapper')} onMaximize={() => maximizeApp('mind_mapper')} onFocus={() => focusApp('mind_mapper')} onMove={(x, y) => moveApp('mind_mapper', x, y)} onResize={(w, h) => resizeApp('mind_mapper', w, h)}>
                     <div style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
-                        <MindMapperApp />
+                        <Suspense fallback={<WindowModuleLoader label="MIND_MAPPER" />}>
+                            <MindMapperApp />
+                        </Suspense>
                     </div>
                 </WindowFrame>
             )}
@@ -5955,7 +5963,9 @@ YOU DID IT. APP DEPLOYED!`);
             {windowStates.prompt_forge?.isOpen && (
                 <WindowFrame {...mobileWindowProps} winState={windowStates.prompt_forge} title="Prompt Forge" AppIcon={Wand2} onClose={() => closeApp('prompt_forge')} onMinimize={() => minimizeApp('prompt_forge')} onMaximize={() => maximizeApp('prompt_forge')} onFocus={() => focusApp('prompt_forge')} onMove={(x, y) => moveApp('prompt_forge', x, y)} onResize={(w, h) => resizeApp('prompt_forge', w, h)}>
                     <div style={{ flex: 1, minHeight: 0, background: '#0b1220', overflow: 'hidden' }}>
-                        <PromptForgeApp />
+                        <Suspense fallback={<WindowModuleLoader label="PROMPT_FORGE" />}>
+                            <PromptForgeApp />
+                        </Suspense>
                     </div>
                 </WindowFrame>
             )}

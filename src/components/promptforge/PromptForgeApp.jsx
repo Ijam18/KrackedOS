@@ -211,7 +211,7 @@ export default function PromptForgeApp() {
     const [techConstraints, setTechConstraints] = useState('');
 
     // Step 3 — Stack & Vibe
-    const [stack, setStack] = useState(['React', 'Vite', 'Supabase']);
+    const [stack, setStack] = useState(['React', 'Vite']);
     const [techDetail, setTechDetail] = useState(null);
     const [styleVibe, setStyleVibe] = useState([]);
     const [vibeDetail, setVibeDetail] = useState(null);
@@ -276,7 +276,7 @@ ${techConstraints ? `CONSTRAINTS (Adhere strictly):\n${techConstraints}\n` : ''}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 [T] TECH STACK
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-${stack.length ? stack.map(t => `► ${t}`).join('\n') : '► React\n► Vite\n► Supabase'}
+${stack.length ? stack.map(t => `► ${t}`).join('\n') : '► React\n► Vite'}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 DESIGN SYSTEM
@@ -449,7 +449,7 @@ Built with Prompt Forge — Based on ROFTCO Framework
         setTargetUsers(''); setInspiration(''); setHasSimilarApp(false);
         setInspirationUrl(''); setCompetitors(''); setMustHaveTags([]);
         setNiceToHaveTags([]); setUniqueFeature(''); setTechConstraints('');
-        setStack(['React', 'Vite', 'Supabase']); setStyleVibe([]); setCustomStyle('');
+        setStack(['React', 'Vite']); setStyleVibe([]); setCustomStyle('');
     };
 
     return (
