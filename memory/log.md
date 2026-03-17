@@ -118,6 +118,33 @@ This file stores long-term project knowledge and successful patterns for **KRACK
   - tilesets
   - retro UI
   - Paper + React pixel workflow for KRACKED_OS
+
+## Session Updates (2026-03-17)
+
+### 1. IjamOS Desktop Slot System Refinement
+- Reworked `IjamOSWorkspace` desktop icon area to behave more like a Windows desktop slot surface instead of a loose auto-fill grid.
+- Added consistent desktop slot sizing constants and responsive column/row measurement tied to the actual desktop icon container.
+- Updated the desktop icon container to start below the mac menu bar overlay so the last row is no longer clipped by the top bar offset.
+- Increased desktop slot height so icon + label footprint fits inside the bottom row without visual cropping.
+
+### 2. Full-Screen Slot Coverage
+- Changed the mac desktop grid render to use measured `columns` and `rows` for full-screen slot coverage.
+- Reduced mac desktop padding so slots use more of the available width and height.
+- Goal validated: desktop icons can occupy the full usable desktop area rather than leaving a large dead zone on the right.
+
+### 3. Desktop Drag/Drop Stabilization
+- Removed yellow drag/drop visual highlight on slots and icons per user request.
+- Reworked drag/drop so the desktop container is the single drop target authority.
+- Nearest-slot resolution now uses real slot DOM positions instead of mixed slot/container drag handlers.
+- This avoids unstable hover behavior and allows dropping near a slot gap while still snapping to the closest slot.
+
+### 4. Verification
+- Re-validated the desktop slot changes with `npm run build`.
+- Current known stable behavior:
+  - slot-based desktop layout persists
+  - desktop area fills the usable screen
+  - bottom row is no longer clipped by the menu bar overlap
+  - dragging snaps to the nearest desktop slot with cleaner behavior
 - Validated the skill successfully with the system `quick_validate.py` script.
 
 ### 7. Paper-First Pixel Boot Screen Refresh

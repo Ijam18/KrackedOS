@@ -38,8 +38,8 @@ const DesktopIcon = ({
         padding: isPhoneMode ? '8px 6px' : (isTabletMode ? '10px' : '12px'),
         borderRadius: '16px',
         transition: 'background 0.18s ease, border-color 0.18s ease, transform 0.18s ease',
-        outline: isDropTarget ? '2px dashed rgba(245,208,0,0.85)' : 'none',
-        outlineOffset: isDropTarget ? '3px' : 0
+        outline: 'none',
+        outlineOffset: 0
       }}
       onMouseOver={(e) => {
         e.currentTarget.style.background = usesRawIcon ? 'transparent' : 'rgba(255,255,255,0.14)';

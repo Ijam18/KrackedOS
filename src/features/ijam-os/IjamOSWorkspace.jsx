@@ -2302,7 +2302,9 @@ const LESSON_MEDIA = {
 const sectionStyle = {
     paddingTop: '36px',
     paddingBottom: '70px',
-    minHeight: '80vh',
+    width: '100%',
+    minWidth: '100%',
+    minHeight: '100vh',
     background: 'radial-gradient(circle at 10% 10%, #fff8dc 0%, #fff0b3 40%, #ffe6d5 100%)'
 };
 
@@ -2737,6 +2739,9 @@ const IjamOSWorkspace = ({ session, currentUser, isMobileView, deviceMode = 'des
     const sessionUiHydratedRef = useRef(false);
     const desktopIconsContainerRef = useRef(null);
     const [desktopGridMetrics, setDesktopGridMetrics] = useState(null);
+    const DESKTOP_SLOT_WIDTH = 92;
+    const DESKTOP_SLOT_HEIGHT = 120;
+    const DESKTOP_SLOT_GAP = 8;
     const [activeMacMenu, setActiveMacMenu] = useState(null);
     const [showBatteryPopup, setShowBatteryPopup] = useState(false);
     const [showControlCenter, setShowControlCenter] = useState(false);
@@ -3462,17 +3467,12 @@ const IjamOSWorkspace = ({ session, currentUser, isMobileView, deviceMode = 'des
     useEffect(() => {
         if (!isMacMode || isTouchIjamMode || !desktopIconsContainerRef.current) return;
 
-        const COL_WIDTH = 100;
-        const COL_GAP = 12;
-        const ROW_HEIGHT = 86;
-        const ROW_GAP = 12;
-
         const updateMetrics = () => {
             const el = desktopIconsContainerRef.current;
-            const width = el?.clientWidth || Math.max(320, window.innerWidth - 40);
-            const height = el?.clientHeight || Math.max(220, window.innerHeight - 28 - 12 - 24);
-            const columns = Math.max(1, Math.floor((width + COL_GAP) / (COL_WIDTH + COL_GAP)));
-            const rows = Math.max(1, Math.floor((height + ROW_GAP) / (ROW_HEIGHT + ROW_GAP)));
+            const width = el?.clientWidth || Math.max(320, window.innerWidth);
+            const height = el?.clientHeight || Math.max(220, window.innerHeight - 28);
+            const columns = Math.max(1, Math.floor((width + DESKTOP_SLOT_GAP) / (DESKTOP_SLOT_WIDTH + DESKTOP_SLOT_GAP)));
+            const rows = Math.max(1, Math.floor((height + DESKTOP_SLOT_GAP) / (DESKTOP_SLOT_HEIGHT + DESKTOP_SLOT_GAP)));
             setDesktopGridMetrics((prev) => (
                 prev && prev.columns === columns && prev.rows === rows
                     ? prev
@@ -3491,7 +3491,7 @@ const IjamOSWorkspace = ({ session, currentUser, isMobileView, deviceMode = 'des
             if (observer) observer.disconnect();
             window.removeEventListener('resize', updateMetrics);
         };
-    }, [isMacMode, isTouchIjamMode]);
+    }, [DESKTOP_SLOT_GAP, DESKTOP_SLOT_HEIGHT, DESKTOP_SLOT_WIDTH, isMacMode, isTouchIjamMode]);
 
     const normalizeDesktopSlots = useCallback((slots, desiredCount) => {
         const normalized = Array.from({ length: Math.max(1, desiredCount) }, () => null);
@@ -3535,7 +3535,6 @@ const IjamOSWorkspace = ({ session, currentUser, isMobileView, deviceMode = 'des
             return { kind: 'empty', slotIndex };
         });
     }, [desktopIconSlots, desktopRenderSlotCount, desktopRenderableFsItems, normalizeDesktopSlots]);
-
     useEffect(() => {
         if (desktopSlotsLoadedRef.current || !runtime) return;
         let active = true;
@@ -3589,6 +3588,37 @@ const IjamOSWorkspace = ({ session, currentUser, isMobileView, deviceMode = 'des
             return slots;
         });
     }, [desktopSlotCount, normalizeDesktopSlots]);
+    const getNearestDesktopSlotIndex = useCallback((clientX, clientY) => {
+        if (!isMacMode || isTouchIjamMode || !desktopIconsContainerRef.current) return null;
+
+        const el = desktopIconsContainerRef.current;
+        const slotElements = Array.from(el.querySelectorAll('[data-desktop-slot-index]'));
+        if (!slotElements.length) return null;
+
+        let nearestSlotIndex = null;
+        let nearestDistance = Number.POSITIVE_INFINITY;
+
+        slotElements.forEach((slotEl) => {
+            const slotIndex = Number.parseInt(slotEl.getAttribute('data-desktop-slot-index') || '', 10);
+            if (Number.isNaN(slotIndex)) return;
+
+            const rect = slotEl.getBoundingClientRect();
+            const centerX = rect.left + (rect.width / 2);
+            const centerY = rect.top + (rect.height / 2);
+            const dx = clientX - centerX;
+            const dy = clientY - centerY;
+            const distance = (dx * dx) + (dy * dy);
+
+            if (distance < nearestDistance) {
+                nearestDistance = distance;
+                nearestSlotIndex = slotIndex;
+            }
+        });
+
+        return nearestSlotIndex == null
+            ? null
+            : Math.max(0, Math.min(desktopRenderSlotCount - 1, nearestSlotIndex));
+    }, [desktopRenderSlotCount, isMacMode, isTouchIjamMode]);
 
     const addVibes = (amount, reason) => {
         setUserVibes(prev => prev + amount);
@@ -4747,21 +4777,55 @@ YOU DID IT. APP DEPLOYED!`);
             <div style={{ position: 'absolute', inset: 0, opacity: 0.1, backgroundImage: 'radial-gradient(#f5d000 0.5px, transparent 0.5px)', backgroundSize: '24px 24px', pointerEvents: 'none' }} />
 
             {/* Desktop Icons Container */}
-            <div style={{
-                maxWidth: isMacMode ? '1280px' : '100%',
-                margin: '0 auto',
-                padding: isPhoneMode ? '58px 10px 96px' : (isTabletMode ? '62px 14px 104px' : '36px 20px 110px'),
-                height: '100%',
-                position: 'relative',
+            <div ref={desktopIconsContainerRef} style={{
+                position: 'absolute',
+                inset: isMacMode ? '28px 0 0 0' : '0 0 0 0',
+                width: '100%',
+                maxWidth: '100%',
+                margin: 0,
+                padding: isPhoneMode ? '12px 10px 12px' : (isTabletMode ? '16px 14px 16px' : (isMacMode ? '8px 8px 12px' : '36px 20px 110px')),
+                height: 'auto',
+                minHeight: 0,
+                boxSizing: 'border-box',
                 zIndex: 1,
                 display: 'grid',
                 gridTemplateColumns: isMacMode
-                    ? 'repeat(auto-fill, 100px)'
+                    ? `repeat(${Math.max(1, desktopGridColumns || 1)}, minmax(0, 1fr))`
                     : (isTabletMode ? 'repeat(auto-fill, minmax(92px, 1fr))' : 'repeat(4, minmax(0, 1fr))'),
-                gap: isMacMode ? '24px' : '12px',
+                gridTemplateRows: isMacMode
+                    ? `repeat(${Math.max(1, desktopGridRows || 1)}, minmax(${DESKTOP_SLOT_HEIGHT}px, 1fr))`
+                    : undefined,
+                gridAutoRows: isMacMode ? undefined : 'minmax(86px, auto)',
+                gap: isMacMode ? `${DESKTOP_SLOT_GAP}px` : '12px',
                 alignItems: 'start',
-                contentVisibility: 'auto'
-            }}>
+                alignContent: isMacMode ? 'stretch' : 'start',
+                justifyItems: isMacMode ? 'stretch' : 'stretch',
+                contentVisibility: 'auto',
+                overflow: 'hidden'
+            }}
+                onDragOver={(e) => {
+                    if (isTouchIjamMode || !draggedIconType) return;
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = 'move';
+                    const nearestSlotIndex = getNearestDesktopSlotIndex(e.clientX, e.clientY);
+                    setDropTargetSlotIndex(nearestSlotIndex);
+                }}
+                onDrop={(e) => {
+                    if (isTouchIjamMode || !draggedIconType) return;
+                    e.preventDefault();
+                    const sourceType = e.dataTransfer.getData('text/plain') || draggedIconType;
+                    const nearestSlotIndex = getNearestDesktopSlotIndex(e.clientX, e.clientY);
+                    moveDesktopIconToSlot(sourceType, nearestSlotIndex);
+                    setDraggedIconType(null);
+                    setDropTargetSlotIndex(null);
+                    setTimeout(() => setIsDraggingDesktopIcon(false), 80);
+                }}
+                onDragLeave={(e) => {
+                    if (!desktopIconsContainerRef.current?.contains(e.relatedTarget)) {
+                        setDropTargetSlotIndex(null);
+                    }
+                }}
+            >
                 {desktopCells.map((cell) => {
                     const slotIndex = cell.slotIndex;
                     const app = cell.kind === 'app' ? appByType[cell.appType] : null;
@@ -4769,34 +4833,20 @@ YOU DID IT. APP DEPLOYED!`);
                     return (
                         <div
                             key={`desktop-slot-${slotIndex}`}
-                            onDragOver={(e) => {
-                                if (isTouchIjamMode || !draggedIconType) return;
-                                e.preventDefault();
-                                e.dataTransfer.dropEffect = 'move';
-                                setDropTargetSlotIndex(slotIndex);
-                            }}
-                            onDrop={(e) => {
-                                if (isTouchIjamMode || !draggedIconType) return;
-                                e.preventDefault();
-                                const sourceType = e.dataTransfer.getData('text/plain') || draggedIconType;
-                                moveDesktopIconToSlot(sourceType, slotIndex);
-                                setDraggedIconType(null);
-                                setDropTargetSlotIndex(null);
-                                setTimeout(() => setIsDraggingDesktopIcon(false), 80);
-                            }}
+                            data-desktop-slot-index={slotIndex}
                             style={{
-                                minHeight: isPhoneMode ? '78px' : '86px',
-                                height: isMacMode ? '86px' : 'auto',
+                                minHeight: isPhoneMode ? '78px' : `${DESKTOP_SLOT_HEIGHT}px`,
+                                height: isMacMode ? '100%' : 'auto',
+                                width: '100%',
                                 borderRadius: '12px',
-                                border: dropTargetSlotIndex === slotIndex
-                                    ? '1px dashed rgba(245,208,0,0.8)'
-                                    : '1px solid transparent',
-                                background: dropTargetSlotIndex === slotIndex
-                                    ? 'rgba(245,208,0,0.08)'
-                                    : 'transparent',
+                                border: '1px solid transparent',
+                                background: 'transparent',
                                 display: 'flex',
                                 alignItems: 'flex-start',
-                                justifyContent: 'flex-start'
+                                justifyContent: 'flex-start',
+                                paddingTop: isMacMode ? '4px' : 0,
+                                paddingLeft: isMacMode ? '2px' : 0,
+                                boxSizing: 'border-box'
                             }}
                         >
                             {app ? (
@@ -4818,20 +4868,6 @@ YOU DID IT. APP DEPLOYED!`);
                                         setDraggedIconType(app.type);
                                         e.dataTransfer.effectAllowed = 'move';
                                         e.dataTransfer.setData('text/plain', app.type);
-                                    }}
-                                    onDragOver={(e) => {
-                                        if (isTouchIjamMode || draggedIconType === app.type) return;
-                                        e.preventDefault();
-                                        e.dataTransfer.dropEffect = 'move';
-                                    }}
-                                    onDrop={(e) => {
-                                        if (isTouchIjamMode || !draggedIconType) return;
-                                        e.preventDefault();
-                                        const sourceType = e.dataTransfer.getData('text/plain') || draggedIconType;
-                                        moveDesktopIconToSlot(sourceType, slotIndex);
-                                        setDraggedIconType(null);
-                                        setDropTargetSlotIndex(null);
-                                        setTimeout(() => setIsDraggingDesktopIcon(false), 80);
                                     }}
                                     onDragEnd={() => {
                                         setDraggedIconType(null);
