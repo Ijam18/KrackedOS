@@ -4843,9 +4843,9 @@ YOU DID IT. APP DEPLOYED!`);
                                 background: 'transparent',
                                 display: 'flex',
                                 alignItems: 'flex-start',
-                                justifyContent: 'flex-start',
+                                justifyContent: isMacMode ? 'center' : 'flex-start',
                                 paddingTop: isMacMode ? '4px' : 0,
-                                paddingLeft: isMacMode ? '2px' : 0,
+                                paddingLeft: isMacMode ? 0 : '2px',
                                 boxSizing: 'border-box'
                             }}
                         >
