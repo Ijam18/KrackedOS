@@ -4790,16 +4790,17 @@ YOU DID IT. APP DEPLOYED!`);
                 zIndex: 1,
                 display: 'grid',
                 gridTemplateColumns: isMacMode
-                    ? `repeat(${Math.max(1, desktopGridColumns || 1)}, minmax(0, 1fr))`
+                    ? `repeat(${Math.max(1, desktopGridColumns || 1)}, ${DESKTOP_SLOT_WIDTH}px)`
                     : (isTabletMode ? 'repeat(auto-fill, minmax(92px, 1fr))' : 'repeat(4, minmax(0, 1fr))'),
                 gridTemplateRows: isMacMode
-                    ? `repeat(${Math.max(1, desktopGridRows || 1)}, minmax(${DESKTOP_SLOT_HEIGHT}px, 1fr))`
+                    ? `repeat(${Math.max(1, desktopGridRows || 1)}, ${DESKTOP_SLOT_HEIGHT}px)`
                     : undefined,
                 gridAutoRows: isMacMode ? undefined : 'minmax(86px, auto)',
                 gap: isMacMode ? `${DESKTOP_SLOT_GAP}px` : '12px',
                 alignItems: 'start',
-                alignContent: isMacMode ? 'stretch' : 'start',
-                justifyItems: isMacMode ? 'stretch' : 'stretch',
+                alignContent: isMacMode ? 'space-between' : 'start',
+                justifyContent: isMacMode ? 'space-between' : 'stretch',
+                justifyItems: isMacMode ? 'center' : 'stretch',
                 contentVisibility: 'auto',
                 overflow: 'hidden'
             }}
