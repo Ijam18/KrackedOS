@@ -2729,7 +2729,7 @@ const IjamOSWorkspace = ({ session, currentUser, isMobileView, deviceMode = 'des
     const [missionEvents, setMissionEvents] = useState([]);
     const [latestMissionEvent, setLatestMissionEvent] = useState(null);
     const [batteryPct, setBatteryPct] = useState('--%');
-    const [desktopIconSlots, setDesktopIconSlots] = useState([]);
+    const [desktopIconPositions, setDesktopIconPositions] = useState({});
     const [desktopFsItems, setDesktopFsItems] = useState([]);
     const [draggedIconType, setDraggedIconType] = useState(null);
     const [dropTargetSlotIndex, setDropTargetSlotIndex] = useState(null);
@@ -3429,6 +3429,11 @@ const IjamOSWorkspace = ({ session, currentUser, isMobileView, deviceMode = 'des
     ), []);
     const desktopGridColumns = desktopGridMetrics?.columns ?? 0;
     const desktopGridRows = desktopGridMetrics?.rows ?? 0;
+    const DESKTOP_LAYOUT_VERSION = 4;
+    const DESKTOP_LAYOUT_CACHE_KEY = 'ijamos_desktop_layout_cache_v4';
+    const DESKTOP_POSITION_CACHE_KEY = 'ijamos_desktop_icon_positions_v2';
+    const isDesktopGridReady = !isMacMode || isTouchIjamMode || (desktopGridColumns > 1 && desktopGridRows > 1);
+    const isBrowserDesktopPersistence = runtime?.mode === 'web-demo';
     const desktopSlotCount = useMemo(() => {
         if (isMacMode && !isTouchIjamMode) {
             return Math.max(appTypeList.length, desktopGridColumns * desktopGridRows);
@@ -3465,14 +3470,17 @@ const IjamOSWorkspace = ({ session, currentUser, isMobileView, deviceMode = 'des
     }, []);
 
     useEffect(() => {
-        if (!isMacMode || isTouchIjamMode || !desktopIconsContainerRef.current) return;
+        if (!isMacMode || isTouchIjamMode) return;
 
         const updateMetrics = () => {
-            const el = desktopIconsContainerRef.current;
-            const width = el?.clientWidth || Math.max(320, window.innerWidth);
-            const height = el?.clientHeight || Math.max(220, window.innerHeight - 28);
-            const columns = Math.max(1, Math.floor((width + DESKTOP_SLOT_GAP) / (DESKTOP_SLOT_WIDTH + DESKTOP_SLOT_GAP)));
-            const rows = Math.max(1, Math.floor((height + DESKTOP_SLOT_GAP) / (DESKTOP_SLOT_HEIGHT + DESKTOP_SLOT_GAP)));
+            const MENU_BAR_HEIGHT = 28;
+            const DESKTOP_PADDING_X = 16;
+            const DESKTOP_PADDING_TOP = 8;
+            const DESKTOP_PADDING_BOTTOM = 12;
+            const usableWidth = Math.max(320, window.innerWidth - DESKTOP_PADDING_X);
+            const usableHeight = Math.max(220, window.innerHeight - MENU_BAR_HEIGHT - DESKTOP_PADDING_TOP - DESKTOP_PADDING_BOTTOM);
+            const columns = Math.max(1, Math.floor((usableWidth + DESKTOP_SLOT_GAP) / (DESKTOP_SLOT_WIDTH + DESKTOP_SLOT_GAP)));
+            const rows = Math.max(1, Math.floor((usableHeight + DESKTOP_SLOT_GAP) / (DESKTOP_SLOT_HEIGHT + DESKTOP_SLOT_GAP)));
             setDesktopGridMetrics((prev) => (
                 prev && prev.columns === columns && prev.rows === rows
                     ? prev
@@ -3481,79 +3489,190 @@ const IjamOSWorkspace = ({ session, currentUser, isMobileView, deviceMode = 'des
         };
 
         updateMetrics();
-        let observer = null;
-        if (typeof ResizeObserver !== 'undefined' && desktopIconsContainerRef.current) {
-            observer = new ResizeObserver(updateMetrics);
-            observer.observe(desktopIconsContainerRef.current);
-        }
+        const frameOne = window.requestAnimationFrame(updateMetrics);
+        const frameTwo = window.requestAnimationFrame(() => window.requestAnimationFrame(updateMetrics));
+        const delayedUpdate = window.setTimeout(updateMetrics, 120);
         window.addEventListener('resize', updateMetrics);
         return () => {
-            if (observer) observer.disconnect();
+            window.cancelAnimationFrame(frameOne);
+            window.cancelAnimationFrame(frameTwo);
+            window.clearTimeout(delayedUpdate);
             window.removeEventListener('resize', updateMetrics);
         };
-    }, [DESKTOP_SLOT_GAP, DESKTOP_SLOT_HEIGHT, DESKTOP_SLOT_WIDTH, isMacMode, isTouchIjamMode]);
+    }, [DESKTOP_SLOT_GAP, DESKTOP_SLOT_HEIGHT, DESKTOP_SLOT_WIDTH, isBooted, isMacMode, isTouchIjamMode]);
 
-    const normalizeDesktopSlots = useCallback((slots, desiredCount) => {
-        const normalized = Array.from({ length: Math.max(1, desiredCount) }, () => null);
-        const seen = new Set();
-        (Array.isArray(slots) ? slots : []).forEach((type, index) => {
-            if (index >= normalized.length) return;
-            if (!appTypeList.includes(type)) return;
-            if (seen.has(type)) return;
-            normalized[index] = type;
-            seen.add(type);
+    const getPositionFromSlotIndex = useCallback((slotIndex, rows = desktopGridRows) => {
+        const safeRows = Math.max(1, rows || 1);
+        const safeIndex = Math.max(0, slotIndex || 0);
+        return {
+            column: Math.floor(safeIndex / safeRows),
+            row: safeIndex % safeRows
+        };
+    }, [desktopGridRows]);
+    const getSlotIndexFromPosition = useCallback((position, rows = desktopGridRows) => {
+        const safeRows = Math.max(1, rows || 1);
+        const column = Math.max(0, Number.parseInt(String(position?.column ?? 0), 10) || 0);
+        const row = Math.max(0, Number.parseInt(String(position?.row ?? 0), 10) || 0);
+        return (column * safeRows) + row;
+    }, [desktopGridRows]);
+    const normalizeDesktopPositions = useCallback((positions) => {
+        const safeColumns = Math.max(1, desktopGridColumns || 1);
+        const safeRows = Math.max(1, desktopGridRows || 1);
+        const occupied = new Set();
+        const normalized = {};
+        let fallbackIndex = 0;
+
+        const claimNextAvailable = () => {
+            while (occupied.has(fallbackIndex)) fallbackIndex += 1;
+            const nextIndex = fallbackIndex;
+            occupied.add(nextIndex);
+            fallbackIndex += 1;
+            return getPositionFromSlotIndex(nextIndex, safeRows);
+        };
+
+        appTypeList.forEach((type) => {
+            const current = positions?.[type];
+            const column = Number.parseInt(String(current?.column ?? -1), 10);
+            const row = Number.parseInt(String(current?.row ?? -1), 10);
+            const hasValidPosition = column >= 0 && column < safeColumns && row >= 0 && row < safeRows;
+
+            if (hasValidPosition) {
+                const slotIndex = getSlotIndexFromPosition({ column, row }, safeRows);
+                if (!occupied.has(slotIndex)) {
+                    occupied.add(slotIndex);
+                    normalized[type] = { column, row };
+                    return;
+                }
+            }
+
+            normalized[type] = claimNextAvailable();
         });
-        const missing = appTypeList.filter((type) => !seen.has(type));
-        let cursor = 0;
-        for (const type of missing) {
-            while (cursor < normalized.length && normalized[cursor] !== null) cursor += 1;
-            if (cursor >= normalized.length) break;
-            normalized[cursor] = type;
-        }
+
         return normalized;
-    }, [appTypeList]);
+    }, [appTypeList, desktopGridColumns, desktopGridRows, getPositionFromSlotIndex, getSlotIndexFromPosition]);
+    const serializeDesktopPositions = useCallback((positions) => {
+        const safeSlotCount = Math.max(1, desktopSlotCount);
+        const slots = Array.from({ length: safeSlotCount }, () => null);
+
+        Object.entries(positions || {}).forEach(([type, position]) => {
+            if (!appTypeList.includes(type)) return;
+            const slotIndex = getSlotIndexFromPosition(position, desktopGridRows);
+            if (slotIndex < 0 || slotIndex >= slots.length || slots[slotIndex]) return;
+            slots[slotIndex] = type;
+        });
+
+        return slots;
+    }, [appTypeList, desktopGridRows, desktopSlotCount, getSlotIndexFromPosition]);
+    const resolvePersistedDesktopPositions = useCallback((layout) => {
+        const rawPositions = layout?.positions && typeof layout.positions === 'object' ? layout.positions : null;
+        const rawSlots = Array.isArray(layout?.slots) ? layout.slots : [];
+        const legacyOrder = Array.isArray(layout?.legacyOrder) ? layout.legacyOrder : [];
+        const persistedVersion = Number.parseInt(String(layout?.layoutVersion ?? 0), 10) || 0;
+
+        if (rawPositions && persistedVersion >= DESKTOP_LAYOUT_VERSION) {
+            return normalizeDesktopPositions(rawPositions);
+        }
+
+        const orderedTypes = (persistedVersion >= DESKTOP_LAYOUT_VERSION
+            ? (rawSlots.length ? rawSlots : legacyOrder)
+            : (rawSlots.length ? rawSlots : legacyOrder).filter(Boolean)
+        ).filter((type) => appTypeList.includes(type));
+
+        const seededPositions = {};
+        orderedTypes.forEach((type, index) => {
+            if (seededPositions[type]) return;
+            seededPositions[type] = getPositionFromSlotIndex(index, desktopGridRows);
+        });
+
+        return normalizeDesktopPositions(seededPositions);
+    }, [DESKTOP_LAYOUT_VERSION, appTypeList, desktopGridRows, getPositionFromSlotIndex, normalizeDesktopPositions]);
+    const loadCachedDesktopLayout = useCallback(() => {
+        if (typeof window === 'undefined') return null;
+        try {
+            const rawPositions = window.localStorage.getItem(DESKTOP_POSITION_CACHE_KEY);
+            if (rawPositions) {
+                const parsedPositions = JSON.parse(rawPositions);
+                if (parsedPositions && typeof parsedPositions === 'object') {
+                    return {
+                        layoutVersion: DESKTOP_LAYOUT_VERSION,
+                        positions: parsedPositions
+                    };
+                }
+            }
+            const raw = window.localStorage.getItem(DESKTOP_LAYOUT_CACHE_KEY);
+            if (!raw) return null;
+            const parsed = JSON.parse(raw);
+            return parsed && typeof parsed === 'object' ? parsed : null;
+        } catch {
+            return null;
+        }
+    }, [DESKTOP_LAYOUT_CACHE_KEY, DESKTOP_LAYOUT_VERSION, DESKTOP_POSITION_CACHE_KEY]);
     const desktopRenderSlotCount = useMemo(
         () => Math.max(desktopSlotCount, appTypeList.length + desktopRenderableFsItems.length),
         [appTypeList.length, desktopRenderableFsItems.length, desktopSlotCount]
     );
     const desktopCells = useMemo(() => {
-        const slots = normalizeDesktopSlots(desktopIconSlots, desktopRenderSlotCount);
-        let desktopItemCursor = 0;
+        const normalizedPositions = normalizeDesktopPositions(desktopIconPositions);
+        const occupied = new Set(Object.values(normalizedPositions).map((position) => getSlotIndexFromPosition(position, desktopGridRows)));
+        const cells = appTypeList.map((appType) => ({
+            kind: 'app',
+            appType,
+            slotIndex: getSlotIndexFromPosition(normalizedPositions[appType], desktopGridRows),
+            position: normalizedPositions[appType]
+        }));
 
-        return Array.from({ length: desktopRenderSlotCount }, (_, slotIndex) => {
-            const appType = slots[slotIndex] || null;
-            if (appType) {
-                return { kind: 'app', slotIndex, appType };
-            }
+        let fsCursor = 0;
+        for (let slotIndex = 0; slotIndex < desktopRenderSlotCount && fsCursor < desktopRenderableFsItems.length; slotIndex += 1) {
+            if (occupied.has(slotIndex)) continue;
+            cells.push({
+                kind: 'fs',
+                item: desktopRenderableFsItems[fsCursor],
+                slotIndex,
+                position: getPositionFromSlotIndex(slotIndex, desktopGridRows)
+            });
+            fsCursor += 1;
+        }
 
-            const desktopItem = desktopRenderableFsItems[desktopItemCursor] || null;
-            if (desktopItem) {
-                desktopItemCursor += 1;
-                return { kind: 'fs', slotIndex, item: desktopItem };
-            }
-
-            return { kind: 'empty', slotIndex };
-        });
-    }, [desktopIconSlots, desktopRenderSlotCount, desktopRenderableFsItems, normalizeDesktopSlots]);
+        return cells;
+    }, [appTypeList, desktopGridRows, desktopIconPositions, desktopRenderSlotCount, desktopRenderableFsItems, getPositionFromSlotIndex, getSlotIndexFromPosition, normalizeDesktopPositions]);
     useEffect(() => {
-        if (desktopSlotsLoadedRef.current || !runtime) return;
+        if (desktopSlotsLoadedRef.current || !runtime || !isDesktopGridReady) return;
         let active = true;
+        const cachedLayout = loadCachedDesktopLayout();
+        const resolveDesiredCount = (layout) => Math.max(
+            desktopSlotCount,
+            Array.isArray(layout?.slots) ? layout.slots.length : 0,
+            Array.isArray(layout?.legacyOrder) ? layout.legacyOrder.length : 0
+        );
+
+        if (cachedLayout) {
+            setDesktopIconPositions(resolvePersistedDesktopPositions(cachedLayout));
+            desktopSlotsLoadedRef.current = true;
+            desktopSlotsHydratedRef.current = true;
+            return () => {
+                active = false;
+            };
+        }
+
+        if (isBrowserDesktopPersistence) {
+            setDesktopIconPositions(normalizeDesktopPositions({}));
+            desktopSlotsLoadedRef.current = true;
+            desktopSlotsHydratedRef.current = true;
+            return () => {
+                active = false;
+            };
+        }
 
         runtime.settings.loadDesktopLayout()
             .then((layout) => {
                 if (!active) return;
-                const persistedSlots = Array.isArray(layout?.slots) && layout.slots.length
-                    ? layout.slots
-                    : Array.isArray(layout?.legacyOrder)
-                        ? layout.legacyOrder
-                        : [];
-                setDesktopIconSlots(normalizeDesktopSlots(persistedSlots, Math.max(desktopSlotCount, persistedSlots.length || desktopSlotCount)));
+                setDesktopIconPositions(resolvePersistedDesktopPositions(layout));
                 desktopSlotsLoadedRef.current = true;
                 desktopSlotsHydratedRef.current = true;
             })
             .catch(() => {
                 if (!active) return;
-                setDesktopIconSlots(normalizeDesktopSlots([], desktopSlotCount));
+                setDesktopIconPositions(normalizeDesktopPositions({}));
                 desktopSlotsLoadedRef.current = true;
                 desktopSlotsHydratedRef.current = true;
             });
@@ -3561,64 +3680,97 @@ const IjamOSWorkspace = ({ session, currentUser, isMobileView, deviceMode = 'des
         return () => {
             active = false;
         };
-    }, [desktopSlotCount, normalizeDesktopSlots, runtime]);
+    }, [isBrowserDesktopPersistence, isDesktopGridReady, loadCachedDesktopLayout, normalizeDesktopPositions, resolvePersistedDesktopPositions, runtime]);
 
     useEffect(() => {
-        if (!desktopSlotsHydratedRef.current || !runtime) return;
-        runtime.settings.saveDesktopLayout({
-            slots: desktopIconSlots,
-            legacyOrder: desktopIconSlots.filter(Boolean)
-        }).catch(() => {});
-    }, [desktopIconSlots, runtime]);
+        if (!desktopSlotsHydratedRef.current || !runtime || !isDesktopGridReady) return;
+        const layoutPayload = {
+            layoutVersion: DESKTOP_LAYOUT_VERSION,
+            grid: isMacMode ? {
+                columns: desktopGridColumns,
+                rows: desktopGridRows
+            } : null,
+            positions: isMacMode && desktopGridRows > 0
+                ? normalizeDesktopPositions(desktopIconPositions)
+                : null,
+            slots: serializeDesktopPositions(normalizeDesktopPositions(desktopIconPositions)),
+            legacyOrder: Object.entries(normalizeDesktopPositions(desktopIconPositions))
+                .sort(([, left], [, right]) => (left.column - right.column) || (left.row - right.row))
+                .map(([type]) => type)
+        };
+
+        if (typeof window !== 'undefined') {
+            try {
+                window.localStorage.setItem(DESKTOP_POSITION_CACHE_KEY, JSON.stringify(layoutPayload.positions || {}));
+                window.localStorage.setItem(DESKTOP_LAYOUT_CACHE_KEY, JSON.stringify(layoutPayload));
+                window.localStorage.setItem('ijamos_desktop_icon_slots', JSON.stringify(layoutPayload.slots));
+                window.localStorage.setItem('ijamos_desktop_icon_order', JSON.stringify(layoutPayload.legacyOrder));
+            } catch {}
+        }
+
+        if (isBrowserDesktopPersistence) return;
+        runtime.settings.saveDesktopLayout(layoutPayload).catch(() => {});
+    }, [DESKTOP_LAYOUT_CACHE_KEY, DESKTOP_LAYOUT_VERSION, DESKTOP_POSITION_CACHE_KEY, desktopGridColumns, desktopGridRows, desktopIconPositions, isBrowserDesktopPersistence, isDesktopGridReady, isMacMode, normalizeDesktopPositions, runtime, serializeDesktopPositions]);
 
     useEffect(() => {
-        setDesktopIconSlots((prev) => normalizeDesktopSlots(prev, desktopSlotCount));
-    }, [desktopSlotCount, normalizeDesktopSlots]);
+        if (!isDesktopGridReady) return;
+        setDesktopIconPositions((prev) => normalizeDesktopPositions(prev));
+    }, [isDesktopGridReady, normalizeDesktopPositions]);
 
     const moveDesktopIconToSlot = useCallback((fromType, slotIndex) => {
         if (!fromType || slotIndex == null) return;
-        setDesktopIconSlots((prev) => {
-            const slots = normalizeDesktopSlots(prev, desktopSlotCount);
-            const fromIndex = slots.indexOf(fromType);
-            if (fromIndex < 0) return prev;
-            const clampedIndex = Math.max(0, Math.min(slotIndex, slots.length - 1));
-            const targetType = slots[clampedIndex];
-            slots[fromIndex] = targetType ?? null;
-            slots[clampedIndex] = fromType;
-            return slots;
+        setDesktopIconPositions((prev) => {
+            const normalized = normalizeDesktopPositions(prev);
+            const nextPosition = getPositionFromSlotIndex(Math.max(0, Math.min(slotIndex, desktopSlotCount - 1)), desktopGridRows);
+            const targetEntry = Object.entries(normalized).find(([type, position]) => (
+                type !== fromType
+                && position.column === nextPosition.column
+                && position.row === nextPosition.row
+            ));
+
+            if (!normalized[fromType]) return prev;
+
+            const next = { ...normalized, [fromType]: nextPosition };
+            if (targetEntry) {
+                const [targetType] = targetEntry;
+                next[targetType] = normalized[fromType];
+            }
+            if (typeof window !== 'undefined') {
+                try {
+                    window.localStorage.setItem(DESKTOP_POSITION_CACHE_KEY, JSON.stringify(next));
+                } catch {}
+            }
+            return next;
         });
-    }, [desktopSlotCount, normalizeDesktopSlots]);
+    }, [DESKTOP_POSITION_CACHE_KEY, desktopGridRows, desktopSlotCount, getPositionFromSlotIndex, normalizeDesktopPositions]);
     const getNearestDesktopSlotIndex = useCallback((clientX, clientY) => {
         if (!isMacMode || isTouchIjamMode || !desktopIconsContainerRef.current) return null;
-
         const el = desktopIconsContainerRef.current;
-        const slotElements = Array.from(el.querySelectorAll('[data-desktop-slot-index]'));
-        if (!slotElements.length) return null;
-
-        let nearestSlotIndex = null;
-        let nearestDistance = Number.POSITIVE_INFINITY;
-
-        slotElements.forEach((slotEl) => {
-            const slotIndex = Number.parseInt(slotEl.getAttribute('data-desktop-slot-index') || '', 10);
-            if (Number.isNaN(slotIndex)) return;
-
-            const rect = slotEl.getBoundingClientRect();
-            const centerX = rect.left + (rect.width / 2);
-            const centerY = rect.top + (rect.height / 2);
-            const dx = clientX - centerX;
-            const dy = clientY - centerY;
-            const distance = (dx * dx) + (dy * dy);
-
-            if (distance < nearestDistance) {
-                nearestDistance = distance;
-                nearestSlotIndex = slotIndex;
-            }
-        });
-
-        return nearestSlotIndex == null
-            ? null
-            : Math.max(0, Math.min(desktopRenderSlotCount - 1, nearestSlotIndex));
-    }, [desktopRenderSlotCount, isMacMode, isTouchIjamMode]);
+        const rect = el.getBoundingClientRect();
+        const computed = window.getComputedStyle(el);
+        const paddingLeft = Number.parseFloat(computed.paddingLeft) || 0;
+        const paddingRight = Number.parseFloat(computed.paddingRight) || 0;
+        const paddingTop = Number.parseFloat(computed.paddingTop) || 0;
+        const paddingBottom = Number.parseFloat(computed.paddingBottom) || 0;
+        const safeColumns = Math.max(1, desktopGridColumns || 1);
+        const safeRows = Math.max(1, desktopGridRows || 1);
+        const usableWidth = Math.max(1, rect.width - paddingLeft - paddingRight);
+        const usableHeight = Math.max(1, rect.height - paddingTop - paddingBottom);
+        const cellWidth = usableWidth / safeColumns;
+        const cellHeight = usableHeight / safeRows;
+        const relativeX = Math.max(0, Math.min(usableWidth - 1, clientX - rect.left - paddingLeft));
+        const relativeY = Math.max(0, Math.min(usableHeight - 1, clientY - rect.top - paddingTop));
+        const column = Math.max(0, Math.min(safeColumns - 1, Math.floor(relativeX / Math.max(1, cellWidth))));
+        const row = Math.max(0, Math.min(safeRows - 1, Math.floor(relativeY / Math.max(1, cellHeight))));
+        return getSlotIndexFromPosition({ column, row }, safeRows);
+    }, [desktopGridColumns, desktopGridRows, getSlotIndexFromPosition, isMacMode, isTouchIjamMode]);
+    const getDesktopSlotPlacement = useCallback((position) => {
+        if (!isMacMode) return {};
+        return {
+            gridColumn: (position?.column ?? 0) + 1,
+            gridRow: (position?.row ?? 0) + 1
+        };
+    }, [isMacMode]);
 
     const addVibes = (amount, reason) => {
         setUserVibes(prev => prev + amount);
@@ -4790,7 +4942,7 @@ YOU DID IT. APP DEPLOYED!`);
                 zIndex: 1,
                 display: 'grid',
                 gridTemplateColumns: isMacMode
-                    ? `repeat(${Math.max(1, desktopGridColumns || 1)}, ${DESKTOP_SLOT_WIDTH}px)`
+                    ? `repeat(${Math.max(1, desktopGridColumns || 1)}, minmax(0, 1fr))`
                     : (isTabletMode ? 'repeat(auto-fill, minmax(92px, 1fr))' : 'repeat(4, minmax(0, 1fr))'),
                 gridTemplateRows: isMacMode
                     ? `repeat(${Math.max(1, desktopGridRows || 1)}, ${DESKTOP_SLOT_HEIGHT}px)`
@@ -4798,8 +4950,8 @@ YOU DID IT. APP DEPLOYED!`);
                 gridAutoRows: isMacMode ? undefined : 'minmax(86px, auto)',
                 gap: isMacMode ? `${DESKTOP_SLOT_GAP}px` : '12px',
                 alignItems: 'start',
-                alignContent: isMacMode ? 'space-between' : 'start',
-                justifyContent: isMacMode ? 'space-between' : 'stretch',
+                alignContent: isMacMode ? 'start' : 'start',
+                justifyContent: isMacMode ? 'start' : 'stretch',
                 justifyItems: isMacMode ? 'center' : 'stretch',
                 contentVisibility: 'auto',
                 overflow: 'hidden'
@@ -4836,6 +4988,7 @@ YOU DID IT. APP DEPLOYED!`);
                             key={`desktop-slot-${slotIndex}`}
                             data-desktop-slot-index={slotIndex}
                             style={{
+                                ...getDesktopSlotPlacement(cell.position),
                                 minHeight: isPhoneMode ? '78px' : `${DESKTOP_SLOT_HEIGHT}px`,
                                 height: isMacMode ? '100%' : 'auto',
                                 width: '100%',

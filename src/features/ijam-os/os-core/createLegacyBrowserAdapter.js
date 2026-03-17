@@ -565,15 +565,36 @@ export function createLegacyBrowserAdapter() {
 
     async loadDesktopLayout() {
       await seedWorkspaceScaffold();
-      return readJsonFile(WORKSPACE_PATHS.desktopLayout, DEFAULT_DESKTOP_LAYOUT);
+      const fileLayout = await readJsonFile(WORKSPACE_PATHS.desktopLayout, DEFAULT_DESKTOP_LAYOUT);
+      const localLayout = safeJsonParse(
+        typeof window !== 'undefined' ? window.localStorage.getItem(LEGACY_STORAGE_KEYS.desktopLayout) : '',
+        null
+      );
+
+      if (localLayout && typeof localLayout === 'object') {
+        return {
+          ...DEFAULT_DESKTOP_LAYOUT,
+          ...fileLayout,
+          ...localLayout
+        };
+      }
+
+      return fileLayout;
     },
 
     async saveDesktopLayout(layout) {
-      await writeJsonFile(WORKSPACE_PATHS.desktopLayout, {
+      const nextLayout = {
         ...DEFAULT_DESKTOP_LAYOUT,
         ...(layout || {}),
         updatedAt: new Date().toISOString()
-      });
+      };
+      await writeJsonFile(WORKSPACE_PATHS.desktopLayout, nextLayout);
+
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem(LEGACY_STORAGE_KEYS.desktopLayout, JSON.stringify(nextLayout));
+        window.localStorage.setItem(LEGACY_STORAGE_KEYS.desktopIconSlots, JSON.stringify(Array.isArray(nextLayout.slots) ? nextLayout.slots : []));
+        window.localStorage.setItem(LEGACY_STORAGE_KEYS.desktopIconOrder, JSON.stringify(Array.isArray(nextLayout.legacyOrder) ? nextLayout.legacyOrder : []));
+      }
     },
 
     async loadSession() {

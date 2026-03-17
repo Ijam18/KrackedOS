@@ -9,6 +9,7 @@ export const LEGACY_STORAGE_KEYS = {
   wallpaper: 'vibe_wallpaper',
   showcaseUrl: 'ijamos_showcase_url',
   websiteUrl: 'ijamos_website_url',
+  desktopLayout: 'ijamos_desktop_layout',
   desktopIconSlots: 'ijamos_desktop_icon_slots',
   desktopIconOrder: 'ijamos_desktop_icon_order',
   communityResources: 'ijamos_community_resources',
