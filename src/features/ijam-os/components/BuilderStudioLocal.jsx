@@ -73,7 +73,7 @@ export default function BuilderStudioLocal() {
 
   if (loading) {
     return (
-      <div style={{ padding: '40px', textAlign: 'center', color: '#888' }}>
+      <div style={{ padding: '40px', textAlign: 'center', color: '#64748b', background: 'linear-gradient(180deg, #f7faff 0%, #edf3fb 100%)', minHeight: '100%' }}>
         <RefreshCw size={32} style={{ animation: 'spin 1s linear infinite', margin: '0 auto 12px' }} />
         <div>Loading Local Studio...</div>
       </div>
@@ -81,41 +81,49 @@ export default function BuilderStudioLocal() {
   }
 
   return (
-    <div style={{ padding: '20px', minHeight: '100%', background: '#111827', color: '#f9fafb' }}>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px', marginBottom: '16px' }}>
-        <div style={{ background: '#0f172a', border: '2px solid #f5d000', borderRadius: '10px', padding: '12px' }}>
-          <div style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 800 }}>LEVEL</div>
-          <div style={{ fontSize: '24px', color: '#f5d000', fontWeight: 900 }}>{stats.level}</div>
+    <div className="os-thin-scroll" style={{ padding: '14px', minHeight: '100%', background: 'linear-gradient(180deg, #f7faff 0%, #edf3fb 100%)', color: '#0f172a', overflowY: 'auto' }}>
+      <div style={{ background: 'rgba(255,255,255,0.82)', border: '1px solid rgba(148,163,184,0.24)', borderRadius: '18px', padding: '18px', boxShadow: '0 16px 40px rgba(148,163,184,0.16)', marginBottom: '12px' }}>
+        <div style={{ fontSize: '11px', color: '#64748b', fontWeight: 700, letterSpacing: '0.08em', marginBottom: '6px' }}>LOCAL ARCADE</div>
+        <div style={{ fontSize: '24px', color: '#0f172a', fontWeight: 700 }}>Builder Studio</div>
+        <div style={{ fontSize: '13px', color: '#475569', marginTop: '6px' }}>Local-only arcade mode with browser-saved progress.</div>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px', marginBottom: '12px' }}>
+        <div style={{ background: 'rgba(255,255,255,0.82)', border: '1px solid rgba(148,163,184,0.24)', borderRadius: '18px', padding: '16px', boxShadow: '0 16px 40px rgba(148,163,184,0.16)' }}>
+          <div style={{ fontSize: '11px', color: '#64748b', fontWeight: 700, letterSpacing: '0.08em' }}>LEVEL</div>
+          <div style={{ fontSize: '24px', color: '#0f172a', fontWeight: 700 }}>{stats.level}</div>
         </div>
-        <div style={{ background: '#0f172a', border: '2px solid #22c55e', borderRadius: '10px', padding: '12px' }}>
-          <div style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 800 }}>VIBES</div>
-          <div style={{ fontSize: '24px', color: '#22c55e', fontWeight: 900 }}>{gameState.vibes || 0}</div>
+        <div style={{ background: 'rgba(255,255,255,0.82)', border: '1px solid rgba(148,163,184,0.24)', borderRadius: '18px', padding: '16px', boxShadow: '0 16px 40px rgba(148,163,184,0.16)' }}>
+          <div style={{ fontSize: '11px', color: '#64748b', fontWeight: 700, letterSpacing: '0.08em' }}>VIBES</div>
+          <div style={{ fontSize: '24px', color: '#047857', fontWeight: 700 }}>{gameState.vibes || 0}</div>
         </div>
-        <div style={{ background: '#0f172a', border: '2px solid #38bdf8', borderRadius: '10px', padding: '12px' }}>
-          <div style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 800 }}>XP</div>
-          <div style={{ fontSize: '24px', color: '#38bdf8', fontWeight: 900 }}>{gameState.xp || 0}</div>
+        <div style={{ background: 'rgba(255,255,255,0.82)', border: '1px solid rgba(148,163,184,0.24)', borderRadius: '18px', padding: '16px', boxShadow: '0 16px 40px rgba(148,163,184,0.16)' }}>
+          <div style={{ fontSize: '11px', color: '#64748b', fontWeight: 700, letterSpacing: '0.08em' }}>XP</div>
+          <div style={{ fontSize: '24px', color: '#0369a1', fontWeight: 700 }}>{gameState.xp || 0}</div>
         </div>
       </div>
 
+      <div style={{ background: 'rgba(255,255,255,0.82)', border: '1px solid rgba(148,163,184,0.24)', borderRadius: '18px', padding: '16px', boxShadow: '0 16px 40px rgba(148,163,184,0.16)' }}>
       <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
         <button
           className="btn"
           onClick={() => setPlayingBugSquash(true)}
-          style={{ background: '#f5d000', color: '#0b1220', border: '2px solid #0b1220', fontWeight: 900 }}
+          style={{ background: 'rgba(37,99,235,0.12)', color: '#0f172a', border: '1px solid rgba(29,78,216,0.22)', fontWeight: 700, borderRadius: '12px' }}
         >
           PLAY BUG SQUASH
         </button>
         <button
           className="btn"
           onClick={() => setGameState(DEFAULT_GAME_STATE)}
-          style={{ background: '#ef4444', color: '#fff', border: '2px solid #7f1d1d', fontWeight: 900 }}
+          style={{ background: '#fff1f2', color: '#be123c', border: '1px solid rgba(244,63,94,0.18)', fontWeight: 700, borderRadius: '12px' }}
         >
           RESET LOCAL STATS
         </button>
       </div>
 
-      <div style={{ marginTop: '16px', fontSize: '12px', color: '#94a3b8', fontFamily: 'monospace' }}>
+      <div style={{ marginTop: '14px', fontSize: '12px', color: '#64748b' }}>
         Local-only arcade mode active. Progress is saved in browser storage.
+      </div>
       </div>
 
       {playingBugSquash && (

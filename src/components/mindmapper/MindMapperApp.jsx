@@ -100,7 +100,7 @@ const FlowCanvas = ({ compact = false, quickAddType = null, onQuickAddConsumed =
     }, [quickAddType, onQuickAddConsumed, screenToFlowPosition, setNodes]);
 
     return (
-        <div ref={wrapperRef} style={{ flex: 1, position: 'relative', background: '#f8fafc' }}>
+        <div ref={wrapperRef} style={{ flex: 1, position: 'relative', background: 'linear-gradient(180deg, #f7faff 0%, #edf3fb 100%)' }}>
             <ReactFlow
                 nodes={nodes}
                 edges={edges}
@@ -112,11 +112,11 @@ const FlowCanvas = ({ compact = false, quickAddType = null, onQuickAddConsumed =
                 nodeTypes={nodeTypes}
                 fitView
             >
-                <Controls style={{ border: '2px solid black', borderRadius: '4px', boxShadow: compact ? '2px 2px 0px black' : '4px 4px 0px black', background: 'white', transform: compact ? 'scale(0.86)' : 'scale(1)', transformOrigin: 'top left' }} />
+                <Controls style={{ border: '1px solid rgba(148,163,184,0.24)', borderRadius: '14px', boxShadow: '0 12px 24px rgba(148,163,184,0.16)', background: 'rgba(255,255,255,0.94)', transform: compact ? 'scale(0.86)' : 'scale(1)', transformOrigin: 'top left' }} />
                 <Background color="#cbd5e1" variant="dots" gap={20} size={2} />
             </ReactFlow>
             <div style={{ position: 'absolute', top: compact ? 10 : 20, left: compact ? 10 : 20, zIndex: 10 }}>
-                <div style={{ background: '#f5d000', color: '#0b1220', padding: compact ? '7px 10px' : '12px 24px', borderRadius: '8px', fontWeight: 900, fontFamily: 'monospace', border: '3px solid #0b1220', boxShadow: compact ? '2px 2px 0 #0b1220' : '4px 4px 0 #0b1220', fontSize: compact ? 9 : 12, maxWidth: compact ? '74vw' : 'none' }}>
+                <div style={{ background: 'rgba(255,255,255,0.94)', color: '#0f172a', padding: compact ? '8px 10px' : '12px 18px', borderRadius: '14px', fontWeight: 700, border: '1px solid rgba(148,163,184,0.24)', boxShadow: '0 12px 24px rgba(148,163,184,0.16)', fontSize: compact ? 10 : 12, maxWidth: compact ? '74vw' : 'none' }}>
                     1. IDENTIFY PROBLEM {'->'} 2. BRANCH TO FEATURES {'->'} 3. DECONSTRUCT TECH STACK
                 </div>
             </div>
@@ -140,7 +140,7 @@ export default function MindMapperApp() {
     }, []);
 
     return (
-        <div style={{ width: '100%', height: '100%', display: 'flex', position: 'relative' }}>
+        <div style={{ width: '100%', height: '100%', display: 'flex', position: 'relative', background: 'linear-gradient(180deg, #f7faff 0%, #edf3fb 100%)' }}>
             {!isCompact && <MindMapperSidebar onQuickAdd={setQuickAddType} />}
             {isCompact && panelOpen && (
                 <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, zIndex: 25 }}>
@@ -156,10 +156,10 @@ export default function MindMapperApp() {
                         left: 10,
                         top: 10,
                         zIndex: 26,
-                        border: '2px solid #0b1220',
-                        borderRadius: 10,
-                        background: '#f5d000',
-                        color: '#0b1220',
+                        border: '1px solid rgba(148,163,184,0.24)',
+                        borderRadius: 12,
+                        background: 'rgba(255,255,255,0.94)',
+                        color: '#334155',
                         width: 34,
                         height: 34,
                         display: 'inline-flex',

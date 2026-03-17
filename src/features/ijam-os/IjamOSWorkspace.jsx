@@ -2924,6 +2924,7 @@ const IjamOSWorkspace = ({ session, currentUser, isMobileView, deviceMode = 'des
     const [explorerError, setExplorerError] = useState('');
     const [explorerClipboard, setExplorerClipboard] = useState(null);
     const explorerImportInputRef = useRef(null);
+    const wallpaperImportInputRef = useRef(null);
     const toggleStage = (stageName) => setCollapsedStages(prev => {
         const next = new Set(prev);
         next.has(stageName) ? next.delete(stageName) : next.add(stageName);
@@ -3049,12 +3050,13 @@ const IjamOSWorkspace = ({ session, currentUser, isMobileView, deviceMode = 'des
             runtime.wallpaper.getCurrent()
         ]);
 
-        setWallpaperGallery(Array.isArray(wallpapers) && wallpapers.length ? wallpapers : BUILT_IN_WALLPAPERS);
+        const nextWallpapers = Array.isArray(wallpapers) && wallpapers.length ? wallpapers : BUILT_IN_WALLPAPERS;
+        setWallpaperGallery(nextWallpapers);
         setWallpaperFit(currentState?.fit || DEFAULT_PERSONALIZATION.fit);
         setWallpaperHistory(currentState?.history || []);
-        if (currentState?.wallpaper?.id) {
-            setCurrentWallpaper(currentState.wallpaper.id);
-        }
+        const resolvedWallpaperId = normalizeLegacyWallpaperId(currentState?.wallpaper?.id);
+        const hasResolvedWallpaper = nextWallpapers.some((wallpaper) => wallpaper.id === resolvedWallpaperId);
+        setCurrentWallpaper(hasResolvedWallpaper ? resolvedWallpaperId : getDefaultWallpaperId());
     }, [runtime]);
 
     const markWorkspaceSessionBooted = useCallback(async () => {
@@ -3310,6 +3312,84 @@ const IjamOSWorkspace = ({ session, currentUser, isMobileView, deviceMode = 'des
         }
         return { ...base, backgroundSize: 'cover', backgroundRepeat: 'no-repeat' };
     }, []);
+    const resolveDesktopWallpaperStyle = useCallback((wallpaper, { fit } = {}) => {
+        const base = resolveWallpaperStyle(wallpaper, { fit });
+        if (!wallpaper || wallpaper.type !== 'image') return base;
+
+        if (wallpaper.id === 'kdos') {
+            return {
+                ...base,
+                backgroundSize: fit === 'fit' ? '42%' : '52%',
+                backgroundPosition: 'center calc(50% + 30px)',
+                backgroundRepeat: 'no-repeat'
+            };
+        }
+
+        return base;
+    }, [resolveWallpaperStyle]);
+    const wallpaperFitOptions = useMemo(() => ([
+        { id: 'fill', label: 'Fill' },
+        { id: 'fit', label: 'Fit' },
+        { id: 'stretch', label: 'Stretch' },
+        { id: 'tile', label: 'Tile' }
+    ]), []);
+    const wallpaperWindowTheme = useMemo(() => ({
+        shell: {
+            display: 'flex',
+            flexDirection: 'column',
+            height: '100%',
+            minHeight: 0,
+            padding: '14px',
+            gap: '12px',
+            background: 'linear-gradient(180deg, #f7faff 0%, #edf3fb 100%)',
+            color: '#0f172a',
+            fontFamily: '"Segoe UI Variable", "Segoe UI", system-ui, sans-serif'
+        },
+        panel: {
+            background: 'rgba(255,255,255,0.82)',
+            border: '1px solid rgba(148,163,184,0.24)',
+            borderRadius: '18px',
+            boxShadow: '0 16px 40px rgba(148,163,184,0.16)'
+        },
+        commandButton: {
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '8px',
+            minHeight: '36px',
+            padding: '0 14px',
+            borderRadius: '12px',
+            border: '1px solid rgba(29,78,216,0.22)',
+            background: 'rgba(37,99,235,0.12)',
+            color: '#0f172a',
+            cursor: 'pointer',
+            fontSize: '13px',
+            fontWeight: 700,
+            fontFamily: '"Segoe UI", system-ui, sans-serif'
+        },
+        fitButton: (isActive) => ({
+            border: isActive ? '1px solid rgba(29,78,216,0.26)' : '1px solid rgba(148,163,184,0.24)',
+            borderRadius: '999px',
+            background: isActive ? 'rgba(37,99,235,0.12)' : 'rgba(255,255,255,0.92)',
+            color: isActive ? '#0f172a' : '#334155',
+            fontSize: '12px',
+            fontWeight: 700,
+            padding: '8px 12px',
+            cursor: 'pointer',
+            fontFamily: '"Segoe UI", system-ui, sans-serif'
+        }),
+        thumb: (isSelected) => ({
+            position: 'relative',
+            aspectRatio: '16 / 9',
+            minHeight: 'unset',
+            borderRadius: '18px',
+            overflow: 'hidden',
+            cursor: 'pointer',
+            border: `1px solid ${isSelected ? 'rgba(29,78,216,0.26)' : 'rgba(148,163,184,0.18)'}`,
+            boxShadow: isSelected ? '0 10px 28px rgba(96,165,250,0.18)' : '0 8px 22px rgba(148,163,184,0.14)',
+            backgroundColor: '#dbe7f5'
+        })
+    }), []);
 
     const handleImageUpload = async (event) => {
         try {
@@ -3515,6 +3595,20 @@ const IjamOSWorkspace = ({ session, currentUser, isMobileView, deviceMode = 'des
         const row = Math.max(0, Number.parseInt(String(position?.row ?? 0), 10) || 0);
         return (column * safeRows) + row;
     }, [desktopGridRows]);
+    const getDesktopFsPositionKey = useCallback((item) => {
+        if (!item) return null;
+        return `fs:${item.path || item.name || 'unknown'}`;
+    }, []);
+    const desktopFsPositionKeys = useMemo(
+        () => desktopRenderableFsItems
+            .map((item) => getDesktopFsPositionKey(item))
+            .filter(Boolean),
+        [desktopRenderableFsItems, getDesktopFsPositionKey]
+    );
+    const desktopPositionKeys = useMemo(
+        () => [...appTypeList, ...desktopFsPositionKeys],
+        [appTypeList, desktopFsPositionKeys]
+    );
     const normalizeDesktopPositions = useCallback((positions) => {
         const safeColumns = Math.max(1, desktopGridColumns || 1);
         const safeRows = Math.max(1, desktopGridRows || 1);
@@ -3530,8 +3624,8 @@ const IjamOSWorkspace = ({ session, currentUser, isMobileView, deviceMode = 'des
             return getPositionFromSlotIndex(nextIndex, safeRows);
         };
 
-        appTypeList.forEach((type) => {
-            const current = positions?.[type];
+        desktopPositionKeys.forEach((key) => {
+            const current = positions?.[key];
             const column = Number.parseInt(String(current?.column ?? -1), 10);
             const row = Number.parseInt(String(current?.row ?? -1), 10);
             const hasValidPosition = column >= 0 && column < safeColumns && row >= 0 && row < safeRows;
@@ -3540,29 +3634,29 @@ const IjamOSWorkspace = ({ session, currentUser, isMobileView, deviceMode = 'des
                 const slotIndex = getSlotIndexFromPosition({ column, row }, safeRows);
                 if (!occupied.has(slotIndex)) {
                     occupied.add(slotIndex);
-                    normalized[type] = { column, row };
+                    normalized[key] = { column, row };
                     return;
                 }
             }
 
-            normalized[type] = claimNextAvailable();
+            normalized[key] = claimNextAvailable();
         });
 
         return normalized;
-    }, [appTypeList, desktopGridColumns, desktopGridRows, getPositionFromSlotIndex, getSlotIndexFromPosition]);
+    }, [desktopGridColumns, desktopGridRows, desktopPositionKeys, getPositionFromSlotIndex, getSlotIndexFromPosition]);
     const serializeDesktopPositions = useCallback((positions) => {
         const safeSlotCount = Math.max(1, desktopSlotCount);
         const slots = Array.from({ length: safeSlotCount }, () => null);
 
-        Object.entries(positions || {}).forEach(([type, position]) => {
-            if (!appTypeList.includes(type)) return;
+        Object.entries(positions || {}).forEach(([key, position]) => {
+            if (!desktopPositionKeys.includes(key)) return;
             const slotIndex = getSlotIndexFromPosition(position, desktopGridRows);
             if (slotIndex < 0 || slotIndex >= slots.length || slots[slotIndex]) return;
-            slots[slotIndex] = type;
+            slots[slotIndex] = key;
         });
 
         return slots;
-    }, [appTypeList, desktopGridRows, desktopSlotCount, getSlotIndexFromPosition]);
+    }, [desktopGridRows, desktopPositionKeys, desktopSlotCount, getSlotIndexFromPosition]);
     const resolvePersistedDesktopPositions = useCallback((layout) => {
         const rawPositions = layout?.positions && typeof layout.positions === 'object' ? layout.positions : null;
         const rawSlots = Array.isArray(layout?.slots) ? layout.slots : [];
@@ -3576,16 +3670,16 @@ const IjamOSWorkspace = ({ session, currentUser, isMobileView, deviceMode = 'des
         const orderedTypes = (persistedVersion >= DESKTOP_LAYOUT_VERSION
             ? (rawSlots.length ? rawSlots : legacyOrder)
             : (rawSlots.length ? rawSlots : legacyOrder).filter(Boolean)
-        ).filter((type) => appTypeList.includes(type));
+        ).filter((key) => desktopPositionKeys.includes(key));
 
         const seededPositions = {};
-        orderedTypes.forEach((type, index) => {
-            if (seededPositions[type]) return;
-            seededPositions[type] = getPositionFromSlotIndex(index, desktopGridRows);
+        orderedTypes.forEach((key, index) => {
+            if (seededPositions[key]) return;
+            seededPositions[key] = getPositionFromSlotIndex(index, desktopGridRows);
         });
 
         return normalizeDesktopPositions(seededPositions);
-    }, [DESKTOP_LAYOUT_VERSION, appTypeList, desktopGridRows, getPositionFromSlotIndex, normalizeDesktopPositions]);
+    }, [DESKTOP_LAYOUT_VERSION, desktopGridRows, desktopPositionKeys, getPositionFromSlotIndex, normalizeDesktopPositions]);
     const loadCachedDesktopLayout = useCallback(() => {
         if (typeof window === 'undefined') return null;
         try {
@@ -3613,28 +3707,27 @@ const IjamOSWorkspace = ({ session, currentUser, isMobileView, deviceMode = 'des
     );
     const desktopCells = useMemo(() => {
         const normalizedPositions = normalizeDesktopPositions(desktopIconPositions);
-        const occupied = new Set(Object.values(normalizedPositions).map((position) => getSlotIndexFromPosition(position, desktopGridRows)));
         const cells = appTypeList.map((appType) => ({
             kind: 'app',
+            entityKey: appType,
             appType,
             slotIndex: getSlotIndexFromPosition(normalizedPositions[appType], desktopGridRows),
             position: normalizedPositions[appType]
         }));
-
-        let fsCursor = 0;
-        for (let slotIndex = 0; slotIndex < desktopRenderSlotCount && fsCursor < desktopRenderableFsItems.length; slotIndex += 1) {
-            if (occupied.has(slotIndex)) continue;
+        desktopRenderableFsItems.forEach((item) => {
+            const entityKey = getDesktopFsPositionKey(item);
+            if (!entityKey) return;
             cells.push({
                 kind: 'fs',
-                item: desktopRenderableFsItems[fsCursor],
-                slotIndex,
-                position: getPositionFromSlotIndex(slotIndex, desktopGridRows)
+                entityKey,
+                item,
+                slotIndex: getSlotIndexFromPosition(normalizedPositions[entityKey], desktopGridRows),
+                position: normalizedPositions[entityKey]
             });
-            fsCursor += 1;
-        }
+        });
 
-        return cells;
-    }, [appTypeList, desktopGridRows, desktopIconPositions, desktopRenderSlotCount, desktopRenderableFsItems, getPositionFromSlotIndex, getSlotIndexFromPosition, normalizeDesktopPositions]);
+        return cells.sort((left, right) => left.slotIndex - right.slotIndex);
+    }, [appTypeList, desktopGridRows, desktopIconPositions, desktopRenderableFsItems, getDesktopFsPositionKey, getSlotIndexFromPosition, normalizeDesktopPositions]);
     useEffect(() => {
         if (desktopSlotsLoadedRef.current || !runtime || !isDesktopGridReady) return;
         let active = true;
@@ -3717,23 +3810,23 @@ const IjamOSWorkspace = ({ session, currentUser, isMobileView, deviceMode = 'des
         setDesktopIconPositions((prev) => normalizeDesktopPositions(prev));
     }, [isDesktopGridReady, normalizeDesktopPositions]);
 
-    const moveDesktopIconToSlot = useCallback((fromType, slotIndex) => {
-        if (!fromType || slotIndex == null) return;
+    const moveDesktopIconToSlot = useCallback((fromKey, slotIndex) => {
+        if (!fromKey || slotIndex == null) return;
         setDesktopIconPositions((prev) => {
             const normalized = normalizeDesktopPositions(prev);
             const nextPosition = getPositionFromSlotIndex(Math.max(0, Math.min(slotIndex, desktopSlotCount - 1)), desktopGridRows);
-            const targetEntry = Object.entries(normalized).find(([type, position]) => (
-                type !== fromType
+            const targetEntry = Object.entries(normalized).find(([key, position]) => (
+                key !== fromKey
                 && position.column === nextPosition.column
                 && position.row === nextPosition.row
             ));
 
-            if (!normalized[fromType]) return prev;
+            if (!normalized[fromKey]) return prev;
 
-            const next = { ...normalized, [fromType]: nextPosition };
+            const next = { ...normalized, [fromKey]: nextPosition };
             if (targetEntry) {
-                const [targetType] = targetEntry;
-                next[targetType] = normalized[fromType];
+                const [targetKey] = targetEntry;
+                next[targetKey] = normalized[fromKey];
             }
             if (typeof window !== 'undefined') {
                 try {
@@ -4384,11 +4477,15 @@ const IjamOSWorkspace = ({ session, currentUser, isMobileView, deviceMode = 'des
         try {
             if (!runtime || !event.target.files?.length) return;
 
+            let lastImportedWallpaper = null;
             for (const file of Array.from(event.target.files)) {
-                await runtime.wallpaper.import(file);
+                lastImportedWallpaper = await runtime.wallpaper.import(file);
             }
 
             await refreshWallpaperState();
+            if (lastImportedWallpaper?.id) {
+                await applyWallpaperSelection(lastImportedWallpaper.id, wallpaperFit || DEFAULT_PERSONALIZATION.fit);
+            }
 
             const browsingWallpapers = currentExplorerAbsolutePath
                 && normalizeOsPath(currentExplorerAbsolutePath).toLowerCase().startsWith(WORKSPACE_PATHS.wallpapers.toLowerCase());
@@ -4404,7 +4501,7 @@ const IjamOSWorkspace = ({ session, currentUser, isMobileView, deviceMode = 'des
                 event.target.value = '';
             }
         }
-    }, [currentExplorerAbsolutePath, refreshExplorerItems, refreshWallpaperState, runtime, windowStates.files?.isOpen]);
+    }, [applyWallpaperSelection, currentExplorerAbsolutePath, refreshExplorerItems, refreshWallpaperState, runtime, wallpaperFit, windowStates.files?.isOpen]);
     useEffect(() => {
         setAssistantMessages([
             {
@@ -4761,9 +4858,9 @@ YOU DID IT. APP DEPLOYED!`);
         if (!wallpaper) return { background: '#0b131e' };
         return {
             background: '#0b131e',
-            ...resolveWallpaperStyle(wallpaper, { fit: wallpaperFit })
+            ...resolveDesktopWallpaperStyle(wallpaper, { fit: wallpaperFit })
         };
-    }, [currentWallpaper, isMacMode, resolveWallpaperStyle, wallpaperFit, wallpaperGallery]);
+    }, [currentWallpaper, isMacMode, resolveDesktopWallpaperStyle, wallpaperFit, wallpaperGallery]);
     const macMenus = useMemo(() => ([
         {
             id: 'system',
@@ -4985,7 +5082,7 @@ YOU DID IT. APP DEPLOYED!`);
                     const desktopItem = cell.kind === 'fs' ? cell.item : null;
                     return (
                         <div
-                            key={`desktop-slot-${slotIndex}`}
+                            key={`desktop-slot-${cell.entityKey || slotIndex}`}
                             data-desktop-slot-index={slotIndex}
                             style={{
                                 ...getDesktopSlotPlacement(cell.position),
@@ -5042,7 +5139,20 @@ YOU DID IT. APP DEPLOYED!`);
                                     }}
                                     isPhoneMode={isPhoneMode}
                                     isTabletMode={isTabletMode}
-                                    draggable={false}
+                                    draggable={!isTouchIjamMode}
+                                    onDragStart={(e) => {
+                                        if (!cell.entityKey) return;
+                                        setIsDraggingDesktopIcon(true);
+                                        setDraggedIconType(cell.entityKey);
+                                        e.dataTransfer.effectAllowed = 'move';
+                                        e.dataTransfer.setData('text/plain', cell.entityKey);
+                                    }}
+                                    onDragEnd={() => {
+                                        setDraggedIconType(null);
+                                        setDropTargetSlotIndex(null);
+                                        setTimeout(() => setIsDraggingDesktopIcon(false), 80);
+                                    }}
+                                    isDropTarget={dropTargetSlotIndex === slotIndex}
                                 />
                             ) : null}
                         </div>
@@ -5680,58 +5790,57 @@ YOU DID IT. APP DEPLOYED!`);
             {/* 3. Settings/Stats Window */}
             {windowStates.progress?.isOpen && (
                 <WindowFrame {...mobileWindowProps} winState={windowStates.progress} title="Stats" AppIcon={User} onClose={() => closeApp('progress')} onMinimize={() => minimizeApp('progress')} onMaximize={() => maximizeApp('progress')} onFocus={() => focusApp('progress')} onMove={(x, y) => moveApp('progress', x, y)} onResize={(w, h) => resizeApp('progress', w, h)}>
-                    <div style={{ padding: '24px', color: '#fff', overflowY: 'auto', height: '100%' }}>
+                    <div className="os-thin-scroll" style={{ display: 'flex', flexDirection: 'column', gap: '12px', padding: '14px', color: '#0f172a', overflowY: 'auto', height: '100%', background: 'linear-gradient(180deg, #f7faff 0%, #edf3fb 100%)' }}>
                         {/* Builder Identity Card */}
-                        <div style={{ background: 'linear-gradient(45deg, #0b1220 0%, #1e293b 100%)', border: '3px solid #f5d000', borderRadius: '16px', padding: '24px', marginBottom: '30px', display: 'flex', alignItems: 'center', gap: '20px', boxShadow: '8px 8px 0 #0b1220' }}>
-                            <div style={{ width: '80px', height: '80px', borderRadius: '20px', background: '#f5d000', border: '4px solid #0b1220', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '32px', fontWeight: 900, color: '#0b1220', flexShrink: 0 }}>
+                        <div style={{ background: 'rgba(255,255,255,0.82)', border: '1px solid rgba(148,163,184,0.24)', borderRadius: '18px', padding: '24px', display: 'flex', alignItems: 'center', gap: '20px', boxShadow: '0 16px 40px rgba(148,163,184,0.16)' }}>
+                            <div style={{ width: '80px', height: '80px', borderRadius: '20px', background: 'linear-gradient(180deg, #2563eb 0%, #1d4ed8 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '32px', fontWeight: 900, color: '#eff6ff', flexShrink: 0 }}>
                                 {(currentUser?.name || 'A')[0].toUpperCase()}
                             </div>
                             <div>
-                                <div style={{ fontSize: '12px', color: '#f5d000', fontWeight: 900, letterSpacing: '0.1em', marginBottom: '4px' }}>VERIFIED_BUILDER</div>
-                                <div style={{ fontSize: '24px', fontWeight: 900, color: '#fff' }}>{currentUser?.name || 'Anonymous Builder'}</div>
-                                <div style={{ fontSize: '13px', color: '#94a3b8', fontWeight: 800 }}>DARI {currentUser?.district || 'Selangor'} // {userRank}</div>
+                                <div style={{ fontSize: '11px', color: '#64748b', fontWeight: 700, letterSpacing: '0.08em', marginBottom: '6px' }}>VERIFIED BUILDER</div>
+                                <div style={{ fontSize: '24px', fontWeight: 700, color: '#0f172a' }}>{currentUser?.name || 'Anonymous Builder'}</div>
+                                <div style={{ fontSize: '13px', color: '#475569', fontWeight: 600 }}>DARI {currentUser?.district || 'Selangor'} // {userRank}</div>
                             </div>
                         </div>
 
-                        <div style={{ display: 'grid', gridTemplateColumns: isNarrowScreen ? '1fr' : '1fr 1fr', gap: '20px', marginBottom: '30px' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: isNarrowScreen ? '1fr' : '1fr 1fr', gap: '12px' }}>
                             {/* Rank Card */}
-                            <div style={{ background: '#0b1220', padding: '24px', border: '3px solid #f5d000', borderRadius: '12px', textAlign: 'center' }}>
-                                <div style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '8px', letterSpacing: '0.1em' }}>RANK</div>
-                                <div style={{ fontSize: '24px', fontWeight: 900, color: '#f5d000' }}>{userRank}</div>
-                                <div style={{ fontSize: '14px', color: '#86efac', marginTop: '4px', fontWeight: 800 }}>{userVibes} VIBES</div>
+                            <div style={{ background: 'rgba(255,255,255,0.82)', padding: '24px', border: '1px solid rgba(148,163,184,0.24)', borderRadius: '18px', textAlign: 'center', boxShadow: '0 16px 40px rgba(148,163,184,0.16)' }}>
+                                <div style={{ fontSize: '11px', color: '#64748b', marginBottom: '8px', letterSpacing: '0.08em', fontWeight: 700 }}>RANK</div>
+                                <div style={{ fontSize: '24px', fontWeight: 700, color: '#0f172a' }}>{userRank}</div>
+                                <div style={{ fontSize: '14px', color: '#047857', marginTop: '4px', fontWeight: 700 }}>{userVibes} VIBES</div>
                             </div>
                             {/* Completion Card */}
-                            <div style={{ background: '#0b1220', padding: '24px', border: '3px solid #334155', borderRadius: '12px', textAlign: 'center' }}>
-                                <div style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '8px', letterSpacing: '0.1em' }}>COMPLETION</div>
-                                <div style={{ fontSize: '24px', fontWeight: 900, color: '#fff' }}>
+                            <div style={{ background: 'rgba(255,255,255,0.82)', padding: '24px', border: '1px solid rgba(148,163,184,0.24)', borderRadius: '18px', textAlign: 'center', boxShadow: '0 16px 40px rgba(148,163,184,0.16)' }}>
+                                <div style={{ fontSize: '11px', color: '#64748b', marginBottom: '8px', letterSpacing: '0.08em', fontWeight: 700 }}>COMPLETION</div>
+                                <div style={{ fontSize: '24px', fontWeight: 700, color: '#0f172a' }}>
                                     {Math.round((completedLessons.length / lessons.length) * 100)}%
                                 </div>
-                                <div style={{ fontSize: '14px', color: '#94a3b8', marginTop: '4px' }}>
+                                <div style={{ fontSize: '14px', color: '#64748b', marginTop: '4px' }}>
                                     {completedLessons.length} / {lessons.length} Modules
                                 </div>
                             </div>
                         </div>
 
                         {/* Progress Bar */}
-                        <div style={{ marginBottom: '30px' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '12px', fontWeight: 900, fontFamily: 'monospace' }}>
-                                <span>SYSTEM_READY_INDEX</span>
+                        <div style={{ background: 'rgba(255,255,255,0.82)', border: '1px solid rgba(148,163,184,0.24)', borderRadius: '18px', boxShadow: '0 16px 40px rgba(148,163,184,0.16)', padding: '20px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px', fontSize: '12px', fontWeight: 700, color: '#475569' }}>
+                                <span>SYSTEM READY INDEX</span>
                                 <span>{Math.round((completedLessons.length / lessons.length) * 100)}%</span>
                             </div>
-                            <div style={{ height: '12px', background: '#0b1220', border: '2px solid #334155', borderRadius: '6px', overflow: 'hidden' }}>
+                            <div style={{ height: '12px', background: '#e2e8f0', borderRadius: '999px', overflow: 'hidden' }}>
                                 <div style={{
                                     height: '100%',
                                     width: `${(completedLessons.length / lessons.length) * 100}%`,
-                                    background: '#f5d000',
-                                    boxShadow: '0 0 12px rgba(245, 208, 0, 0.4)',
+                                    background: 'linear-gradient(90deg, #2563eb 0%, #60a5fa 100%)',
                                     transition: 'width 1s ease-out'
                                 }} />
                             </div>
                         </div>
 
                         {/* Stage Checklist */}
-                        <div style={{ background: '#0b1220', padding: '20px', borderRadius: '12px', border: '2px solid #1e293b' }}>
-                            <div style={{ fontSize: '14px', fontWeight: 900, color: '#f5d000', marginBottom: '16px', fontFamily: 'monospace' }}>ROADMAP_CHECKLIST</div>
+                        <div style={{ background: 'rgba(255,255,255,0.82)', padding: '20px', borderRadius: '18px', border: '1px solid rgba(148,163,184,0.24)', boxShadow: '0 16px 40px rgba(148,163,184,0.16)' }}>
+                            <div style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', marginBottom: '16px', letterSpacing: '0.08em' }}>ROADMAP CHECKLIST</div>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                                 {Object.keys(groupedLessons).map(stage => {
                                     const stageLessons = groupedLessons[stage];
@@ -5739,14 +5848,14 @@ YOU DID IT. APP DEPLOYED!`);
                                     const isStageDone = completedInStage === stageLessons.length;
 
                                     return (
-                                        <div key={stage} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: isStageDone ? 'rgba(134, 239, 172, 0.05)' : 'rgba(255,255,255,0.02)', border: isStageDone ? '1px solid #86efac' : '1px solid #1e293b', borderRadius: '8px' }}>
+                                        <div key={stage} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px', background: isStageDone ? '#ecfdf5' : 'rgba(248,250,252,0.9)', border: isStageDone ? '1px solid rgba(16,185,129,0.22)' : '1px solid rgba(226,232,240,0.92)', borderRadius: '14px' }}>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                                <div style={{ width: '18px', height: '18px', border: '2px solid', borderColor: isStageDone ? '#86efac' : '#334155', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#86efac' }}>
+                                                <div style={{ width: '18px', height: '18px', border: '2px solid', borderColor: isStageDone ? '#10b981' : '#94a3b8', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#10b981' }}>
                                                     {isStageDone && "✓"}
                                                 </div>
-                                                <span style={{ fontSize: '13px', fontWeight: 800, color: isStageDone ? '#86efac' : '#fff' }}>{stage.toUpperCase()}</span>
+                                                <span style={{ fontSize: '13px', fontWeight: 700, color: isStageDone ? '#047857' : '#0f172a' }}>{stage.toUpperCase()}</span>
                                             </div>
-                                            <span style={{ fontSize: '11px', color: '#64748b', fontWeight: 900 }}>{completedInStage}/{stageLessons.length}</span>
+                                            <span style={{ fontSize: '11px', color: '#64748b', fontWeight: 700 }}>{completedInStage}/{stageLessons.length}</span>
                                         </div>
                                     );
                                 })}
@@ -5754,17 +5863,17 @@ YOU DID IT. APP DEPLOYED!`);
                         </div>
 
                         {/* WEBSITE SHOWCASE UPLOADER */}
-                        <div style={{ background: '#0b1220', padding: '24px', borderRadius: '12px', border: '3px solid #f5d000', marginTop: '30px', boxShadow: '8px 8px 0 #0b1220' }}>
-                            <div style={{ fontSize: '14px', fontWeight: 900, color: '#f5d000', marginBottom: '16px', fontFamily: 'monospace' }}>[ WEBSITE_SHOWCASE ]</div>
+                        <div style={{ background: 'rgba(255,255,255,0.82)', padding: '24px', borderRadius: '18px', border: '1px solid rgba(148,163,184,0.24)', boxShadow: '0 16px 40px rgba(148,163,184,0.16)' }}>
+                            <div style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', marginBottom: '16px', letterSpacing: '0.08em' }}>WEBSITE SHOWCASE</div>
 
                             <div style={{ display: 'grid', gridTemplateColumns: isNarrowScreen ? '1fr' : '1fr 1fr', gap: '24px' }}>
 
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                                    <div style={{ background: '#1e293b', border: '2px dashed #475569', borderRadius: '8px', padding: '20px', textAlign: 'center', position: 'relative' }}>
+                                    <div style={{ background: 'rgba(248,250,252,0.96)', border: '1px dashed rgba(148,163,184,0.6)', borderRadius: '14px', padding: '20px', textAlign: 'center', position: 'relative' }}>
                                         {showcaseUrl ? (
                                             <img src={showcaseUrl} alt="Showcase" style={{ width: '100%', borderRadius: '4px', display: 'block' }} />
                                         ) : (
-                                            <div style={{ color: '#94a3b8', fontSize: '13px', fontFamily: 'monospace' }}>No image uploaded.</div>
+                                            <div style={{ color: '#64748b', fontSize: '13px' }}>No image uploaded.</div>
                                         )}
                                         <input
                                             type="file"
@@ -5773,32 +5882,32 @@ YOU DID IT. APP DEPLOYED!`);
                                             disabled={isUploading}
                                             style={{ opacity: 0, position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', cursor: 'pointer' }}
                                         />
-                                        <button style={{ marginTop: '12px', background: '#f5d000', color: '#0b1220', border: 'none', padding: '6px 16px', borderRadius: '4px', fontWeight: 900, fontFamily: 'monospace', cursor: 'pointer' }}>
+                                        <button style={{ marginTop: '12px', border: '1px solid rgba(29,78,216,0.22)', background: 'rgba(37,99,235,0.12)', color: '#0f172a', padding: '8px 16px', borderRadius: '12px', fontWeight: 700, cursor: 'pointer' }}>
                                             {isUploading ? 'UPLOADING...' : (showcaseUrl ? 'CHANGE_IMAGE' : 'UPLOAD_IMAGE')}
                                         </button>
                                     </div>
                                 </div>
 
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', justifyContent: 'center' }}>
-                                    <p style={{ color: '#94a3b8', fontSize: '12px', lineHeight: 1.5, margin: 0 }}>
+                                    <p style={{ color: '#64748b', fontSize: '12px', lineHeight: 1.5, margin: 0 }}>
                                         Upload a screenshot of your website here to show off to the community alongside your rank and vibes.
                                     </p>
                                     <div>
-                                        <label style={{ display: 'block', fontSize: '11px', color: '#f5d000', marginBottom: '8px', fontWeight: 900, fontFamily: 'monospace' }}>LIVE_URL</label>
+                                        <label style={{ display: 'block', fontSize: '11px', color: '#64748b', marginBottom: '8px', fontWeight: 700, letterSpacing: '0.08em' }}>LIVE URL</label>
                                         <div style={{ display: 'flex', gap: '8px' }}>
                                             <input
                                                 value={websiteUrl}
                                                 onChange={e => setWebsiteUrl(e.target.value)}
                                                 placeholder="https://mywebsite.vercel.app"
-                                                style={{ flex: 1, background: '#111827', border: '2px solid #334155', padding: '10px', color: '#fff', borderRadius: '8px', fontFamily: 'monospace', fontSize: '12px' }}
+                                                style={{ flex: 1, background: '#ffffff', border: '1px solid rgba(148,163,184,0.24)', padding: '10px 12px', color: '#0f172a', borderRadius: '12px', fontSize: '12px' }}
                                             />
-                                            <button onClick={handleSaveWebsiteUrl} style={{ background: '#f5d000', color: '#0b1220', border: 'none', padding: '0 16px', borderRadius: '8px', fontWeight: 900, cursor: 'pointer' }}>SAVE</button>
+                                            <button onClick={handleSaveWebsiteUrl} style={{ border: '1px solid rgba(29,78,216,0.22)', background: 'rgba(37,99,235,0.12)', color: '#0f172a', padding: '0 16px', borderRadius: '12px', fontWeight: 700, cursor: 'pointer' }}>SAVE</button>
                                         </div>
                                     </div>
                                     {websiteUrl && (
                                         <button
                                             onClick={() => openExternal(websiteUrl)}
-                                            style={{ background: 'transparent', border: '2px solid #f5d000', color: '#f5d000', padding: '10px', borderRadius: '8px', fontWeight: 900, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', width: '100%', fontFamily: 'monospace' }}
+                                            style={{ background: 'rgba(255,255,255,0.92)', border: '1px solid rgba(148,163,184,0.24)', color: '#0f172a', padding: '10px', borderRadius: '12px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', width: '100%' }}
                                         >
                                             OPEN_LIVE_SITE <ExternalLink size={14} />
                                         </button>
@@ -5824,7 +5933,7 @@ YOU DID IT. APP DEPLOYED!`);
                     onMove={(x, y) => moveApp('mission', x, y)}
                     onResize={(w, h) => resizeApp('mission', w, h)}
                 >
-                    <div style={{ padding: '14px', color: '#fff', overflowY: 'auto', height: '100%' }}>
+                    <div style={{ padding: '14px', overflow: 'hidden', height: '100%', background: 'linear-gradient(180deg, #f7faff 0%, #edf3fb 100%)' }}>
                         <Suspense fallback={<WindowModuleLoader label="MISSION_CONSOLE" background="transparent" />}>
                             <KrackedMissionConsole
                                 currentUser={currentUser}
@@ -5844,15 +5953,62 @@ YOU DID IT. APP DEPLOYED!`);
             {/* Wallpaper Gallery Window */}
             {windowStates.wallpaper?.isOpen && (
                 <WindowFrame {...mobileWindowProps} winState={windowStates.wallpaper} title="Wallpaper" AppIcon={Sparkles} onClose={() => closeApp('wallpaper')} onMinimize={() => minimizeApp('wallpaper')} onMaximize={() => maximizeApp('wallpaper')} onFocus={() => focusApp('wallpaper')} onMove={(x, y) => moveApp('wallpaper', x, y)} onResize={(w, h) => resizeApp('wallpaper', w, h)}>
-                    <div style={{ padding: '24px', color: '#fff', overflowY: 'auto', height: '100%' }}>
-                        <div style={{ marginBottom: '20px' }}>
-                            <div style={{ fontSize: '12px', color: '#f5d000', fontWeight: 900, letterSpacing: '0.1em', marginBottom: '8px' }}>CURRENT_WALLPAPER</div>
-                            <div style={{ fontSize: '18px', fontWeight: 900, color: '#fff' }}>
-                                {wallpaperGallery.find((wallpaper) => wallpaper.id === currentWallpaper)?.name || 'Unknown'}
+                    <div style={wallpaperWindowTheme.shell}>
+                        <input
+                            ref={wallpaperImportInputRef}
+                            type="file"
+                            accept="image/png,image/jpeg,image/jpg,image/webp,image/svg+xml"
+                            multiple
+                            onChange={handleWallpaperFilesSelected}
+                            style={{ display: 'none' }}
+                        />
+                        <div style={{ ...wallpaperWindowTheme.panel, padding: '16px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '14px', flexWrap: 'wrap' }}>
+                            <div>
+                                <div style={{ fontSize: '11px', color: '#64748b', fontWeight: 700, letterSpacing: '0.08em', marginBottom: '6px' }}>CURRENT WALLPAPER</div>
+                                <div style={{ fontSize: '22px', fontWeight: 700, color: '#0f172a' }}>
+                                    {wallpaperGallery.find((wallpaper) => wallpaper.id === currentWallpaper)?.name || 'Unknown'}
+                                </div>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={handleWallpaperImport}
+                                style={wallpaperWindowTheme.commandButton}
+                            >
+                                Import Wallpaper
+                            </button>
+                        </div>
+                        <div style={{ ...wallpaperWindowTheme.panel, padding: '12px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
+                            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                                {wallpaperFitOptions.map((option) => {
+                                    const isActive = wallpaperFit === option.id;
+                                    return (
+                                        <button
+                                            key={option.id}
+                                            type="button"
+                                            onClick={() => { void applyWallpaperSelection(currentWallpaper, option.id); }}
+                                            style={wallpaperWindowTheme.fitButton(isActive)}
+                                        >
+                                            {option.label}
+                                        </button>
+                                    );
+                                })}
                             </div>
                         </div>
 
-                        <div className="wallpaper-grid">
+                        <div
+                            className="os-thin-scroll"
+                            style={{
+                                ...wallpaperWindowTheme.panel,
+                                display: 'grid',
+                                gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
+                                gap: '16px',
+                                flex: 1,
+                                minHeight: 0,
+                                overflowY: 'auto',
+                                padding: '16px',
+                                alignContent: 'start'
+                            }}
+                        >
                             {wallpaperGallery.map((wallpaper, index) => {
                                 const isSelected = currentWallpaper === wallpaper.id;
                                 const wallpaperStyle = resolveWallpaperStyle(wallpaper, { fit: wallpaperFit });
@@ -5860,11 +6016,10 @@ YOU DID IT. APP DEPLOYED!`);
                                 return (
                                     <div
                                         key={wallpaper.id}
-                                        className={`wallpaper-thumb ${isSelected ? 'selected' : ''}`}
                                         onClick={() => { void applyWallpaperSelection(wallpaper.id); }}
                                         style={{
                                             ...wallpaperStyle,
-                                            position: 'relative'
+                                            ...wallpaperWindowTheme.thumb(isSelected)
                                         }}
                                     >
                                         {wallpaper.type === 'time-based' && (
@@ -5872,13 +6027,13 @@ YOU DID IT. APP DEPLOYED!`);
                                                 position: 'absolute',
                                                 top: '6px',
                                                 right: '6px',
-                                                background: 'rgba(0,0,0,0.6)',
+                                                background: 'rgba(15,23,42,0.72)',
                                                 padding: '3px 8px',
-                                                borderRadius: '4px',
-                                                fontSize: '9px',
+                                                borderRadius: '999px',
+                                                fontSize: '10px',
                                                 fontWeight: 700,
                                                 color: '#fff',
-                                                fontFamily: 'monospace'
+                                                fontFamily: '"Segoe UI", system-ui, sans-serif'
                                             }}>
                                                 {wallpaper.times}
                                             </div>
@@ -5888,18 +6043,18 @@ YOU DID IT. APP DEPLOYED!`);
                                             bottom: 0,
                                             left: 0,
                                             right: 0,
-                                            padding: '8px',
-                                            background: 'linear-gradient(to top, rgba(0,0,0,0.8), transparent)',
+                                            padding: '12px',
+                                            background: 'linear-gradient(to top, rgba(15,23,42,0.86), rgba(15,23,42,0.16) 72%, transparent)',
                                             textAlign: 'center'
                                         }}>
-                                            <div style={{ fontSize: '11px', fontWeight: 700, color: '#fff', fontFamily: 'monospace' }}>
+                                            <div style={{ fontSize: '13px', fontWeight: 700, color: '#fff', fontFamily: '"Segoe UI", system-ui, sans-serif' }}>
                                                 {wallpaper.name}
                                             </div>
                                             {wallpaper.type === 'animated-gradient' && (
-                                                <div style={{ fontSize: '8px', color: '#fbbf24', marginTop: '2px' }}>ANIMATED</div>
+                                                <div style={{ fontSize: '10px', color: '#facc15', marginTop: '4px', fontWeight: 700 }}>ANIMATED</div>
                                             )}
                                             {wallpaper.type === 'time-based' && (
-                                                <div style={{ fontSize: '8px', color: '#86efac', marginTop: '2px' }}>AUTO</div>
+                                                <div style={{ fontSize: '10px', color: '#86efac', marginTop: '4px', fontWeight: 700 }}>AUTO</div>
                                             )}
                                         </div>
                                     </div>
@@ -6119,8 +6274,8 @@ YOU DID IT. APP DEPLOYED!`);
             {/* 6. Arcade Window */}
             {windowStates.arcade?.isOpen && (
                 <WindowFrame {...mobileWindowProps} winState={windowStates.arcade} title="Arcade" AppIcon={Gamepad2} onClose={() => closeApp('arcade')} onMinimize={() => minimizeApp('arcade')} onMaximize={() => maximizeApp('arcade')} onFocus={() => focusApp('arcade')} onMove={(x, y) => moveApp('arcade', x, y)} onResize={(w, h) => resizeApp('arcade', w, h)}>
-                    <div style={{ flex: 1, minHeight: 0, background: '#f3f4f6', overflowY: 'auto' }}>
-                        <Suspense fallback={<WindowModuleLoader label="BUILDER_STUDIO" background="#f3f4f6" />}>
+                    <div style={{ flex: 1, minHeight: 0, background: 'linear-gradient(180deg, #f7faff 0%, #edf3fb 100%)', overflow: 'hidden' }}>
+                        <Suspense fallback={<WindowModuleLoader label="BUILDER_STUDIO" background="transparent" />}>
                             <BuilderStudioLocal />
                         </Suspense>
                     </div>
@@ -6130,8 +6285,8 @@ YOU DID IT. APP DEPLOYED!`);
             {/* 7. Simulator Window */}
             {windowStates.simulator?.isOpen && (
                 <WindowFrame {...mobileWindowProps} winState={windowStates.simulator} title="Simulator" AppIcon={Activity} onClose={() => closeApp('simulator')} onMinimize={() => minimizeApp('simulator')} onMaximize={() => maximizeApp('simulator')} onFocus={() => focusApp('simulator')} onMove={(x, y) => moveApp('simulator', x, y)} onResize={(w, h) => resizeApp('simulator', w, h)}>
-                    <div style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
-                        <Suspense fallback={<WindowModuleLoader label="SIMULATOR" />}>
+                    <div style={{ flex: 1, minHeight: 0, overflow: 'hidden', background: 'linear-gradient(180deg, #f7faff 0%, #edf3fb 100%)' }}>
+                        <Suspense fallback={<WindowModuleLoader label="SIMULATOR" background="transparent" />}>
                             <VibeSimulator />
                         </Suspense>
                     </div>
@@ -6141,8 +6296,8 @@ YOU DID IT. APP DEPLOYED!`);
             {/* 8. Mind Mapper Window */}
             {windowStates.mind_mapper?.isOpen && (
                 <WindowFrame {...mobileWindowProps} winState={windowStates.mind_mapper} title="Mind Map" AppIcon={Waypoints} onClose={() => closeApp('mind_mapper')} onMinimize={() => minimizeApp('mind_mapper')} onMaximize={() => maximizeApp('mind_mapper')} onFocus={() => focusApp('mind_mapper')} onMove={(x, y) => moveApp('mind_mapper', x, y)} onResize={(w, h) => resizeApp('mind_mapper', w, h)}>
-                    <div style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
-                        <Suspense fallback={<WindowModuleLoader label="MIND_MAPPER" />}>
+                    <div style={{ flex: 1, minHeight: 0, overflow: 'hidden', background: 'linear-gradient(180deg, #f7faff 0%, #edf3fb 100%)' }}>
+                        <Suspense fallback={<WindowModuleLoader label="MIND_MAPPER" background="transparent" />}>
                             <MindMapperApp />
                         </Suspense>
                     </div>
@@ -6152,8 +6307,8 @@ YOU DID IT. APP DEPLOYED!`);
             {/* 9. Prompt Forge Window */}
             {windowStates.prompt_forge?.isOpen && (
                 <WindowFrame {...mobileWindowProps} winState={windowStates.prompt_forge} title="Prompt Forge" AppIcon={Wand2} onClose={() => closeApp('prompt_forge')} onMinimize={() => minimizeApp('prompt_forge')} onMaximize={() => maximizeApp('prompt_forge')} onFocus={() => focusApp('prompt_forge')} onMove={(x, y) => moveApp('prompt_forge', x, y)} onResize={(w, h) => resizeApp('prompt_forge', w, h)}>
-                    <div style={{ flex: 1, minHeight: 0, background: '#0b1220', overflow: 'hidden' }}>
-                        <Suspense fallback={<WindowModuleLoader label="PROMPT_FORGE" />}>
+                    <div style={{ flex: 1, minHeight: 0, background: 'linear-gradient(180deg, #f7faff 0%, #edf3fb 100%)', overflow: 'hidden' }}>
+                        <Suspense fallback={<WindowModuleLoader label="PROMPT_FORGE" background="transparent" />}>
                             <PromptForgeApp />
                         </Suspense>
                     </div>
@@ -6163,10 +6318,16 @@ YOU DID IT. APP DEPLOYED!`);
             {/* 4. Recycle Bin Window */}
             {windowStates.trash?.isOpen && (
                 <WindowFrame {...mobileWindowProps} winState={windowStates.trash} title="Recycle Bin" AppIcon={Trash2} onClose={() => closeApp('trash')} onMinimize={() => minimizeApp('trash')} onMaximize={() => maximizeApp('trash')} onFocus={() => focusApp('trash')} onMove={(x, y) => moveApp('trash', x, y)} onResize={(w, h) => resizeApp('trash', w, h)}>
-                    <div style={{ padding: '60px 20px', textAlign: 'center', color: '#64748b' }}>
-                        <Trash2 size={48} style={{ marginBottom: '20px', opacity: 0.3 }} />
-                        <div style={{ fontFamily: 'monospace', fontWeight: 900, fontSize: '14px' }}>BOX IS CURRENTLY EMPTY</div>
-                        <div style={{ fontSize: '11px', marginTop: '10px' }}>[ No deleted vibes or failed projects found ]</div>
+                    <div style={{ height: '100%', padding: '14px', background: 'linear-gradient(180deg, #f7faff 0%, #edf3fb 100%)' }}>
+                        <div style={{ height: '100%', display: 'grid', placeItems: 'center', background: 'rgba(255,255,255,0.82)', border: '1px solid rgba(148,163,184,0.24)', borderRadius: '18px', boxShadow: '0 16px 40px rgba(148,163,184,0.16)', textAlign: 'center', color: '#64748b', padding: '32px 20px' }}>
+                            <div>
+                                <div style={{ width: '72px', height: '72px', margin: '0 auto 18px', borderRadius: '22px', background: 'rgba(37,99,235,0.08)', border: '1px solid rgba(37,99,235,0.14)', display: 'grid', placeItems: 'center' }}>
+                                    <Trash2 size={32} style={{ opacity: 0.7, color: '#2563eb' }} />
+                                </div>
+                                <div style={{ fontWeight: 700, fontSize: '18px', color: '#0f172a' }}>Recycle Bin is empty</div>
+                                <div style={{ fontSize: '13px', marginTop: '8px', lineHeight: 1.6 }}>No deleted vibes or failed projects found.</div>
+                            </div>
+                        </div>
                     </div>
                 </WindowFrame>
             )}

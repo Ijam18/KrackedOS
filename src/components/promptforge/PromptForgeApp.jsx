@@ -133,8 +133,8 @@ const Popup = ({ onClose, children }) => (
     <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}
         onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
         <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)' }} onClick={onClose} />
-        <div style={{ position: 'relative', background: '#0b1220', border: '2px solid #F5D000', boxShadow: '6px 6px 0 #F5D000', borderRadius: '12px', padding: '24px', maxWidth: '400px', width: '100%', zIndex: 1, maxHeight: '80vh', overflowY: 'auto' }}>
-            <button onClick={onClose} style={{ position: 'absolute', top: '12px', right: '12px', background: 'none', border: 'none', color: 'rgba(255,255,255,0.5)', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
+        <div className="os-thin-scroll" style={{ position: 'relative', background: 'rgba(255,255,255,0.94)', border: '1px solid rgba(148,163,184,0.24)', boxShadow: '0 16px 40px rgba(148,163,184,0.16)', borderRadius: '18px', padding: '24px', maxWidth: '460px', width: '100%', zIndex: 1, maxHeight: '80vh', overflowY: 'auto' }}>
+            <button onClick={onClose} style={{ position: 'absolute', top: '12px', right: '12px', background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
                 <X size={18} />
             </button>
             {children}
@@ -144,20 +144,20 @@ const Popup = ({ onClose, children }) => (
 
 // ─── Info Alert / Prompting Tip ──────────────────────────────────────────────
 const TipCard = ({ title, children }) => (
-    <div style={{ background: 'rgba(245,208,0,0.05)', border: '1px solid rgba(245,208,0,0.3)', borderRadius: '8px', padding: '12px', marginBottom: '16px', display: 'flex', gap: '10px' }}>
-        <Zap size={18} color="#F5D000" style={{ flexShrink: 0, marginTop: '2px' }} />
+    <div style={{ background: 'rgba(255,255,255,0.82)', border: '1px solid rgba(148,163,184,0.24)', borderRadius: '16px', padding: '14px', marginBottom: '16px', display: 'flex', gap: '10px', boxShadow: '0 16px 40px rgba(148,163,184,0.12)' }}>
+        <Zap size={18} color="#2563eb" style={{ flexShrink: 0, marginTop: '2px' }} />
         <div>
-            <div style={{ fontSize: '11px', fontWeight: 900, color: '#F5D000', textTransform: 'uppercase', marginBottom: '4px', fontFamily: NB_FONT }}>AJWAD'S PROMPT TIP: {title}</div>
-            <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.7)', lineHeight: 1.5 }}>{children}</div>
+            <div style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', marginBottom: '4px', letterSpacing: '0.08em' }}>Prompt Tip: {title}</div>
+            <div style={{ fontSize: '12px', color: '#475569', lineHeight: 1.6 }}>{children}</div>
         </div>
     </div>
 );
 
 // ─── Tag Chip ────────────────────────────────────────────────────────────────────
 const Chip = ({ label, onRemove, color = '#C8102E' }) => (
-    <div style={{ background: color, border: '2px solid #121417', boxShadow: '2px 2px 0 #121417',
-        borderRadius: '8px', padding: '4px 10px', fontSize: '12px', fontWeight: 700, color: 'white',
-        display: 'inline-flex', gap: '6px', alignItems: 'center', fontFamily: NB_FONT }}>
+    <div style={{ background: color + '18', border: `1px solid ${color}33`,
+        borderRadius: '999px', padding: '5px 10px', fontSize: '12px', fontWeight: 700, color,
+        display: 'inline-flex', gap: '6px', alignItems: 'center', fontFamily: UI_FONT }}>
         {label}
         <button onClick={onRemove} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.8)', cursor: 'pointer', padding: 0, fontSize: '14px', lineHeight: 1, display: 'flex', alignItems: 'center' }}>×</button>
     </div>
@@ -165,16 +165,80 @@ const Chip = ({ label, onRemove, color = '#C8102E' }) => (
 
 // ─── Label ────────────────────────────────────────────────────────────────────
 const FieldLabel = ({ children }) => (
-    <div style={{ color: 'rgba(245,208,0,0.7)', fontSize: '11px', fontWeight: 700, marginBottom: '6px', fontFamily: NB_FONT, letterSpacing: '0.04em', textTransform: 'uppercase' }}>{children}</div>
+    <div style={{ color: '#64748b', fontSize: '11px', fontWeight: 700, marginBottom: '6px', letterSpacing: '0.08em', textTransform: 'uppercase' }}>{children}</div>
 );
 
 // ─── Text Input ──────────────────────────────────────────────────────────────
 const TextInput = ({ value, onChange, placeholder, rows }) => {
-    const base = { width: '100%', background: '#0b1220', border: '2px solid #1e2d3d', color: '#fff', padding: '10px 12px', borderRadius: '6px', fontFamily: UI_FONT, fontSize: '13px', outline: 'none', resize: rows ? 'vertical' : 'none', boxSizing: 'border-box' };
+    const base = { width: '100%', background: '#ffffff', border: '1px solid rgba(148,163,184,0.24)', color: '#0f172a', padding: '10px 12px', borderRadius: '12px', fontFamily: UI_FONT, fontSize: '13px', outline: 'none', resize: rows ? 'vertical' : 'none', boxSizing: 'border-box' };
     return rows
         ? <textarea value={value} onChange={onChange} placeholder={placeholder} rows={rows} style={base} />
         : <input value={value} onChange={onChange} placeholder={placeholder} style={{ ...base, resize: undefined }} />;
 };
+
+const sectionCardStyle = {
+    background: 'rgba(255,255,255,0.82)',
+    border: '1px solid rgba(148,163,184,0.24)',
+    borderRadius: '18px',
+    boxShadow: '0 16px 40px rgba(148,163,184,0.16)',
+    padding: '18px'
+};
+
+const sectionTitleStyle = {
+    fontSize: '15px',
+    fontWeight: 700,
+    color: '#0f172a',
+    marginBottom: '6px'
+};
+
+const sectionIntroStyle = {
+    color: '#64748b',
+    fontSize: '12px',
+    marginBottom: '16px',
+    lineHeight: 1.55
+};
+
+const subtlePanelStyle = {
+    background: 'rgba(248,250,252,0.94)',
+    border: '1px solid rgba(226,232,240,0.92)',
+    borderRadius: '14px'
+};
+
+const sectionShellStyle = {
+    ...sectionCardStyle,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '16px'
+};
+
+const optionButtonStyle = (active) => ({
+    padding: '9px 14px',
+    borderRadius: '12px',
+    fontWeight: 700,
+    fontSize: '13px',
+    cursor: 'pointer',
+    background: active ? 'linear-gradient(135deg, #2563eb, #1d4ed8)' : 'rgba(255,255,255,0.88)',
+    color: active ? '#ffffff' : '#334155',
+    border: active ? '1px solid rgba(37,99,235,0.55)' : '1px solid rgba(148,163,184,0.24)',
+    boxShadow: active ? '0 12px 28px rgba(37,99,235,0.22)' : '0 10px 24px rgba(148,163,184,0.12)'
+});
+
+const actionButtonStyle = (variant = 'primary') => ({
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '8px',
+    padding: '10px 16px',
+    borderRadius: '12px',
+    fontWeight: 700,
+    fontSize: '13px',
+    cursor: 'pointer',
+    textDecoration: 'none',
+    border: variant === 'primary' ? '1px solid rgba(37,99,235,0.5)' : '1px solid rgba(148,163,184,0.28)',
+    background: variant === 'primary' ? 'linear-gradient(135deg, #2563eb, #1d4ed8)' : 'rgba(255,255,255,0.88)',
+    color: variant === 'primary' ? '#ffffff' : '#334155',
+    boxShadow: variant === 'primary' ? '0 14px 28px rgba(37,99,235,0.22)' : '0 12px 24px rgba(148,163,184,0.14)'
+});
 
 // ─── Design system helper ─────────────────────────────────────────────────────
 const getVibeDesignSystem = (selectedVibeIds, vibes) => {
@@ -453,26 +517,26 @@ Built with Prompt Forge — Based on ROFTCO Framework
     };
 
     return (
-        <div style={{ padding: '20px', color: '#fff', height: '100%', overflowY: 'auto', display: 'flex', flexDirection: 'column', fontFamily: UI_FONT }}>
+        <div className="os-thin-scroll" style={{ padding: '14px', color: '#0f172a', height: '100%', overflowY: 'auto', display: 'flex', flexDirection: 'column', fontFamily: UI_FONT, background: 'linear-gradient(180deg, #f7faff 0%, #edf3fb 100%)' }}>
 
             {/* Header */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '20px', paddingBottom: '20px', borderBottom: '2px dashed rgba(245,208,0,0.2)' }}>
-                <div style={{ background: '#F5D000', color: '#0b1220', padding: '10px', borderRadius: '10px', border: '3px solid #121417', boxShadow: '4px 4px 0 #121417', flexShrink: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '16px', padding: '16px 18px', borderRadius: '18px', background: 'rgba(255,255,255,0.82)', border: '1px solid rgba(148,163,184,0.24)', boxShadow: '0 16px 40px rgba(148,163,184,0.16)' }}>
+                <div style={{ background: 'rgba(37,99,235,0.12)', color: '#0f172a', padding: '10px', borderRadius: '14px', border: '1px solid rgba(29,78,216,0.22)', flexShrink: 0 }}>
                     <Wand2 size={28} strokeWidth={2.5} />
                 </div>
                 <div>
-                    <h2 style={{ fontSize: '18px', fontWeight: 900, color: '#F5D000', margin: 0, fontFamily: NB_FONT }}>[ PROMPT_FORGE: FRAMEWORK ROFTCO ]</h2>
-                    <p style={{ margin: '3px 0 0', color: 'rgba(245,208,0,0.45)', fontSize: '12px' }}>"Developer yang mahir prompting akan berada di hadapan." – Ajwad</p>
+                    <h2 style={{ fontSize: '18px', fontWeight: 700, color: '#0f172a', margin: 0 }}>[ PROMPT_FORGE: FRAMEWORK ROFTCO ]</h2>
+                    <p style={{ margin: '3px 0 0', color: '#64748b', fontSize: '12px' }}>"Developer yang mahir prompting akan berada di hadapan." – Ajwad</p>
                 </div>
             </div>
 
             {/* Step indicators */}
-            <div style={{ display: 'flex', gap: '6px', marginBottom: '24px', alignItems: 'center' }}>
+            <div style={{ display: 'flex', gap: '6px', marginBottom: '18px', alignItems: 'center' }}>
                 {STEPS.map((s, idx) => (
                     <React.Fragment key={s}>
                         <div style={{ flex: 1 }}>
-                            <div style={{ height: '6px', background: idx <= step ? '#F5D000' : '#1a2840', borderRadius: '3px', border: '1px solid #121417', transition: 'background 0.3s' }} />
-                            <div style={{ fontSize: '9px', color: idx <= step ? '#F5D000' : 'rgba(255,255,255,0.25)', marginTop: '4px', textAlign: 'center', fontWeight: 700, letterSpacing: '0.02em' }}>{s.toUpperCase()}</div>
+                            <div style={{ height: '6px', background: idx <= step ? '#2563eb' : '#cbd5e1', borderRadius: '999px', transition: 'background 0.3s' }} />
+                            <div style={{ fontSize: '9px', color: idx <= step ? '#0f172a' : '#94a3b8', marginTop: '4px', textAlign: 'center', fontWeight: 700, letterSpacing: '0.02em' }}>{s.toUpperCase()}</div>
                         </div>
                     </React.Fragment>
                 ))}
@@ -480,34 +544,35 @@ Built with Prompt Forge — Based on ROFTCO Framework
 
             {/* ── STEP 0: Assign AI Role ─────────────────────────────────────────── */}
             {step === 0 && (
-                <div style={{ flex: 1 }}>
+                <div style={sectionShellStyle}>
                     <TipCard title="R - ROLE">
                         Define the role of the AI in the project. This helps in guiding the AI's focus and setting expectations for its output. AI functions based on the instructions given; quality instructions produce quality outputs.
                     </TipCard>
-                    <h3 style={{ fontSize: '15px', fontWeight: 900, color: '#F5D000', marginBottom: '6px', fontFamily: NB_FONT }}>1. ROLE (R) - ASSIGN AI PERSONA</h3>
-                    <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '12px', marginBottom: '16px' }}>Select the persona the AI should adopt. Click a card for details.</p>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                    <div><h3 style={sectionTitleStyle}>1. ROLE (R) - ASSIGN AI PERSONA</h3><p style={sectionIntroStyle}>Select the persona the AI should adopt. Click a card for details or double click for a deeper brief.</p></div>
+                    
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px' }}>
                         {ROLES.map(r => (
                             <div key={r.id}
                                 onClick={() => setRole(r)}
                                 onDoubleClick={() => setRoleDetail(r)}
                                 style={{
-                                    padding: '14px 12px', borderRadius: '10px', cursor: 'pointer',
-                                    background: role?.id === r.id ? r.color + '22' : '#0b1220',
-                                    border: role?.id === r.id ? `2px solid ${r.color}` : '2px solid #1e2d3d',
-                                    boxShadow: role?.id === r.id ? `3px 3px 0 ${r.color}` : '2px 2px 0 #121417',
+                                    ...subtlePanelStyle,
+                                    padding: '14px 12px',
+                                    cursor: 'pointer',
+                                    background: role?.id === r.id ? r.color + '12' : 'rgba(255,255,255,0.88)',
+                                    border: role?.id === r.id ? `1px solid ${r.color}55` : '1px solid rgba(226,232,240,0.92)',
+                                    boxShadow: role?.id === r.id ? `0 18px 36px ${r.color}22` : '0 12px 28px rgba(148,163,184,0.14)',
                                     transition: 'all 0.15s',
                                 }}>
                                 {/* Icon badge */}
                                 <div style={{ width: 32, height: 32, background: r.color + '22', border: `1.5px solid ${r.color}55`, borderRadius: '9px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '8px' }}>
                                     <r.Icon size={16} color={r.color} strokeWidth={2} />
                                 </div>
-                                <div style={{ fontSize: '12px', fontWeight: 800, color: role?.id === r.id ? r.color : '#e2e8f0', lineHeight: 1.3, marginBottom: '4px' }}>{r.label}</div>
-                                <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.35)', lineHeight: 1.4 }}>{r.bestFor}</div>
+                                <div style={{ fontSize: '12px', fontWeight: 800, color: role?.id === r.id ? r.color : '#0f172a', lineHeight: 1.3, marginBottom: '4px' }}>{r.label}</div>
+                                <div style={{ fontSize: '10px', color: '#64748b', lineHeight: 1.5 }}>{r.bestFor}</div>
                                 <button onClick={e => { e.stopPropagation(); setRoleDetail(r); }}
-                                    style={{ marginTop: '8px', background: 'none', border: `1px solid ${r.color}44`, color: r.color, borderRadius: '4px', fontSize: '9px', padding: '2px 7px', cursor: 'pointer', fontWeight: 700 }}>
-                                    DETAILS →
-                                </button>
+                                    style={{ marginTop: '10px', background: 'rgba(255,255,255,0.72)', border: `1px solid ${r.color}33`, color: r.color, borderRadius: '999px', fontSize: '10px', padding: '5px 9px', cursor: 'pointer', fontWeight: 700 }}>
+                                    Details</button>
                             </div>
                         ))}
                     </div>
@@ -519,23 +584,22 @@ Built with Prompt Forge — Based on ROFTCO Framework
                                 <roleDetail.Icon size={24} color={roleDetail.color} strokeWidth={2} />
                             </div>
                             <h3 style={{ fontSize: '16px', fontWeight: 900, color: roleDetail.color, marginBottom: '8px', fontFamily: NB_FONT }}>{roleDetail.label}</h3>
-                            <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.7)', lineHeight: 1.6, marginBottom: '12px' }}>{roleDetail.description}</p>
+                            <p style={{ fontSize: '13px', color: '#475569', lineHeight: 1.6, marginBottom: '12px' }}>{roleDetail.description}</p>
                             <div style={{ marginBottom: '12px' }}>
-                                <div style={{ fontSize: '10px', fontWeight: 700, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', marginBottom: '6px' }}>Best For</div>
-                                <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.55)' }}>{roleDetail.bestFor}</div>
+                                <div style={{ fontSize: '10px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', marginBottom: '6px' }}>Best For</div>
+                                <div style={{ fontSize: '13px', color: '#475569' }}>{roleDetail.bestFor}</div>
                             </div>
                             <div style={{ marginBottom: '16px' }}>
-                                <div style={{ fontSize: '10px', fontWeight: 700, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', marginBottom: '8px' }}>Skills</div>
+                                <div style={{ fontSize: '10px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', marginBottom: '8px' }}>Skills</div>
                                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
                                     {roleDetail.skills.map(s => (
-                                        <span key={s} style={{ background: roleDetail.color + '22', border: `1px solid ${roleDetail.color}55`, color: roleDetail.color, borderRadius: '6px', padding: '3px 8px', fontSize: '11px', fontWeight: 700 }}>{s}</span>
+                                        <span key={s} style={{ background: roleDetail.color + '15', border: `1px solid ${roleDetail.color}33`, color: roleDetail.color, borderRadius: '999px', padding: '4px 9px', fontSize: '11px', fontWeight: 700 }}>{s}</span>
                                     ))}
                                 </div>
                             </div>
                             <button onClick={() => { setRole(roleDetail); setRoleDetail(null); }}
-                                style={{ width: '100%', padding: '12px', background: roleDetail.color, color: 'white', border: '2px solid #121417', boxShadow: '3px 3px 0 #121417', borderRadius: '8px', fontWeight: 900, fontSize: '14px', cursor: 'pointer', fontFamily: NB_FONT }}>
-                                SELECT THIS ROLE ✓
-                            </button>
+                                style={{ ...actionButtonStyle('primary'), width: '100%', background: roleDetail.color, border: `1px solid ${roleDetail.color}` }}>
+                                Select this role</button>
                         </Popup>
                     )}
                 </div>
@@ -543,11 +607,11 @@ Built with Prompt Forge — Based on ROFTCO Framework
 
             {/* ── STEP 1: Define Context & MVP ──────────────────────────────────── */}
             {step === 1 && (
-                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div style={sectionShellStyle}>
                     <TipCard title="O - OBJECTIVE">
                         Clearly state the objective of your prompt. This ensures the AI understands the core goal, leading to much more accurate and relevant responses. Treat this prompt as a specification document for the AI.
                     </TipCard>
-                    <h3 style={{ fontSize: '15px', fontWeight: 900, color: '#F5D000', marginBottom: '0', fontFamily: NB_FONT }}>2. OBJECTIVE (O) - DEFINE CONTEXT & GOAL</h3>
+                    <div><h3 style={sectionTitleStyle}>2. OBJECTIVE (O) - DEFINE CONTEXT & GOAL</h3><p style={sectionIntroStyle}>Define the core problem, target user, and any reference product so the generated prompt starts from the right business context.</p></div>
 
                     <div>
                         <FieldLabel>App Name</FieldLabel>
@@ -574,16 +638,13 @@ Built with Prompt Forge — Based on ROFTCO Framework
                         <div style={{ display: 'flex', gap: '8px', marginBottom: hasSimilarApp ? '10px' : 0 }}>
                             {['Yes', 'No'].map(opt => (
                                 <button key={opt} onClick={() => setHasSimilarApp(opt === 'Yes')}
-                                    style={{ padding: '7px 18px', borderRadius: '6px', fontWeight: 700, fontSize: '13px', cursor: 'pointer',
-                                        background: (hasSimilarApp ? 'Yes' : 'No') === opt ? '#F5D000' : '#0d1928',
-                                        color: (hasSimilarApp ? 'Yes' : 'No') === opt ? '#0b1220' : 'rgba(255,255,255,0.55)',
-                                        border: (hasSimilarApp ? 'Yes' : 'No') === opt ? '2px solid #F5D000' : '2px solid #1e2d3d' }}>
+                                    style={optionButtonStyle((hasSimilarApp ? 'Yes' : 'No') === opt)}>
                                     {opt}
                                 </button>
                             ))}
                         </div>
                         {hasSimilarApp && (
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '12px', background: '#0d1928', borderRadius: '8px', border: '1px solid #1a2840' }}>
+                            <div style={{ ...subtlePanelStyle, display: 'flex', flexDirection: 'column', gap: '8px', padding: '12px' }}>
                                 <TextInput value={inspirationUrl} onChange={e => setInspirationUrl(e.target.value)} placeholder="Paste their URL (e.g. https://linear.app)" />
                                 <TextInput value={competitors} onChange={e => setCompetitors(e.target.value)} placeholder="What do you want to replicate or improve?" rows={2} />
                             </div>
@@ -594,12 +655,12 @@ Built with Prompt Forge — Based on ROFTCO Framework
 
             {/* ── STEP 2: Feature Wishlist ──────────────────────────────────────── */}
             {step === 2 && (
-                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '18px' }}>
+                <div style={sectionShellStyle}>
                     <TipCard title="F - FEATURES & C - CONSTRAINTS">
                         <strong>Features:</strong> Detail specific capabilities needed to fulfill project objectives.<br/><br/>
                         <strong>Constraints:</strong> Add constraints to focus the AI. Avoid ambiguity in your queries to get cleaner results. Constraints guide the boundary of development.
                     </TipCard>
-                    <h3 style={{ fontSize: '15px', fontWeight: 900, color: '#F5D000', marginBottom: '0', fontFamily: NB_FONT }}>3. FEATURES & CONSTRAINTS (F & C)</h3>
+                    <div><h3 style={sectionTitleStyle}>3. FEATURES & CONSTRAINTS (F & C)</h3><p style={sectionIntroStyle}>Separate the non-negotiable features from the nice-to-have ideas so the AI can prioritize the MVP correctly.</p></div>
 
                     {/* Must Have */}
                     <div>
@@ -611,9 +672,9 @@ Built with Prompt Forge — Based on ROFTCO Framework
                             <input value={mustInput} onChange={e => setMustInput(e.target.value)}
                                 onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addTag(mustHaveTags, mustInput, setMustHaveTags, setMustInput); } }}
                                 placeholder="e.g. User Auth, Dashboard... (Enter to add)"
-                                style={{ flex: 1, background: '#0b1220', border: '2px solid #C8102E', color: '#fff', padding: '8px 12px', borderRadius: '6px', fontSize: '13px', outline: 'none', fontFamily: UI_FONT }} />
+                                style={{ flex: 1, background: '#ffffff', border: '1px solid rgba(239,68,68,0.28)', color: '#0f172a', padding: '10px 12px', borderRadius: '12px', fontSize: '13px', outline: 'none', fontFamily: UI_FONT }} />
                             <button onClick={() => addTag(mustHaveTags, mustInput, setMustHaveTags, setMustInput)}
-                                style={{ padding: '8px 14px', background: '#C8102E', color: 'white', border: '2px solid #121417', boxShadow: '2px 2px 0 #121417', borderRadius: '6px', fontWeight: 900, cursor: 'pointer', fontSize: '13px' }}>+</button>
+                                style={{ ...actionButtonStyle('primary'), padding: '10px 14px', background: 'linear-gradient(135deg, #ef4444, #dc2626)' }}>+</button>
                         </div>
                     </div>
 
@@ -627,9 +688,9 @@ Built with Prompt Forge — Based on ROFTCO Framework
                             <input value={niceInput} onChange={e => setNiceInput(e.target.value)}
                                 onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addTag(niceToHaveTags, niceInput, setNiceToHaveTags, setNiceInput); } }}
                                 placeholder="e.g. Dark Mode, Export PDF... (Enter to add)"
-                                style={{ flex: 1, background: '#0b1220', border: '2px solid #1e2d3d', color: '#fff', padding: '8px 12px', borderRadius: '6px', fontSize: '13px', outline: 'none', fontFamily: UI_FONT }} />
+                                style={{ flex: 1, background: '#ffffff', border: '1px solid rgba(148,163,184,0.24)', color: '#0f172a', padding: '10px 12px', borderRadius: '12px', fontSize: '13px', outline: 'none', fontFamily: UI_FONT }} />
                             <button onClick={() => addTag(niceToHaveTags, niceInput, setNiceToHaveTags, setNiceInput)}
-                                style={{ padding: '8px 14px', background: '#1e2d3d', color: 'white', border: '2px solid #121417', boxShadow: '2px 2px 0 #121417', borderRadius: '6px', fontWeight: 900, cursor: 'pointer', fontSize: '13px' }}>+</button>
+                                style={{ ...actionButtonStyle('secondary'), padding: '10px 14px' }}>+</button>
                         </div>
                     </div>
 
@@ -647,11 +708,11 @@ Built with Prompt Forge — Based on ROFTCO Framework
 
             {/* ── STEP 3: Tech Stack & Design Vibe ─────────────────────────────── */}
             {step === 3 && (
-                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                <div style={sectionShellStyle}>
                     <TipCard title="T - TECH STACK">
                         Identify tools and technology you want to build with. Choosing the right stack is critical to the efficiency and success of the project.
                     </TipCard>
-                    <h3 style={{ fontSize: '15px', fontWeight: 900, color: '#F5D000', marginBottom: '0', fontFamily: NB_FONT }}>4. TECH STACK (T)</h3>
+                    <div><h3 style={sectionTitleStyle}>4. TECH STACK (T)</h3><p style={sectionIntroStyle}>Pick the implementation stack and design direction. The generated prompt will use these selections as explicit guardrails.</p></div>
 
                     {/* Tech Stack */}
                     {TECH_CATEGORIES.map(cat => (
@@ -752,61 +813,51 @@ Built with Prompt Forge — Based on ROFTCO Framework
 
             {/* ── STEP 4: Master Prompt Output ─────────────────────────────────── */}
             {step === 4 && (
-                <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                <div style={sectionShellStyle}>
                     <TipCard title="O - OUTPUT FORMAT">
                         <strong>Prompt Layering:</strong> Don't ask everything at once! Layer your prompts. Focus on one element at a time to keep interactions natural and prompts clear.
                     </TipCard>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', gap: '8px', flexWrap: 'wrap' }}>
-                        <h3 style={{ fontSize: '15px', fontWeight: 900, color: '#22c55e', margin: 0, fontFamily: NB_FONT }}>5. OUTPUT FORMAT (O) - MASTER PROMPT</h3>
+                        <h3 style={{ ...sectionTitleStyle, margin: 0 }}>5. OUTPUT FORMAT (O) - MASTER PROMPT</h3>
                         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                             <button onClick={copyToClipboard}
-                                style={{ display: 'flex', alignItems: 'center', gap: '6px', background: copied ? '#22c55e' : '#F5D000',
-                                    color: '#0b1220', border: '2px solid #121417', boxShadow: '3px 3px 0 #121417',
-                                    padding: '8px 14px', borderRadius: '6px', fontWeight: 900, cursor: 'pointer', fontFamily: NB_FONT, fontSize: '12px' }}>
+                                style={{ ...actionButtonStyle('primary'), background: copied ? 'linear-gradient(135deg, #16a34a, #15803d)' : 'linear-gradient(135deg, #2563eb, #1d4ed8)' }}>
                                 {copied ? <Check size={14} /> : <Copy size={14} />}
-                                {copied ? 'COPIED!' : 'COPY PROMPT'}
+                                {copied ? 'Copied' : 'Copy prompt'}
                             </button>
                             <a href="https://claude.ai" target="_blank" rel="noopener noreferrer"
-                                style={{ display: 'flex', alignItems: 'center', gap: '6px', background: '#0b1220', color: '#F5D000',
-                                    border: '2px solid #F5D000', boxShadow: '3px 3px 0 #F5D000',
-                                    padding: '8px 14px', borderRadius: '6px', fontWeight: 700, textDecoration: 'none', fontSize: '12px' }}>
+                                style={actionButtonStyle('secondary')}>
                                 <ExternalLink size={13} /> Open Claude.ai
                             </a>
                         </div>
                     </div>
-                    <div style={{ background: '#0b1220', padding: '16px', borderRadius: '8px', border: '2px solid #1e2d3d',
-                        color: '#e2e8f0', fontFamily: NB_FONT, whiteSpace: 'pre-wrap', fontSize: '11.5px', lineHeight: 1.7,
+                    <div style={{ background: 'rgba(248,250,252,0.96)', padding: '16px', borderRadius: '16px', border: '1px solid rgba(226,232,240,0.92)',
+                        color: '#1e293b', fontFamily: NB_FONT, whiteSpace: 'pre-wrap', fontSize: '11.5px', lineHeight: 1.7,
                         flex: 1, overflowY: 'auto', maxHeight: '420px' }}>
                         {generatePrompt()}
                     </div>
-                    <div style={{ marginTop: '12px', padding: '12px', background: '#0d1928', borderRadius: '8px', border: '1px solid #1a2840', fontSize: '12px', color: 'rgba(255,255,255,0.35)', lineHeight: 1.6 }}>
-                        <strong style={{ color: 'rgba(245,208,0,0.7)' }}>How to use:</strong> Copy → Open Claude.ai via Antigravity → Paste as your first message → Follow the 7-step build guide. Claude will confirm each step before writing code.
+                    <div style={{ marginTop: '12px', padding: '12px', background: 'rgba(248,250,252,0.96)', borderRadius: '14px', border: '1px solid rgba(226,232,240,0.92)', fontSize: '12px', color: '#64748b', lineHeight: 1.6 }}>
+                        <strong style={{ color: '#1d4ed8' }}>How to use:</strong> Copy, open Claude.ai, paste as your first message, then follow the 7-step build guide. Claude will confirm each step before writing code.
                     </div>
                 </div>
             )}
 
             {/* ── Navigation ─────────────────────────────────────────────────── */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '20px', paddingTop: '20px', borderTop: '2px dashed rgba(245,208,0,0.2)', gap: '12px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '20px', paddingTop: '20px', borderTop: '1px solid rgba(226,232,240,0.92)', gap: '12px' }}>
                 <button disabled={step === 0} onClick={() => setStep(prev => Math.max(0, prev - 1))}
-                    style={{ padding: '11px 20px', display: 'flex', alignItems: 'center', gap: '6px', background: 'transparent',
-                        color: step === 0 ? 'rgba(255,255,255,0.2)' : '#F5D000', border: '2px solid', borderColor: step === 0 ? '#1a2840' : '#F5D000',
-                        borderRadius: '8px', fontWeight: 900, cursor: step === 0 ? 'not-allowed' : 'pointer', fontFamily: NB_FONT, fontSize: '13px' }}>
-                    <ChevronLeft size={16} /> BACK
+                    style={{ ...actionButtonStyle('secondary'), opacity: step === 0 ? 0.45 : 1, cursor: step === 0 ? 'not-allowed' : 'pointer' }}>
+                    <ChevronLeft size={16} /> Back
                 </button>
 
                 {step < 4 ? (
                     <button onClick={() => setStep(prev => Math.min(4, prev + 1))}
-                        style={{ padding: '11px 20px', display: 'flex', alignItems: 'center', gap: '6px', background: '#F5D000',
-                            color: '#0b1220', border: '2px solid #121417', boxShadow: '3px 3px 0 #121417',
-                            borderRadius: '8px', fontWeight: 900, cursor: 'pointer', fontFamily: NB_FONT, fontSize: '13px' }}>
-                        NEXT <ChevronRight size={16} />
+                        style={actionButtonStyle('primary')}>
+                        Next <ChevronRight size={16} />
                     </button>
                 ) : (
                     <button onClick={resetAll}
-                        style={{ padding: '11px 20px', display: 'flex', alignItems: 'center', gap: '6px', background: '#0d1928',
-                            color: '#fff', border: '2px solid #1e2d3d', boxShadow: '2px 2px 0 #121417',
-                            borderRadius: '8px', fontWeight: 900, cursor: 'pointer', fontFamily: NB_FONT, fontSize: '13px' }}>
-                        RESET FORGE
+                        style={actionButtonStyle('secondary')}>
+                        Reset forge
                     </button>
                 )}
             </div>

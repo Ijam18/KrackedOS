@@ -88,7 +88,7 @@ const FlowCanvas = ({ compact = false, quickAddType = null, onQuickAddConsumed =
     }, [quickAddType, onQuickAddConsumed, screenToFlowPosition, setNodes]);
 
     return (
-        <div ref={wrapperRef} style={{ flex: 1, position: 'relative', background: '#f8fafc' }}>
+        <div ref={wrapperRef} style={{ flex: 1, position: 'relative', background: 'linear-gradient(180deg, #f7faff 0%, #edf3fb 100%)' }}>
             <ReactFlow
                 nodes={nodes}
                 edges={edges}
@@ -100,7 +100,7 @@ const FlowCanvas = ({ compact = false, quickAddType = null, onQuickAddConsumed =
                 nodeTypes={nodeTypes}
                 fitView
             >
-                <Controls style={{ border: '2px solid black', borderRadius: '4px', boxShadow: compact ? '2px 2px 0px black' : '4px 4px 0px black', background: 'white', transform: compact ? 'scale(0.86)' : 'scale(1)', transformOrigin: 'top left' }} />
+                <Controls style={{ border: '1px solid rgba(148,163,184,0.24)', borderRadius: '14px', boxShadow: '0 12px 24px rgba(148,163,184,0.16)', background: 'rgba(255,255,255,0.94)', transform: compact ? 'scale(0.86)' : 'scale(1)', transformOrigin: 'top left' }} />
                 <Background color="#cbd5e1" variant="dots" gap={20} size={2} />
             </ReactFlow>
         </div>
@@ -123,7 +123,7 @@ export default function VibeSimulator() {
     }, []);
 
     return (
-        <div style={{ width: '100%', height: '100%', display: 'flex', position: 'relative' }}>
+        <div style={{ width: '100%', height: '100%', display: 'flex', position: 'relative', background: 'linear-gradient(180deg, #f7faff 0%, #edf3fb 100%)' }}>
             {!isCompact && <SimulatorSidebar onQuickAdd={setQuickAddType} />}
             {isCompact && panelOpen && (
                 <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, zIndex: 25 }}>
@@ -139,10 +139,10 @@ export default function VibeSimulator() {
                         left: 10,
                         top: 10,
                         zIndex: 26,
-                        border: '2px solid #0b1220',
-                        borderRadius: 10,
-                        background: '#f5d000',
-                        color: '#0b1220',
+                        border: '1px solid rgba(148,163,184,0.24)',
+                        borderRadius: 12,
+                        background: 'rgba(255,255,255,0.94)',
+                        color: '#334155',
                         width: 34,
                         height: 34,
                         display: 'inline-flex',

@@ -102,19 +102,7 @@ export const DEFAULT_SESSION_STATE = {
 };
 
 export const BUILT_IN_WALLPAPERS = [
-  { id: 'kdos', name: 'KDOS', type: 'image', src: '/icons/KDOS.png', source: 'built-in' },
-  { id: 'merdeka', name: 'Merdeka Red', type: 'gradient', colors: ['#DC2626', '#FFFFFF', '#FF0000'], source: 'built-in' },
-  { id: 'jalur', name: 'Jalur Gemilang', type: 'animated-gradient', colors: ['#010066', '#FFFFFF', '#CC0000'], source: 'built-in' },
-  { id: 'wau', name: 'Wau Kuning', type: 'gradient', colors: ['#FFCC00', '#FFD700', '#FFFAC0'], source: 'built-in' },
-  { id: 'kebaya', name: 'Kebaya', type: 'gradient', colors: ['#004488', '#0066CC', '#0099FF'], source: 'built-in' },
-  { id: 'tropic-rain', name: 'Tropic Rain', type: 'animated-gradient', colors: ['#0891B2', '#10B981', '#34D399'], source: 'built-in' },
-  { id: 'hibiscus', name: 'Hibiscus Morning', type: 'gradient', colors: ['#FF6B6B', '#FFE4E1', '#FFF0F5'], source: 'built-in' },
-  { id: 'sunset', name: 'Tropical Sunset', type: 'gradient', colors: ['#F97316', '#FDBA74', '#FCD34D'], source: 'built-in' },
-  { id: 'night', name: 'Tropical Night', type: 'gradient', colors: ['#0C1220', '#1E3A8A', '#3B82F6'], source: 'built-in' },
-  { id: 'pagi-morning', name: 'Pagi (Morning)', type: 'time-based', times: '6-12', colors: ['#87CEEB', '#FFD166', '#FFF7ED'], source: 'built-in' },
-  { id: 'tengahari', name: 'Tengahari (Afternoon)', type: 'time-based', times: '12-15', colors: ['#FDBA74', '#FCD34D', '#FBBF24'], source: 'built-in' },
-  { id: 'petang', name: 'Petang (Evening)', type: 'time-based', times: '18-21', colors: ['#F97316', '#F59E0B', '#FBBF24'], source: 'built-in' },
-  { id: 'malam', name: 'Malam (Night)', type: 'time-based', times: '21-6', colors: ['#0C1220', '#1E3A8A', '#3B82F6'], source: 'built-in' }
+  { id: 'kdos', name: 'KDOS', type: 'image', src: '/icons/KDOS.png', source: 'built-in' }
 ];
 
 export const DEFAULT_PERSONALIZATION = {
@@ -150,19 +138,9 @@ export function getDefaultWallpaperId() {
 }
 
 export function normalizeLegacyWallpaperId(wallpaperId) {
-  switch (wallpaperId) {
-    case 'morning':
-      return 'pagi-morning';
-    case 'day':
-    case 'afternoon':
-      return 'tengahari';
-    case 'evening':
-      return 'petang';
-    case 'night':
-      return 'malam';
-    default:
-      return wallpaperId || getDefaultWallpaperId();
-  }
+  if (!wallpaperId) return getDefaultWallpaperId();
+  if (String(wallpaperId).startsWith('imported:')) return wallpaperId;
+  return wallpaperId === 'kdos' ? wallpaperId : getDefaultWallpaperId();
 }
 
 export function createSystemRegistryRecord() {

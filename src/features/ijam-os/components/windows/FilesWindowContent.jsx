@@ -597,7 +597,7 @@ export default function FilesWindowContent({
 
       <div style={{ flex: 1, minHeight: 0, display: 'grid', gridTemplateColumns: isNarrowScreen ? 'minmax(0, 1fr)' : (showDetailsPane ? '220px minmax(0, 1fr) 250px' : '220px minmax(0, 1fr)'), gap: '12px' }}>
         {!isNarrowScreen && (
-          <aside style={{ ...glassPanelStyle, minHeight: 0, overflowY: 'auto', padding: '16px 10px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <aside className="os-thin-scroll" style={{ ...glassPanelStyle, minHeight: 0, overflowY: 'auto', padding: '16px 10px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
             {navSections.map((section) => (
               <div key={section.id} style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                 <div style={{ padding: '0 10px', fontSize: '11px', fontWeight: 700, color: '#64748b', letterSpacing: '0.03em', textTransform: 'uppercase' }}>
@@ -629,7 +629,7 @@ export default function FilesWindowContent({
             </div>
           )}
 
-          <div style={{ ...explorerSurfaceStyle, flex: 1, minHeight: 0, height: '100%', width: '100%', overflowY: 'auto', padding: '0', display: 'flex', flexDirection: 'column' }}>
+          <div className="os-thin-scroll" style={{ ...explorerSurfaceStyle, flex: 1, minHeight: 0, height: '100%', width: '100%', overflowY: 'auto', padding: '0', display: 'flex', flexDirection: 'column' }}>
             {searchValue && (
               <div style={{ padding: '12px 16px 0', fontSize: '12px', color: '#64748b' }}>
                 Search results for <span style={{ color: '#2563eb', fontWeight: 600 }}>{searchValue}</span>
@@ -735,7 +735,7 @@ export default function FilesWindowContent({
         </section>
 
         {!isNarrowScreen && showDetailsPane && (
-          <aside style={{ ...glassPanelStyle, minHeight: 0, overflowY: 'auto', padding: '18px 16px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <aside className="os-thin-scroll" style={{ ...glassPanelStyle, minHeight: 0, overflowY: 'auto', padding: '18px 16px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
             {selectedItem ? (
               <>
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', textAlign: 'center' }}>
