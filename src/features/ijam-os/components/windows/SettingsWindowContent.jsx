@@ -10,6 +10,7 @@ import {
   RotateCcw,
   Save,
   ShieldCheck,
+  PlugZap,
   UserRound,
   Users
 } from 'lucide-react';
@@ -168,6 +169,7 @@ export default function SettingsWindowContent({
   onSubmit,
   isSaving,
   onReset,
+  powerStatus,
   isNarrowScreen
 }) {
   const initials = (profileForm.username || 'A').trim().charAt(0).toUpperCase() || 'A';
@@ -399,6 +401,35 @@ export default function SettingsWindowContent({
                     Clears the local OS session and returns the workspace to its default state.
                   </p>
                 </div>
+              </div>
+              <div style={{ padding: '18px', borderRadius: '16px', border: '1px solid rgba(226,232,240,0.92)', background: 'rgba(248,250,252,0.9)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '16px', fontWeight: 600, color: '#0f172a', marginBottom: '12px' }}>
+                  <PlugZap size={18} color="#2563eb" />
+                  Power & device
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: isNarrowScreen ? '1fr' : 'repeat(2, minmax(0, 1fr))', gap: '12px' }}>
+                  <SummaryChip icon={PlugZap} label="Status" value={powerStatus?.statusLabel || 'Power unavailable'} />
+                  <SummaryChip icon={ShieldCheck} label="Runtime" value={powerStatus?.runtime || 'unknown'} />
+                  <SummaryChip icon={BriefcaseBusiness} label="Device class" value={powerStatus?.deviceClass || 'unknown'} />
+                  <SummaryChip icon={Users} label="Power source" value={powerStatus?.source || 'unknown'} />
+                </div>
+                <div style={{ marginTop: '14px', display: 'grid', gridTemplateColumns: isNarrowScreen ? '1fr' : 'repeat(2, minmax(0, 1fr))', gap: '16px' }}>
+                  <SettingsField label="Battery support" hint="Whether KRACKED_OS can read real device power data in this runtime.">
+                    <input value={powerStatus?.supported ? 'Available' : 'Unavailable'} readOnly style={fieldStyle} />
+                  </SettingsField>
+                  <SettingsField label="Battery level" hint="Actual client-side battery level when the device exposes it.">
+                    <input value={powerStatus?.levelPercent != null ? `${powerStatus.levelPercent}%` : 'Not available'} readOnly style={fieldStyle} />
+                  </SettingsField>
+                  <SettingsField label="Charging state" hint="Native or browser-reported charging state.">
+                    <input value={powerStatus?.chargingLabel || 'unknown'} readOnly style={fieldStyle} />
+                  </SettingsField>
+                  <SettingsField label="Detection method" hint="How the local runtime resolved the current power state.">
+                    <input value={powerStatus?.detectionMethod || 'fallback'} readOnly style={fieldStyle} />
+                  </SettingsField>
+                </div>
+                <p style={{ margin: '12px 0 0', fontSize: '13px', color: '#64748b', lineHeight: 1.6 }}>
+                  {powerStatus?.detailLabel || 'Device power data not available on this runtime.'}
+                </p>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
                 <button

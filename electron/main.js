@@ -23,12 +23,16 @@ import {
   normalizeOsPath,
   sanitizeFileName
 } from '../src/features/ijam-os/os-core/pathUtils.js';
+import { createPowerApi } from './power.js';
+import { createDeviceApi } from './device.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const homeRoot = path.join(os.homedir(), 'KRACKED_OS');
 const metadataPath = path.join(homeRoot, 'system', 'entry-metadata.json');
 const devServerUrl = process.env.KRACKED_OS_DEV_SERVER_URL || '';
 const distIndexPath = path.join(__dirname, '..', 'dist', 'index.html');
+const powerApi = createPowerApi();
+const deviceApi = createDeviceApi();
 
 function toHostPath(osPath) {
   const normalized = normalizeOsPath(osPath);
@@ -557,6 +561,11 @@ ipcMain.handle('os.wallpaper.list', () => wallpaperApi.list());
 ipcMain.handle('os.wallpaper.import', (_event, payload) => wallpaperApi.import(payload));
 ipcMain.handle('os.wallpaper.setCurrent', (_event, id, fit) => wallpaperApi.setCurrent(id, fit));
 ipcMain.handle('os.wallpaper.getCurrent', () => wallpaperApi.getCurrent());
+ipcMain.handle('os.power.getStatus', () => powerApi.getStatus());
+ipcMain.handle('os.device.getStatus', () => deviceApi.getStatus());
+ipcMain.handle('os.device.setWifiEnabled', (_event, enabled) => deviceApi.setWifiEnabled(Boolean(enabled)));
+ipcMain.handle('os.device.setVolume', (_event, percent) => deviceApi.setVolume(percent));
+ipcMain.handle('os.device.setBrightness', (_event, percent) => deviceApi.setBrightness(percent));
 
 ipcMain.handle('os.settings.migrateLegacy', () => settingsApi.migrateLegacy());
 ipcMain.handle('os.settings.loadProfile', () => settingsApi.loadProfile());

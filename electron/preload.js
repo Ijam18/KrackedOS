@@ -10,9 +10,20 @@ contextBridge.exposeInMainWorld('krackedOS', {
     capabilities: {
       realFs: true,
       wallpaperFiles: true,
-      containers: false
+      containers: false,
+      power: true,
+      device: true
     },
     initialize: () => invoke('os.runtime.initialize')
+  },
+  device: {
+    getStatus: () => invoke('os.device.getStatus'),
+    setWifiEnabled: (enabled) => invoke('os.device.setWifiEnabled', enabled),
+    setVolume: (percent) => invoke('os.device.setVolume', percent),
+    setBrightness: (percent) => invoke('os.device.setBrightness', percent)
+  },
+  power: {
+    getStatus: () => invoke('os.power.getStatus')
   },
   fs: {
     mountWorkspace: () => invoke('os.fs.mountWorkspace'),

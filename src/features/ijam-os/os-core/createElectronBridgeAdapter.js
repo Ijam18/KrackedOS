@@ -34,7 +34,18 @@ export function createElectronBridgeAdapter() {
     capabilities: bridge.runtime?.capabilities || {
       realFs: true,
       wallpaperFiles: true,
-      containers: false
+      containers: false,
+      power: true,
+      device: true
+    },
+    device: {
+      getStatus: () => bridge.device?.getStatus?.(),
+      setWifiEnabled: (enabled) => bridge.device?.setWifiEnabled?.(enabled),
+      setVolume: (percent) => bridge.device?.setVolume?.(percent),
+      setBrightness: (percent) => bridge.device?.setBrightness?.(percent)
+    },
+    power: {
+      getStatus: () => bridge.power?.getStatus?.()
     },
     fs: {
       mountWorkspace: () => bridge.fs.mountWorkspace(),

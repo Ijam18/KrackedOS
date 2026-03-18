@@ -742,7 +742,74 @@ export function createLegacyBrowserAdapter() {
     capabilities: {
       realFs: false,
       wallpaperFiles: true,
-      containers: false
+      containers: false,
+      power: false,
+      device: false
+    },
+    device: {
+      async getStatus() {
+        const connection = typeof navigator !== 'undefined'
+          ? (navigator.connection || navigator.mozConnection || navigator.webkitConnection || null)
+          : null;
+        const connectionType = String(connection?.type || '').toLowerCase();
+        const ua = typeof navigator !== 'undefined' ? String(navigator.userAgent || '').toLowerCase() : '';
+        const isMobileUa = /(android|iphone|ipad|ipod|mobile)/.test(ua);
+        const isTouch = typeof navigator !== 'undefined' ? Number(navigator.maxTouchPoints || 0) > 1 : false;
+        const transportType = !navigator?.onLine
+          ? 'offline'
+          : connectionType.includes('wifi')
+            ? 'wifi'
+            : connectionType.includes('ethernet')
+              ? 'ethernet'
+              : (!isMobileUa && !isTouch ? 'ethernet' : 'unknown');
+        return {
+          network: {
+            online: typeof navigator !== 'undefined' ? Boolean(navigator.onLine) : true,
+            transportType,
+            adapterName: null,
+            ssid: null,
+            ip: null,
+            canToggleWifi: false,
+            canOpenSystemSettings: false,
+            source: connection ? 'browser-connection-api' : 'browser-online-api'
+          },
+          audio: {
+            volumePercent: null,
+            muted: null,
+            canSetVolume: false,
+            source: 'unsupported'
+          },
+          display: {
+            brightnessPercent: null,
+            canSetBrightness: false,
+            source: 'unsupported'
+          },
+          capability: {
+            networkControl: false,
+            audioControl: false,
+            brightnessControl: false
+          },
+          meta: {
+            runtime: OS_RUNTIME_MODES.WEB_DEMO,
+            platform: 'browser',
+            updatedAt: Date.now()
+          }
+        };
+      },
+      async setWifiEnabled() {
+        return { ok: false, message: 'Unsupported in browser runtime.' };
+      },
+      async setVolume() {
+        return { ok: false, message: 'Unsupported in browser runtime.' };
+      },
+      async setBrightness() {
+        return { ok: false, message: 'Unsupported in browser runtime.' };
+      }
+    },
+    power: {
+      async getStatus() {
+        return null;
+      }
     },
     fs: fsProvider,
     wallpaper: wallpaperProvider,

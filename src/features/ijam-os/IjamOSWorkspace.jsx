@@ -33,7 +33,8 @@ import {
     Bluetooth,
     MoonStar,
     SunMedium,
-    Volume2
+    Volume2,
+    PlugZap
 } from 'lucide-react';
 import { callNvidiaLLM, localIntelligence, ZARULIJAM_SYSTEM_PROMPT } from '../../lib/nvidia';
 import { useWeather } from '../../utils/useWeather';
@@ -55,6 +56,8 @@ import {
     getDefaultWallpaperId,
     normalizeLegacyWallpaperId
 } from './os-core/constants';
+import { createDefaultPowerStatus, createPowerStatusAdapter } from './os-core/createPowerStatusAdapter';
+import { createDefaultDeviceStatus, createDeviceStatusAdapter } from './os-core/createDeviceStatusAdapter';
 import { basenameFromPath, dirnameFromPath, extnameFromPath, joinOsPath, normalizeOsPath } from './os-core/pathUtils';
 
 const BuilderStudioLocal = lazy(() => import('./components/BuilderStudioLocal'));
@@ -65,6 +68,38 @@ const KrackedMissionConsole = lazy(() => import('./components/windows/KrackedMis
 const KrackedIjamTerminal = lazy(() => import('./components/windows/KrackedIjamTerminal'));
 const KrackedKdAcademy = lazy(() => import('./components/windows/KrackedKdAcademy'));
 const BLANK_BITMAP_DATA_URL = 'data:image/bmp;base64,Qk06AAAAAAAAADYAAAAoAAAAAQAAAAEAAAABABgAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAA////AA==';
+const CALENDAR_DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+function buildCalendarCells(year, month) {
+    const firstDay = new Date(year, month, 1);
+    const startWeekday = firstDay.getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const prevMonthDays = new Date(year, month, 0).getDate();
+    const today = new Date();
+    const cells = [];
+
+    for (let idx = 0; idx < 42; idx += 1) {
+        const dayOffset = idx - startWeekday + 1;
+        let cellDate = new Date(year, month, dayOffset);
+        let inCurrentMonth = true;
+        if (dayOffset < 1) {
+            cellDate = new Date(year, month - 1, prevMonthDays + dayOffset);
+            inCurrentMonth = false;
+        } else if (dayOffset > daysInMonth) {
+            cellDate = new Date(year, month + 1, dayOffset - daysInMonth);
+            inCurrentMonth = false;
+        }
+        const isToday = cellDate.toDateString() === today.toDateString();
+        cells.push({
+            key: `${cellDate.getFullYear()}-${cellDate.getMonth()}-${cellDate.getDate()}-${idx}`,
+            dayNumber: cellDate.getDate(),
+            inCurrentMonth,
+            isToday
+        });
+    }
+
+    return cells;
+}
 
 function WindowModuleLoader({ label, background = '#0b1220' }) {
     return (
@@ -2725,10 +2760,16 @@ const IjamOSWorkspace = ({ session, currentUser, isMobileView, deviceMode = 'des
     const [focusedWindow, setFocusedWindow] = useState(null);
     const [zCounter, setZCounter] = useState(100);
     const [isStartMenuOpen, setIsStartMenuOpen] = useState(false);
+    const [showDateTimePanel, setShowDateTimePanel] = useState(false);
     const [startMenuSearch, setStartMenuSearch] = useState('');
+    const [startPanelMode, setStartPanelMode] = useState('pinned');
+    const [calendarCursor, setCalendarCursor] = useState(() => {
+        const now = new Date();
+        return { year: now.getFullYear(), month: now.getMonth() };
+    });
     const [missionEvents, setMissionEvents] = useState([]);
     const [latestMissionEvent, setLatestMissionEvent] = useState(null);
-    const [batteryPct, setBatteryPct] = useState('--%');
+    const [powerStatus, setPowerStatus] = useState(() => createDefaultPowerStatus(runtime?.mode));
     const [desktopIconPositions, setDesktopIconPositions] = useState({});
     const [desktopFsItems, setDesktopFsItems] = useState([]);
     const [draggedIconType, setDraggedIconType] = useState(null);
@@ -2738,6 +2779,7 @@ const IjamOSWorkspace = ({ session, currentUser, isMobileView, deviceMode = 'des
     const desktopSlotsHydratedRef = useRef(false);
     const sessionUiHydratedRef = useRef(false);
     const desktopIconsContainerRef = useRef(null);
+    const startSearchInputRef = useRef(null);
     const [desktopGridMetrics, setDesktopGridMetrics] = useState(null);
     const DESKTOP_SLOT_WIDTH = 92;
     const DESKTOP_SLOT_HEIGHT = 120;
@@ -2745,11 +2787,10 @@ const IjamOSWorkspace = ({ session, currentUser, isMobileView, deviceMode = 'des
     const [activeMacMenu, setActiveMacMenu] = useState(null);
     const [showBatteryPopup, setShowBatteryPopup] = useState(false);
     const [showControlCenter, setShowControlCenter] = useState(false);
-    const [uiBrightness, setUiBrightness] = useState(100);
-    const [uiVolume, setUiVolume] = useState(100);
-    const [wifiEnabled, setWifiEnabled] = useState(true);
+    const [deviceStatus, setDeviceStatus] = useState(() => createDefaultDeviceStatus(runtime?.mode));
+    const [uiBrightnessFallback, setUiBrightnessFallback] = useState(100);
+    const [uiVolumeFallback, setUiVolumeFallback] = useState(100);
     const [bluetoothEnabled, setBluetoothEnabled] = useState(true);
-    const [airdropEnabled, setAirdropEnabled] = useState(false);
     const [focusModeEnabled, setFocusModeEnabled] = useState(false);
     const getRoleHintFromApp = useCallback((appType) => {
         if (appType === 'terminal' || appType === 'prompt_forge') return 'engineer';
@@ -2991,30 +3032,20 @@ const IjamOSWorkspace = ({ session, currentUser, isMobileView, deviceMode = 'des
     const kdacademyUrl = 'https://kdacademy.up.railway.app/';
 
     useEffect(() => {
-        let battery = null;
-        const handleBatteryUpdate = () => {
-            if (!battery) return;
-            setBatteryPct(`${Math.round((battery.level || 0) * 100)}%`);
-        };
+        const adapter = createPowerStatusAdapter(runtime);
+        setPowerStatus(adapter.getSnapshot());
+        return adapter.subscribe((nextStatus) => {
+            setPowerStatus(nextStatus);
+        });
+    }, [runtime]);
 
-        if (typeof navigator === 'undefined' || !navigator.getBattery) {
-            setBatteryPct('--%');
-            return undefined;
-        }
-
-        navigator.getBattery().then((manager) => {
-            battery = manager;
-            handleBatteryUpdate();
-            battery.addEventListener('levelchange', handleBatteryUpdate);
-            battery.addEventListener('chargingchange', handleBatteryUpdate);
-        }).catch(() => setBatteryPct('--%'));
-
-        return () => {
-            if (!battery) return;
-            battery.removeEventListener('levelchange', handleBatteryUpdate);
-            battery.removeEventListener('chargingchange', handleBatteryUpdate);
-        };
-    }, []);
+    useEffect(() => {
+        const adapter = createDeviceStatusAdapter(runtime);
+        setDeviceStatus(adapter.getSnapshot());
+        return adapter.subscribe((nextStatus) => {
+            setDeviceStatus(nextStatus);
+        });
+    }, [runtime]);
 
     const [profileForm, setProfileForm] = useState({
         username: '',
@@ -3520,11 +3551,76 @@ const IjamOSWorkspace = ({ session, currentUser, isMobileView, deviceMode = 'des
         }
         return Math.max(24, appTypeList.length + 8);
     }, [isMacMode, isTouchIjamMode, appTypeList.length, desktopGridColumns, desktopGridRows]);
-    const batteryLevel = useMemo(() => {
-        const parsed = Number.parseInt(String(batteryPct).replace('%', ''), 10);
-        if (Number.isNaN(parsed)) return 100;
-        return Math.max(0, Math.min(parsed, 100));
-    }, [batteryPct]);
+    const displayPowerPercent = powerStatus?.levelPercent ?? null;
+    const powerMeterLevel = useMemo(() => {
+        if (displayPowerPercent == null) return powerStatus?.hasBattery === false ? 100 : 0;
+        return Math.max(0, Math.min(displayPowerPercent, 100));
+    }, [displayPowerPercent, powerStatus?.hasBattery]);
+    const powerWidgetLabel = displayPowerPercent != null ? `${displayPowerPercent}%` : powerStatus?.hasBattery === false && powerStatus?.source === 'ac' ? 'AC' : '--';
+    const powerAccentColor = useMemo(() => {
+        if (!powerStatus) return '#94a3b8';
+        if (powerStatus.hasBattery === false && powerStatus.source === 'ac') return '#60a5fa';
+        if (powerStatus.isCharging) return '#22c55e';
+        if (displayPowerPercent == null) return '#94a3b8';
+        if (displayPowerPercent > 50) return '#22c55e';
+        if (displayPowerPercent > 20) return '#f59e0b';
+        return '#ef4444';
+    }, [displayPowerPercent, powerStatus]);
+    const isPlugOnlyPower = powerStatus?.hasBattery === false && powerStatus?.source === 'ac';
+    const isChargingPower = !isPlugOnlyPower && powerStatus?.isCharging === true;
+    const networkTransportType = deviceStatus?.network?.transportType || 'unknown';
+    const isNetworkOnline = Boolean(deviceStatus?.network?.online);
+    const resolvedNetworkType = !isNetworkOnline || networkTransportType === 'offline'
+        ? 'offline'
+        : networkTransportType === 'wifi'
+            ? 'wifi'
+            : networkTransportType === 'ethernet'
+                ? 'ethernet'
+                : 'unknown';
+    const isWifiConnected = resolvedNetworkType === 'wifi';
+    const networkCanToggleWifi = Boolean(deviceStatus?.network?.canToggleWifi && runtime?.device?.setWifiEnabled);
+    const hasAudioControl = Boolean(deviceStatus?.audio?.canSetVolume && runtime?.device?.setVolume);
+    const hasBrightnessControl = Boolean(deviceStatus?.display?.canSetBrightness && runtime?.device?.setBrightness);
+    const resolvedVolumePercent = hasAudioControl
+        ? (Number.isFinite(deviceStatus?.audio?.volumePercent) ? deviceStatus.audio.volumePercent : uiVolumeFallback)
+        : uiVolumeFallback;
+    const resolvedBrightnessPercent = hasBrightnessControl
+        ? (Number.isFinite(deviceStatus?.display?.brightnessPercent) ? deviceStatus.display.brightnessPercent : uiBrightnessFallback)
+        : uiBrightnessFallback;
+    const menuBarBrightness = Math.max(0.7, resolvedBrightnessPercent / 100);
+    const workspaceBrightness = Math.max(0.2, resolvedBrightnessPercent / 100);
+    const networkStatusLabel = resolvedNetworkType === 'wifi'
+        ? 'Wi-Fi connected'
+        : resolvedNetworkType === 'ethernet'
+            ? 'Ethernet connected'
+            : resolvedNetworkType === 'offline'
+                ? 'Offline'
+                : 'Online (limited detection)';
+    const networkDetailLabel = deviceStatus?.network?.ssid
+        || deviceStatus?.network?.adapterName
+        || (resolvedNetworkType === 'offline'
+            ? 'No internet access'
+            : deviceStatus?.network?.source?.includes('browser')
+                ? 'Browser cannot read adapter details'
+                : 'No adapter details');
+    const networkIconColor = resolvedNetworkType === 'offline'
+        ? 'rgba(255,255,255,0.55)'
+        : resolvedNetworkType === 'unknown'
+            ? 'rgba(255,255,255,0.62)'
+            : '#93c5fd';
+    const NetworkTrayIcon = resolvedNetworkType === 'ethernet' ? Server : resolvedNetworkType === 'wifi' ? Wifi : Globe;
+    const fullDateLabel = useMemo(
+        () => new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' }),
+        [systemDate, systemTime]
+    );
+    const monthYearLabel = useMemo(
+        () => new Date(calendarCursor.year, calendarCursor.month, 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
+        [calendarCursor.month, calendarCursor.year]
+    );
+    const calendarCells = useMemo(
+        () => buildCalendarCells(calendarCursor.year, calendarCursor.month),
+        [calendarCursor.month, calendarCursor.year]
+    );
     const currentDesktopAppLabel = useMemo(
         () => APP_REGISTRY.find((app) => app.type === focusedWindow)?.label || 'KRACKED_OS v3.0',
         [focusedWindow]
@@ -3532,6 +3628,18 @@ const IjamOSWorkspace = ({ session, currentUser, isMobileView, deviceMode = 'des
     const recentApps = useMemo(
         () => APP_REGISTRY.filter((app) => windowStates[app.type]?.isOpen).slice(0, 4),
         [windowStates]
+    );
+    const filteredStartApps = useMemo(
+        () => APP_REGISTRY.filter((app) => !startMenuSearch || app.label.toLowerCase().includes(startMenuSearch.toLowerCase())),
+        [startMenuSearch]
+    );
+    const pinnedStartApps = useMemo(
+        () => APP_REGISTRY.slice(0, 12).filter((app) => !startMenuSearch || app.label.toLowerCase().includes(startMenuSearch.toLowerCase())),
+        [startMenuSearch]
+    );
+    const visibleStartApps = useMemo(
+        () => (startPanelMode === 'all' ? filteredStartApps : pinnedStartApps),
+        [filteredStartApps, pinnedStartApps, startPanelMode]
     );
     const desktopRenderableFsItems = useMemo(
         () => [...desktopFsItems].sort((left, right) => left.name.localeCompare(right.name, undefined, { numeric: true, sensitivity: 'base' })),
@@ -3544,10 +3652,80 @@ const IjamOSWorkspace = ({ session, currentUser, isMobileView, deviceMode = 'des
             setActiveMacMenu(null);
             setShowBatteryPopup(false);
             setShowControlCenter(false);
+            setShowDateTimePanel(false);
+            setIsStartMenuOpen(false);
         };
         document.addEventListener('mousedown', handleGlobalPointer);
         return () => document.removeEventListener('mousedown', handleGlobalPointer);
     }, []);
+
+    useEffect(() => {
+        if (!isStartMenuOpen) return;
+        setStartPanelMode('pinned');
+        const timer = window.setTimeout(() => {
+            startSearchInputRef.current?.focus();
+        }, 0);
+        return () => window.clearTimeout(timer);
+    }, [isStartMenuOpen]);
+
+    useEffect(() => {
+        const handleEscape = (event) => {
+            if (event.key !== 'Escape') return;
+            setActiveMacMenu(null);
+            setShowBatteryPopup(false);
+            setShowControlCenter(false);
+            setShowDateTimePanel(false);
+            setIsStartMenuOpen(false);
+        };
+        window.addEventListener('keydown', handleEscape);
+        return () => window.removeEventListener('keydown', handleEscape);
+    }, []);
+
+    const handleWifiToggle = useCallback(async () => {
+        if (!networkCanToggleWifi || !runtime?.device?.setWifiEnabled) return;
+        const nextEnabled = !isWifiConnected;
+        await runtime.device.setWifiEnabled(nextEnabled).catch(() => null);
+    }, [isWifiConnected, networkCanToggleWifi, runtime]);
+
+    const handleVolumeChange = useCallback(async (nextPercent) => {
+        const normalized = Math.max(0, Math.min(100, Number(nextPercent) || 0));
+        setUiVolumeFallback(normalized);
+        setDeviceStatus((prev) => ({
+            ...prev,
+            audio: { ...(prev?.audio || {}), volumePercent: normalized }
+        }));
+        if (!hasAudioControl || !runtime?.device?.setVolume) return;
+        await runtime.device.setVolume(normalized).catch(() => null);
+    }, [hasAudioControl, runtime]);
+
+    const handleBrightnessChange = useCallback(async (nextPercent) => {
+        const normalized = Math.max(0, Math.min(100, Number(nextPercent) || 0));
+        setUiBrightnessFallback(normalized);
+        setDeviceStatus((prev) => ({
+            ...prev,
+            display: { ...(prev?.display || {}), brightnessPercent: normalized }
+        }));
+        if (!hasBrightnessControl || !runtime?.device?.setBrightness) return;
+        await runtime.device.setBrightness(normalized).catch(() => null);
+    }, [hasBrightnessControl, runtime]);
+
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            window.__KRACKED_MASTER_VOLUME = resolvedVolumePercent / 100;
+        }
+    }, [resolvedVolumePercent]);
+
+    useEffect(() => {
+        if (typeof document === 'undefined') return;
+        const mediaElements = document.querySelectorAll('audio, video');
+        mediaElements.forEach((node) => {
+            try {
+                node.volume = Math.max(0, Math.min(1, resolvedVolumePercent / 100));
+            } catch (_) {
+                // Ignore read-only media sources.
+            }
+        });
+    }, [resolvedVolumePercent, showControlCenter]);
 
     useEffect(() => {
         if (!isMacMode || isTouchIjamMode) return;
@@ -4965,12 +5143,14 @@ YOU DID IT. APP DEPLOYED!`);
     }
 
     return (
-        <section id="resources-page" style={{ ...sectionStyle, ...wallpaperStyle, height: '100vh', overflow: 'hidden', position: 'relative' }}>
+        <section id="resources-page" style={{ ...sectionStyle, ...wallpaperStyle, height: '100vh', overflow: 'hidden', position: 'relative', filter: `brightness(${workspaceBrightness})` }}>
             {isTouchIjamMode && (
                 <div style={{ position: 'absolute', top: 'max(2px, env(safe-area-inset-top, 0px))', left: 10, right: 10, zIndex: 1200 }}>
                     <MobileStatusBar
                         timeLabel={systemTime}
-                        batteryPct={batteryPct}
+                        batteryPct={powerWidgetLabel}
+                        powerStatus={powerStatus}
+                        deviceStatus={deviceStatus}
                         marginBottom={0}
                         centerContent={(
                             <div
@@ -6266,6 +6446,7 @@ YOU DID IT. APP DEPLOYED!`);
                                 void resetWorkspaceSession();
                             }
                         }}
+                        powerStatus={powerStatus}
                         isNarrowScreen={isNarrowScreen}
                     />
                 </WindowFrame>
@@ -6332,91 +6513,111 @@ YOU DID IT. APP DEPLOYED!`);
                 </WindowFrame>
             )}
 
-            {/* App Drawer Overlay (v3) */}
+                        {/* Start Panel Overlay (Windows style, top-left) */}
             {isStartMenuOpen && (
                 <>
-                    {/* Backdrop */}
                     <div onClick={() => setIsStartMenuOpen(false)} style={{ position: 'absolute', inset: 0, zIndex: 9998 }} />
-                    <div style={{
-                        position: 'absolute',
-                        top: '28px',
-                        left: '16px',
-                        width: '400px',
-                        maxWidth: 'calc(100vw - 32px)',
-                        maxHeight: 'calc(100vh - 200px)',
-                        background: 'rgba(7,11,20,0.96)',
-                        backdropFilter: 'blur(28px) saturate(1.8)',
-                        WebkitBackdropFilter: 'blur(28px) saturate(1.8)',
-                        border: '1px solid rgba(245,208,0,0.25)',
-                        borderRadius: '16px',
-                        boxShadow: '0 24px 60px rgba(0,0,0,0.7), 0 0 0 1px rgba(245,208,0,0.08)',
-                        zIndex: 9999,
-                        display: 'flex',
-                        flexDirection: 'column',
-                        fontFamily: 'monospace',
-                        color: '#fff',
-                        overflow: 'hidden'
-                    }}>
-                        {/* Header */}
-                        <div style={{ padding: '16px 20px 12px', borderBottom: '1px solid rgba(255,255,255,0.07)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                            <div>
-                                <div style={{ fontSize: '13px', fontWeight: 900, color: '#f5d000', letterSpacing: '0.06em' }}>KRACKED_OS v3.0</div>
-                                <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.35)', marginTop: '2px' }}>{currentUser?.name || 'Administrator'} · Local Session</div>
-                            </div>
-                            <button
-                                aria-label="Power off"
-                                onClick={() => { if (window.confirm('Power off KRACKED_OS session?')) { localStorage.removeItem('vibe_os_booted'); window.location.reload(); } }}
-                                style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)', color: '#ef4444', width: '34px', height: '34px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.15s' }}
-                                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.3)'; }}
-                                onMouseLeave={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.15)'; }}
-                            >
-                                <Power size={15} />
-                            </button>
-                        </div>
-
-                        {/* Search */}
-                        <div style={{ padding: '12px 20px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                    <div
+                        data-mac-menu-root
+                        role="dialog"
+                        aria-label="Start panel"
+                        style={{
+                            position: 'absolute',
+                            top: '34px',
+                            left: '12px',
+                            width: 'min(680px, calc(100vw - 24px))',
+                            maxHeight: 'min(82vh, 740px)',
+                            background: 'linear-gradient(160deg, rgba(15,23,42,0.94) 0%, rgba(30,41,59,0.9) 42%, rgba(51,65,85,0.88) 100%)',
+                            backdropFilter: 'blur(22px) saturate(1.15)',
+                            WebkitBackdropFilter: 'blur(22px) saturate(1.15)',
+                            border: '1px solid rgba(245,208,0,0.22)',
+                            borderRadius: '20px',
+                            boxShadow: '0 28px 60px rgba(2,6,23,0.62), inset 0 1px 0 rgba(255,255,255,0.04)',
+                            zIndex: 9999,
+                            display: 'grid',
+                            gridTemplateRows: 'auto auto 1fr auto',
+                            overflow: 'hidden'
+                        }}
+                    >
+                        <div style={{ padding: '16px 20px 10px' }}>
                             <div style={{ position: 'relative' }}>
-                                <Search size={14} color="rgba(255,255,255,0.3)" style={{ position: 'absolute', left: '12px', top: '11px' }} />
+                                <Search size={16} color="rgba(248,250,252,0.7)" style={{ position: 'absolute', left: '14px', top: '12px' }} />
                                 <input
+                                    ref={startSearchInputRef}
                                     type="text"
-                                    placeholder="Search apps..."
+                                    placeholder="Search for apps, settings, and documents"
                                     value={startMenuSearch}
                                     onChange={(e) => setStartMenuSearch(e.target.value)}
-                                    style={{ width: '100%', padding: '10px 12px 10px 36px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', borderRadius: '8px', fontFamily: 'monospace', fontSize: '13px', outline: 'none', boxSizing: 'border-box' }}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter' && filteredStartApps.length) {
+                                            openApp(filteredStartApps[0].type);
+                                            setIsStartMenuOpen(false);
+                                        }
+                                    }}
+                                    style={{
+                                        width: '100%',
+                                        padding: '10px 12px 10px 40px',
+                                        borderRadius: '999px',
+                                        border: '1px solid rgba(245,208,0,0.26)',
+                                        background: 'rgba(15,23,42,0.72)',
+                                        color: '#f8fafc',
+                                        fontSize: '13px',
+                                        fontFamily: 'system-ui, -apple-system, sans-serif',
+                                        outline: 'none',
+                                        boxSizing: 'border-box'
+                                    }}
                                 />
                             </div>
                         </div>
 
-                        {/* App Grid */}
-                        <div style={{ padding: '16px 20px', flex: 1, overflowY: 'auto' }}>
-                            <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.3)', marginBottom: '12px', fontWeight: 900, letterSpacing: '0.1em' }}>ALL APPS</div>
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' }}>
-                                {APP_REGISTRY.filter(app => !startMenuSearch || app.label.toLowerCase().includes(startMenuSearch.toLowerCase())).map(app => (
-                                    <button key={app.type}
+                        <div style={{ padding: '0 22px 10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <div style={{ fontSize: '14px', fontWeight: 700, color: '#f8fafc', fontFamily: 'system-ui, -apple-system, sans-serif' }}>{startPanelMode === 'all' ? 'All apps' : 'Pinned'}</div>
+                            <button
+                                type="button"
+                                onClick={() => setStartPanelMode((prev) => (prev === 'all' ? 'pinned' : 'all'))}
+                                style={{ border: '1px solid rgba(245,208,0,0.26)', borderRadius: '10px', background: 'rgba(245,208,0,0.14)', color: '#f5d000', fontSize: '12px', fontWeight: 600, padding: '5px 10px', cursor: 'pointer' }}
+                            >
+                                {startPanelMode === 'all' ? 'Pinned' : 'All apps'}
+                            </button>
+                        </div>
+
+                        <div style={{ padding: '0 22px 18px', overflowY: 'auto' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(88px, 1fr))', gap: '12px' }}>
+                                {visibleStartApps.map((app) => (
+                                    <button
+                                        key={app.type}
+                                        type="button"
                                         onClick={() => { openApp(app.type); setIsStartMenuOpen(false); }}
-                                        style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '10px', padding: '12px 6px', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '7px', transition: 'all 0.15s' }}
-                                        onMouseEnter={e => { e.currentTarget.style.background = 'rgba(245,208,0,0.1)'; e.currentTarget.style.borderColor = 'rgba(245,208,0,0.3)'; }}
-                                        onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)'; }}
+                                        style={{ border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', background: 'rgba(15,23,42,0.4)', color: '#e2e8f0', padding: '8px 6px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', cursor: 'pointer' }}
                                     >
-                                        <div style={{ width: '38px', height: '38px', background: '#0b1220', border: `1.5px solid ${app.color}`, borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                            <app.icon size={20} color={app.color} />
+                                        <div style={{ width: '40px', height: '40px', borderRadius: '10px', border: app.desktopIconImage ? 'none' : `1px solid ${app.color}`, background: 'rgba(255,255,255,0.06)', display: 'grid', placeItems: 'center', overflow: 'hidden' }}>
+                                            {app.desktopIconImage ? (
+                                                <img src={app.desktopIconImage} alt={`${app.label} icon`} style={{ width: '36px', height: '36px', objectFit: 'contain', transform: `scale(${app.desktopIconScale || 1})` }} />
+                                            ) : (
+                                                <app.icon size={20} color={app.color} />
+                                            )}
                                         </div>
-                                        <span style={{ fontSize: '10px', fontWeight: 700, color: 'rgba(255,255,255,0.7)', textAlign: 'center', lineHeight: 1.2 }}>{app.label}</span>
+                                        <span style={{ fontSize: '12px', fontWeight: 600, lineHeight: 1.2, color: '#e2e8f0', textAlign: 'center', fontFamily: 'system-ui, -apple-system, sans-serif' }}>{app.label}</span>
                                     </button>
                                 ))}
-                                <button
-                                    onClick={() => { window.open('https://antigravity.id', '_blank'); setIsStartMenuOpen(false); }}
-                                    style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '10px', padding: '12px 6px', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '7px', transition: 'all 0.15s' }}
-                                    onMouseEnter={e => { e.currentTarget.style.background = 'rgba(245,208,0,0.1)'; e.currentTarget.style.borderColor = 'rgba(245,208,0,0.3)'; }}
-                                    onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)'; }}
-                                >
-                                    <div style={{ width: '38px', height: '38px', background: '#0b1220', border: '1.5px solid #a78bfa', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                        <BookOpen size={20} color="#a78bfa" />
-                                    </div>
-                                    <span style={{ fontSize: '10px', fontWeight: 700, color: 'rgba(255,255,255,0.7)', textAlign: 'center', lineHeight: 1.2 }}>DOCS</span>
-                                </button>
                             </div>
+                        </div>
+
+                        <div style={{ borderTop: '1px solid rgba(245,208,0,0.16)', background: 'rgba(15,23,42,0.64)', padding: '12px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#f8fafc', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                                <div style={{ width: '54px', height: '54px', borderRadius: '18px', display: 'grid', placeItems: 'center', background: 'linear-gradient(180deg, #2563eb 0%, #1d4ed8 100%)', color: '#eff6ff', fontSize: '22px', fontWeight: 700 }}>
+                                    {(currentUser?.name || 'L')[0].toUpperCase()}
+                                </div>
+                                <span style={{ fontSize: '15px', fontWeight: 600 }}>{currentUser?.name || 'Local Builder'}</span>
+                            </div>
+                            <button
+                                aria-label="Power off"
+                                type="button"
+                                onClick={() => { if (window.confirm('Power off KRACKED_OS session?')) { localStorage.removeItem('vibe_os_booted'); window.location.reload(); } }}
+                                style={{ border: '1px solid rgba(239,68,68,0.45)', background: 'rgba(239,68,68,0.15)', color: '#b91c1c', width: '34px', height: '34px', borderRadius: '999px', display: 'grid', placeItems: 'center', cursor: 'pointer' }}
+                            >
+                                <Power size={16} />
+                            </button>
                         </div>
                     </div>
                 </>
@@ -6498,8 +6699,8 @@ YOU DID IT. APP DEPLOYED!`);
                         padding: '0 10px',
                         zIndex: 500,
                         fontFamily: 'monospace',
-                        backdropFilter: `blur(20px) saturate(1.3) brightness(${Math.max(0.7, uiBrightness / 100)})`,
-                        WebkitBackdropFilter: `blur(20px) saturate(1.3) brightness(${Math.max(0.7, uiBrightness / 100)})`
+                        backdropFilter: `blur(20px) saturate(1.3) brightness(${menuBarBrightness})`,
+                        WebkitBackdropFilter: `blur(20px) saturate(1.3) brightness(${menuBarBrightness})`
                     }}
                 >
                     <div style={{ display: 'flex', alignItems: 'center', gap: '2px', minWidth: 0 }}>
@@ -6507,13 +6708,25 @@ YOU DID IT. APP DEPLOYED!`);
                             <div key={menu.id} style={{ position: 'relative' }}>
                                 <button
                                     type="button"
-                                    onClick={() => setActiveMacMenu((prev) => prev === menu.id ? null : menu.id)}
+                                    onClick={() => {
+                                        if (menu.id === 'system') {
+                                            setIsStartMenuOpen((prev) => !prev);
+                                            setShowDateTimePanel(false);
+                                            setShowBatteryPopup(false);
+                                            setShowControlCenter(false);
+                                            setActiveMacMenu(null);
+                                            return;
+                                        }
+                                        setIsStartMenuOpen(false);
+                                        setShowDateTimePanel(false);
+                                        setActiveMacMenu((prev) => prev === menu.id ? null : menu.id);
+                                    }}
                                     style={{
                                         height: '28px',
                                         padding: '0 12px',
                                         borderRadius: '6px',
                                         border: 'none',
-                                        background: activeMacMenu === menu.id ? 'rgba(255,255,255,0.14)' : 'transparent',
+                                        background: (menu.id === 'system' ? isStartMenuOpen : activeMacMenu === menu.id) ? 'rgba(255,255,255,0.14)' : 'transparent',
                                         color: menu.accent || '#f8fafc',
                                         fontSize: '11px',
                                         fontWeight: menu.bold || menu.accent ? 800 : 600,
@@ -6528,7 +6741,7 @@ YOU DID IT. APP DEPLOYED!`);
                                         <img src="/icons/KDOS.png" alt="KDOS" style={{ width: '24px', height: '24px', objectFit: 'contain', display: 'block', transform: 'translateY(1px)' }} />
                                     ) : menu.label}
                                 </button>
-                                {activeMacMenu === menu.id && (
+                                {menu.id !== 'system' && activeMacMenu === menu.id && (
                                     <div style={{ position: 'absolute', top: '26px', left: 0, minWidth: '220px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(9,14,25,0.96)', boxShadow: '0 24px 48px rgba(0,0,0,0.45)', padding: '8px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
                                         {menu.items.map((item, index) => item.separator ? (
                                             <div key={`${menu.id}-sep-${index}`} style={{ height: '1px', background: 'rgba(255,255,255,0.08)', margin: '4px 2px' }} />
@@ -6559,43 +6772,228 @@ YOU DID IT. APP DEPLOYED!`);
 
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                         <div style={{ position: 'relative' }}>
-                            <button type="button" onClick={() => { setShowBatteryPopup((prev) => !prev); setShowControlCenter(false); setActiveMacMenu(null); }} style={{ height: '22px', padding: '0 8px', borderRadius: '8px', border: 'none', background: showBatteryPopup ? 'rgba(255,255,255,0.12)' : 'transparent', color: '#f8fafc', display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
-                                <span style={{ fontSize: '10px', fontWeight: 700 }}>{batteryLevel}%</span>
-                                <div style={{ width: '24px', height: '11px', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.5)', padding: '1px', position: 'relative' }}>
-                                    <div style={{ width: `${batteryLevel}%`, height: '100%', borderRadius: '2px', background: batteryLevel > 50 ? '#22c55e' : batteryLevel > 20 ? '#f59e0b' : '#ef4444' }} />
-                                    <div style={{ position: 'absolute', right: '-3px', top: '3px', width: '2px', height: '4px', borderRadius: '0 2px 2px 0', background: 'rgba(255,255,255,0.6)' }} />
-                                </div>
+                            <button type="button" onClick={() => { setShowBatteryPopup((prev) => !prev); setShowControlCenter(false); setShowDateTimePanel(false); setIsStartMenuOpen(false); setActiveMacMenu(null); }} style={{ height: '22px', padding: '0 8px', borderRadius: '8px', border: 'none', background: showBatteryPopup ? 'rgba(255,255,255,0.12)' : 'transparent', color: '#f8fafc', display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
+                                <span style={{ fontSize: '10px', fontWeight: 700 }}>{powerWidgetLabel}</span>
+                                {isPlugOnlyPower ? (
+                                    <PlugZap size={14} color="#93c5fd" />
+                                ) : (
+                                    <div style={{ width: '24px', height: '11px', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.5)', padding: '1px', position: 'relative' }}>
+                                        <div style={{ width: `${powerMeterLevel}%`, height: '100%', borderRadius: '2px', background: powerAccentColor }} />
+                                        {isChargingPower && <div style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -58%)', fontSize: '8px', lineHeight: 1, color: '#f8fafc' }}>⚡</div>}
+                                        <div style={{ position: 'absolute', right: '-3px', top: '3px', width: '2px', height: '4px', borderRadius: '0 2px 2px 0', background: 'rgba(255,255,255,0.6)' }} />
+                                    </div>
+                                )}
                             </button>
                             {showBatteryPopup && (
-                                <div style={{ position: 'absolute', top: '26px', right: 0, width: '220px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(9,14,25,0.96)', boxShadow: '0 24px 48px rgba(0,0,0,0.45)', padding: '12px' }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', fontWeight: 800, color: '#f8fafc' }}><span>Power</span><span>{batteryLevel}%</span></div>
-                                    <div style={{ marginTop: '10px', height: '10px', borderRadius: '999px', background: 'rgba(255,255,255,0.08)', overflow: 'hidden' }}><div style={{ width: `${batteryLevel}%`, height: '100%', background: batteryLevel > 50 ? '#22c55e' : batteryLevel > 20 ? '#f59e0b' : '#ef4444' }} /></div>
-                                    <div style={{ marginTop: '10px', fontSize: '10px', color: 'rgba(255,255,255,0.6)' }}>Power Source: Local Session</div>
-                                    <button type="button" onClick={() => { openApp('settings'); setShowBatteryPopup(false); }} style={{ marginTop: '10px', width: '100%', border: 'none', borderRadius: '8px', padding: '8px 10px', background: 'rgba(245,208,0,0.14)', color: '#f5d000', fontSize: '11px', cursor: 'pointer' }}>Power Preferences</button>
+                                <div style={{ position: 'absolute', top: '26px', right: 0, width: '204px', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(9,14,25,0.96)', boxShadow: '0 24px 48px rgba(0,0,0,0.45)', padding: '12px' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px' }}>
+                                        <div>
+                                            <div style={{ fontSize: '12px', fontWeight: 800, color: '#f8fafc' }}>Power</div>
+                                            <div style={{ marginTop: '3px', fontSize: '10px', color: 'rgba(255,255,255,0.64)' }}>{powerStatus?.statusLabel || 'Power unavailable'}</div>
+                                        </div>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                            {isPlugOnlyPower ? (
+                                                <PlugZap size={18} color="#93c5fd" />
+                                            ) : (
+                                                <div style={{ width: '34px', height: '16px', borderRadius: '5px', border: '1px solid rgba(255,255,255,0.55)', padding: '2px', position: 'relative' }}>
+                                                    <div style={{ width: `${powerMeterLevel}%`, height: '100%', borderRadius: '3px', background: powerAccentColor }} />
+                                                    {isChargingPower && <div style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -56%)', fontSize: '10px', lineHeight: 1, color: '#f8fafc' }}>⚡</div>}
+                                                    <div style={{ position: 'absolute', right: '-4px', top: '5px', width: '3px', height: '6px', borderRadius: '0 2px 2px 0', background: 'rgba(255,255,255,0.65)' }} />
+                                                </div>
+                                            )}
+                                            <span style={{ fontSize: '15px', fontWeight: 800, color: '#f8fafc' }}>
+                                                {displayPowerPercent != null ? `${displayPowerPercent}%` : isPlugOnlyPower ? 'AC' : '--'}
+                                            </span>
+                                        </div>
+                                    </div>
                                 </div>
                             )}
                         </div>
-                        <button type="button" onClick={() => setWifiEnabled((prev) => !prev)} style={{ height: '22px', width: '24px', borderRadius: '8px', border: 'none', background: wifiEnabled ? 'rgba(96,165,250,0.18)' : 'transparent', color: wifiEnabled ? '#93c5fd' : 'rgba(255,255,255,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}><Wifi size={14} /></button>
-                        <button type="button" onClick={() => { setIsStartMenuOpen(true); setShowBatteryPopup(false); setShowControlCenter(false); setActiveMacMenu(null); }} style={{ height: '22px', width: '24px', borderRadius: '8px', border: 'none', background: isStartMenuOpen ? 'rgba(255,255,255,0.12)' : 'transparent', color: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}><Search size={14} /></button>
+                        <button
+                            type="button"
+                            title={networkStatusLabel}
+                            onClick={() => {
+                                setShowControlCenter(true);
+                                setShowBatteryPopup(false);
+                                setShowDateTimePanel(false);
+                                setIsStartMenuOpen(false);
+                                setActiveMacMenu(null);
+                            }}
+                            style={{
+                                height: '22px',
+                                width: '24px',
+                                borderRadius: '8px',
+                                border: 'none',
+                                background: resolvedNetworkType === 'offline' ? 'transparent' : 'rgba(96,165,250,0.16)',
+                                color: networkIconColor,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                cursor: 'pointer'
+                            }}
+                        >
+                            <NetworkTrayIcon size={14} />
+                        </button>
                         <div style={{ position: 'relative' }}>
-                            <button type="button" onClick={() => { setShowControlCenter((prev) => !prev); setShowBatteryPopup(false); setActiveMacMenu(null); }} style={{ height: '22px', width: '24px', borderRadius: '8px', border: 'none', background: showControlCenter ? 'rgba(255,255,255,0.12)' : 'transparent', color: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}><SlidersHorizontal size={14} /></button>
+                            <button type="button" onClick={() => { setShowControlCenter((prev) => !prev); setShowBatteryPopup(false); setShowDateTimePanel(false); setIsStartMenuOpen(false); setActiveMacMenu(null); }} style={{ height: '22px', width: '24px', borderRadius: '8px', border: 'none', background: showControlCenter ? 'rgba(255,255,255,0.12)' : 'transparent', color: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}><SlidersHorizontal size={14} /></button>
                             {showControlCenter && (
-                                <div style={{ position: 'absolute', top: '26px', right: 0, width: '292px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(9,14,25,0.97)', boxShadow: '0 24px 48px rgba(0,0,0,0.45)', padding: '12px', display: 'grid', gap: '10px' }}>
+                                <div style={{ position: 'absolute', top: '26px', right: 0, width: '304px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(9,14,25,0.97)', boxShadow: '0 24px 48px rgba(0,0,0,0.45)', padding: '12px', display: 'grid', gap: '10px' }}>
                                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '8px' }}>
-                                        {[{ label: 'Wi-Fi', icon: Wifi, active: wifiEnabled, onClick: () => setWifiEnabled((prev) => !prev) }, { label: 'Bluetooth', icon: Bluetooth, active: bluetoothEnabled, onClick: () => setBluetoothEnabled((prev) => !prev) }, { label: 'AirDrop', icon: Sparkles, active: airdropEnabled, onClick: () => setAirdropEnabled((prev) => !prev) }, { label: 'Focus', icon: MoonStar, active: focusModeEnabled, onClick: () => setFocusModeEnabled((prev) => !prev) }].map((item) => {
+                                        {[
+                                            {
+                                                label: 'Wi-Fi',
+                                                icon: Wifi,
+                                                active: isWifiConnected,
+                                                visible: Boolean(deviceStatus?.network?.canToggleWifi),
+                                                onClick: () => { void handleWifiToggle(); }
+                                            },
+                                            {
+                                                label: 'Bluetooth',
+                                                icon: Bluetooth,
+                                                active: bluetoothEnabled,
+                                                visible: true,
+                                                onClick: () => setBluetoothEnabled((prev) => !prev)
+                                            },
+                                            {
+                                                label: 'Focus',
+                                                icon: MoonStar,
+                                                active: focusModeEnabled,
+                                                visible: true,
+                                                onClick: () => setFocusModeEnabled((prev) => !prev)
+                                            }
+                                        ].filter((item) => item.visible).map((item) => {
                                             const Icon = item.icon;
                                             return <button key={item.label} type="button" onClick={item.onClick} style={{ border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '10px', background: item.active ? 'rgba(96,165,250,0.18)' : 'rgba(255,255,255,0.04)', color: '#f8fafc', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '8px', cursor: 'pointer' }}><Icon size={16} /><span style={{ fontSize: '11px', fontWeight: 700 }}>{item.label}</span></button>;
                                         })}
                                     </div>
-                                    <div style={{ borderRadius: '12px', background: 'rgba(255,255,255,0.04)', padding: '10px 12px' }}><div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#f8fafc' }}><SunMedium size={16} /><input type="range" min="40" max="100" step="1" value={uiBrightness} onChange={(e) => setUiBrightness(Number(e.target.value))} style={{ flex: 1 }} /><span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.6)' }}>{uiBrightness}%</span></div></div>
-                                    <div style={{ borderRadius: '12px', background: 'rgba(255,255,255,0.04)', padding: '10px 12px' }}><div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#f8fafc' }}><Volume2 size={16} /><input type="range" min="0" max="100" step="1" value={uiVolume} onChange={(e) => setUiVolume(Number(e.target.value))} style={{ flex: 1 }} /><span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.6)' }}>{uiVolume}%</span></div></div>
-                                    <button type="button" onClick={() => { openApp('settings'); setShowControlCenter(false); }} style={{ border: 'none', borderRadius: '12px', padding: '10px 12px', background: 'rgba(245,208,0,0.14)', color: '#f5d000', fontSize: '11px', fontWeight: 700, cursor: 'pointer', textAlign: 'left' }}>Open Control Preferences</button>
+                                    <div style={{ borderRadius: '12px', background: 'rgba(255,255,255,0.04)', padding: '10px 12px' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', color: '#f8fafc' }}>
+                                            <span style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.04em' }}>NETWORK</span>
+                                            <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.62)' }}>{resolvedNetworkType === 'ethernet' ? 'Ethernet' : resolvedNetworkType === 'wifi' ? 'Wi-Fi' : resolvedNetworkType === 'offline' ? 'Offline' : 'Online'}</span>
+                                        </div>
+                                        <div style={{ marginTop: '6px', fontSize: '11px', color: '#f8fafc', fontWeight: 700 }}>{networkStatusLabel}</div>
+                                        <div style={{ marginTop: '2px', fontSize: '10px', color: 'rgba(255,255,255,0.62)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{networkDetailLabel}</div>
+                                    </div>
+                                    <div style={{ borderRadius: '12px', background: 'rgba(255,255,255,0.04)', padding: '10px 12px' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#f8fafc' }}>
+                                            <SunMedium size={16} />
+                                            <input
+                                                type="range"
+                                                min="20"
+                                                max="100"
+                                                step="1"
+                                                value={resolvedBrightnessPercent}
+                                                onChange={(e) => { void handleBrightnessChange(e.target.value); }}
+                                                style={{ flex: 1 }}
+                                            />
+                                            <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.6)' }}>
+                                                {resolvedBrightnessPercent}%
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div style={{ borderRadius: '12px', background: 'rgba(255,255,255,0.04)', padding: '10px 12px' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#f8fafc' }}>
+                                            <Volume2 size={16} />
+                                            <input
+                                                type="range"
+                                                min="0"
+                                                max="100"
+                                                step="1"
+                                                value={resolvedVolumePercent}
+                                                onChange={(e) => { void handleVolumeChange(e.target.value); }}
+                                                style={{ flex: 1 }}
+                                            />
+                                            <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.6)' }}>
+                                                {resolvedVolumePercent}%
+                                            </span>
+                                        </div>
+                                    </div>
                                 </div>
                             )}
                         </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#f8fafc', paddingLeft: '4px' }}>
-                            <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.7)' }}>{systemDate}</span>
-                            <span style={{ fontSize: '11px', fontWeight: 800 }}>{systemTime}</span>
+                        <div style={{ position: 'relative', paddingLeft: '4px' }}>
+                            <button
+                                type="button"
+                                aria-expanded={showDateTimePanel}
+                                aria-controls="kdos-datetime-panel"
+                                onClick={() => {
+                                    setShowDateTimePanel((prev) => !prev);
+                                    setShowBatteryPopup(false);
+                                    setShowControlCenter(false);
+                                    setActiveMacMenu(null);
+                                    setIsStartMenuOpen(false);
+                                }}
+                                style={{ border: 'none', borderRadius: '8px', background: showDateTimePanel ? 'rgba(255,255,255,0.12)' : 'transparent', color: '#f8fafc', cursor: 'pointer', padding: '3px 8px', display: 'grid', textAlign: 'right', lineHeight: 1.15 }}
+                            >
+                                <span style={{ fontSize: '11px', fontWeight: 800 }}>{systemTime}</span>
+                                <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.72)' }}>{systemDate}</span>
+                            </button>
+                            {showDateTimePanel && (
+                                <div
+                                    id="kdos-datetime-panel"
+                                    role="dialog"
+                                    aria-label="Calendar and clock"
+                                    style={{ position: 'absolute', top: '30px', right: 0, width: '312px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.18)', background: 'rgba(11,18,32,0.94)', boxShadow: '0 24px 48px rgba(2,6,23,0.5)', padding: '12px', color: '#f8fafc' }}
+                                >
+                                    <div style={{ fontSize: '12px', fontWeight: 800 }}>{fullDateLabel}</div>
+                                    <div style={{ marginTop: '6px', fontSize: '28px', fontWeight: 900, letterSpacing: '0.04em' }}>{systemTime}</div>
+                                    <div style={{ marginTop: '10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setCalendarCursor((prev) => {
+                                                    const month = prev.month - 1;
+                                                    if (month < 0) return { year: prev.year - 1, month: 11 };
+                                                    return { year: prev.year, month };
+                                                });
+                                            }}
+                                            style={{ height: '26px', width: '26px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.14)', background: 'rgba(255,255,255,0.08)', color: '#e2e8f0', display: 'grid', placeItems: 'center', cursor: 'pointer' }}
+                                        >
+                                            <ArrowLeft size={14} />
+                                        </button>
+                                        <span style={{ fontSize: '12px', fontWeight: 700 }}>{monthYearLabel}</span>
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setCalendarCursor((prev) => {
+                                                    const month = prev.month + 1;
+                                                    if (month > 11) return { year: prev.year + 1, month: 0 };
+                                                    return { year: prev.year, month };
+                                                });
+                                            }}
+                                            style={{ height: '26px', width: '26px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.14)', background: 'rgba(255,255,255,0.08)', color: '#e2e8f0', display: 'grid', placeItems: 'center', cursor: 'pointer' }}
+                                        >
+                                            <ArrowRight size={14} />
+                                        </button>
+                                    </div>
+                                    <div style={{ marginTop: '10px', display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '4px', fontSize: '10px', color: 'rgba(226,232,240,0.68)', textAlign: 'center' }}>
+                                        {CALENDAR_DAY_LABELS.map((day) => <span key={day}>{day}</span>)}
+                                    </div>
+                                    <div style={{ marginTop: '6px', display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '4px' }}>
+                                        {calendarCells.map((cell) => (
+                                            <div
+                                                key={cell.key}
+                                                style={{
+                                                    height: '30px',
+                                                    borderRadius: '8px',
+                                                    border: cell.isToday ? '1px solid rgba(245,208,0,0.7)' : '1px solid transparent',
+                                                    background: cell.isToday ? 'rgba(245,208,0,0.18)' : 'transparent',
+                                                    color: cell.inCurrentMonth ? '#f8fafc' : 'rgba(148,163,184,0.72)',
+                                                    fontSize: '11px',
+                                                    fontWeight: cell.isToday ? 800 : 500,
+                                                    display: 'grid',
+                                                    placeItems: 'center'
+                                                }}
+                                            >
+                                                {cell.dayNumber}
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <div style={{ marginTop: '8px', fontSize: '10px', color: 'rgba(148,163,184,0.85)' }}>
+                                        Local timezone: {Intl.DateTimeFormat().resolvedOptions().timeZone || 'System'}
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -6647,6 +7045,7 @@ YOU DID IT. APP DEPLOYED!`);
 };
 
 export default IjamOSWorkspace;
+
 
 
 
