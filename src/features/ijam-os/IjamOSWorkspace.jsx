@@ -43,9 +43,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 import IjamBotMascot from '../../components/IjamBotMascot';
 import MobileStatusBar from '../../components/MobileStatusBar';
 import { useIjamOSWindowManager } from './hooks/useIjamOSWindowManager';
+import { useMissionControlState } from './hooks/useMissionControlState';
 import { APP_REGISTRY } from './constants/appRegistry';
 import KrackedInteractiveLoading from './components/loading/KrackedInteractiveLoading';
 import DesktopIcon from './components/DesktopIcon';
+import StartMenu from './components/StartMenu';
 import WindowFrame from './components/WindowFrame';
 import FilesWindowContent, { VsCodeExplorerIcon } from './components/windows/FilesWindowContent';
 import SettingsWindowContent from './components/windows/SettingsWindowContent';
@@ -69,6 +71,70 @@ const KrackedIjamTerminal = lazy(() => import('./components/windows/KrackedIjamT
 const KrackedKdAcademy = lazy(() => import('./components/windows/KrackedKdAcademy'));
 const BLANK_BITMAP_DATA_URL = 'data:image/bmp;base64,Qk06AAAAAAAAADYAAAAoAAAAAQAAAAEAAAABABgAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAA////AA==';
 const CALENDAR_DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const SHELL_HEADER_LABEL = 'KRACKED_OS';
+const STATS_RPG_STORAGE_KEY = 'ijamos_stats_rpg';
+const DEFAULT_STATS_RPG_LOADOUT = {
+    class: 'class:signal_runner',
+    title: 'title:booting_builder',
+    banner: 'banner:blue_nebula',
+    avatarFrame: 'frame:clean_shell',
+    aura: 'aura:calm_sync',
+    badgeSlots: ['badge:first_boot', null, null]
+};
+const STATS_RPG_CATALOG = {
+    class: [
+        { id: 'class:signal_runner', label: 'Signal Runner', rarity: 'Starter', description: 'Keeps momentum up while the system is still booting.' },
+        { id: 'class:prompt_smith', label: 'Prompt Smith', rarity: 'Common', description: 'Shapes rough ideas into builder-ready prompts.' },
+        { id: 'class:stack_raider', label: 'Stack Raider', rarity: 'Rare', description: 'Clears modules fast and keeps the roadmap moving.' },
+        { id: 'class:launch_keeper', label: 'Launch Keeper', rarity: 'Epic', description: 'Polishes proof-of-work until it is shareable.' }
+    ],
+    title: [
+        { id: 'title:booting_builder', label: 'Booting Builder', rarity: 'Starter', description: 'Fresh session, clean slate, ready to build.' },
+        { id: 'title:checkpoint_hunter', label: 'Checkpoint Hunter', rarity: 'Common', description: 'Always hunting the next milestone.' },
+        { id: 'title:proof_carrier', label: 'Proof Carrier', rarity: 'Rare', description: 'Brings links, screenshots, and receipts.' },
+        { id: 'title:system_legend', label: 'System Legend', rarity: 'Epic', description: 'Has the numbers and the shipped work to prove it.' }
+    ],
+    banner: [
+        { id: 'banner:blue_nebula', label: 'Blue Nebula', rarity: 'Starter', description: 'Default command-deck banner.' },
+        { id: 'banner:stage_grid', label: 'Stage Grid', rarity: 'Common', description: 'Rewards steady stage progression.' },
+        { id: 'banner:proof_signal', label: 'Proof Signal', rarity: 'Rare', description: 'Unlocked when portfolio proof is attached.' },
+        { id: 'banner:final_form', label: 'Final Form', rarity: 'Epic', description: 'Reserved for builders who clear the system.' }
+    ],
+    avatarFrame: [
+        { id: 'frame:clean_shell', label: 'Clean Shell', rarity: 'Starter', description: 'Minimal frame for a clean boot.' },
+        { id: 'frame:ion_edge', label: 'Ion Edge', rarity: 'Common', description: 'Sharper edge for focused builders.' },
+        { id: 'frame:proof_plate', label: 'Proof Plate', rarity: 'Rare', description: 'Reactive frame for builders with receipts.' },
+        { id: 'frame:mythic_core', label: 'Mythic Core', rarity: 'Epic', description: 'High-tier shell for top-level completion.' }
+    ],
+    aura: [
+        { id: 'aura:calm_sync', label: 'Calm Sync', rarity: 'Starter', description: 'Quiet glow while the profile is stabilizing.' },
+        { id: 'aura:focus_current', label: 'Focus Current', rarity: 'Common', description: 'Signals strong stage concentration.' },
+        { id: 'aura:launch_surge', label: 'Launch Surge', rarity: 'Rare', description: 'Triggers when launch proof is live.' },
+        { id: 'aura:vibe_overdrive', label: 'Vibe Overdrive', rarity: 'Epic', description: 'Reserved for maxed builders.' }
+    ],
+    badge: [
+        { id: 'badge:first_boot', label: 'First Boot', rarity: 'Starter', description: 'Opened the system and began the run.' },
+        { id: 'badge:module_climber', label: 'Module Climber', rarity: 'Common', description: 'Cleared early modules.' },
+        { id: 'badge:stage_sweeper', label: 'Stage Sweeper', rarity: 'Common', description: 'Finished a full stage.' },
+        { id: 'badge:proof_online', label: 'Proof Online', rarity: 'Rare', description: 'Attached live proof-of-work.' },
+        { id: 'badge:showcase_ready', label: 'Showcase Ready', rarity: 'Rare', description: 'Added both image and live URL.' },
+        { id: 'badge:full_clear', label: 'Full Clear', rarity: 'Epic', description: 'Completed the full curriculum.' }
+    ]
+};
+const DEFAULT_BEGINNER_PROFILE_FORM = {
+    builderName: '',
+    malaysiaState: '',
+    ideaTitle: '',
+    problemStatement: '',
+    whatsappContact: '',
+    aboutYourself: '',
+    programGoal: '',
+    guildStatus: 'not_started',
+    githubStatus: 'not_started',
+    vercelStatus: 'not_started',
+    supabaseStatus: 'not_started',
+    guildProfileUrl: ''
+};
 
 function buildCalendarCells(year, month) {
     const firstDay = new Date(year, month, 1);
@@ -2715,27 +2781,17 @@ const LegacyDesktopIcon = ({ label, icon: Icon, onClick, color = '#f5d000', isPh
     </button>
 );
 
-const StartMenuApp = ({ icon: Icon, label, onClick }) => (
-    <button onClick={onClick}
-        style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', background: 'transparent', border: 'none', cursor: 'pointer', padding: '12px', borderRadius: '8px', transition: 'background 0.2s' }}
-        onMouseOver={(e) => e.currentTarget.style.background = '#1e293b'}
-        onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}
-    >
-        <Icon size={24} color="#f8fafc" />
-        <span style={{ color: '#f8fafc', fontSize: '10px', fontWeight: 600, fontFamily: 'monospace' }}>{label}</span>
-    </button>
-);
-
 const IjamOSWorkspace = ({ session, currentUser, isMobileView, deviceMode = 'desktop', ijamOsMode = 'mac_desktop', setPublicPage, setCurrentUser, runtime }) => {
     const isMacMode = ijamOsMode === 'mac_desktop';
     const isPhoneMode = ijamOsMode === 'ios_phone';
     const isTabletMode = ijamOsMode === 'ios_tablet';
     const isTouchIjamMode = isPhoneMode || isTabletMode;
+    const usesDesktopWallpaperLayout = isMacMode || isTabletMode;
     const mobileWindowProps = isTouchIjamMode
         ? {
             mobileMode: true,
-            mobileInset: isPhoneMode ? '86px 8px 96px 8px' : '92px 12px 104px 12px',
-            mobileMaxInset: isPhoneMode ? '46px 0px 72px 0px' : '50px 0px 80px 0px'
+            mobileInset: isPhoneMode ? '86px 8px 96px 8px' : '78px 18px 102px 18px',
+            mobileMaxInset: isPhoneMode ? '46px 0px 72px 0px' : '44px 10px 84px 10px'
         }
         : {};
     const [activeIndex, setActiveIndex] = useState(0);
@@ -2810,6 +2866,9 @@ const IjamOSWorkspace = ({ session, currentUser, isMobileView, deviceMode = 'des
         setLatestMissionEvent(evt);
         setMissionEvents((prev) => [evt, ...prev].slice(0, 24));
     }, []);
+    const { missionState, missionActions } = useMissionControlState({
+        missionEvents
+    });
     const triggerHaptic = useCallback(() => {
         if (
             typeof navigator !== 'undefined' &&
@@ -2844,7 +2903,7 @@ const IjamOSWorkspace = ({ session, currentUser, isMobileView, deviceMode = 'des
         setZCounter(z => {
             const newZ = z + 1;
             setWindowStates(prev => {
-                if (isTouchIjamMode) {
+                if (isPhoneMode) {
                     const vw = typeof window !== 'undefined' ? window.innerWidth : 430;
                     const vh = typeof window !== 'undefined' ? window.innerHeight : 900;
                     const reset = {};
@@ -2862,6 +2921,28 @@ const IjamOSWorkspace = ({ session, currentUser, isMobileView, deviceMode = 'des
                             y: 58,
                             w: Math.max(320, vw - 20),
                             h: Math.max(400, vh - 84),
+                            zIndex: newZ
+                        }
+                    };
+                }
+                if (isTabletMode) {
+                    if (prev[type]?.isOpen) {
+                        return {
+                            ...prev,
+                            [type]: {
+                                ...prev[type],
+                                isMinimized: false,
+                                zIndex: newZ
+                            }
+                        };
+                    }
+                    return {
+                        ...prev,
+                        [type]: {
+                            ...(prev[type] || {}),
+                            isOpen: true,
+                            isMinimized: false,
+                            isMaximized: false,
                             zIndex: newZ
                         }
                     };
@@ -2885,7 +2966,7 @@ const IjamOSWorkspace = ({ session, currentUser, isMobileView, deviceMode = 'des
             setFocusedWindow(type);
             return newZ;
         });
-    }, [emitMissionEvent, getRestoredWindowMetrics, getRoleHintFromApp, isTouchIjamMode]);
+    }, [emitMissionEvent, getRestoredWindowMetrics, getRoleHintFromApp, isPhoneMode, isTabletMode]);
 
     const closeApp = useCallback((type) => {
         setWindowStates(prev => ({ ...prev, [type]: { ...(prev[type] || {}), isOpen: false } }));
@@ -3047,17 +3128,8 @@ const IjamOSWorkspace = ({ session, currentUser, isMobileView, deviceMode = 'des
         });
     }, [runtime]);
 
-    const [profileForm, setProfileForm] = useState({
-        username: '',
-        district: '',
-        ideaTitle: '',
-        problemStatement: '',
-        threadsHandle: '',
-        whatsappContact: '',
-        discordTag: '',
-        aboutYourself: '',
-        programGoal: ''
-    });
+    const [profileForm, setProfileForm] = useState(DEFAULT_BEGINNER_PROFILE_FORM);
+    const [settingsFocusSection, setSettingsFocusSection] = useState('settings-identity');
     const [isSavingSettings, setIsSavingSettings] = useState(false);
     const [terminalLog, setTerminalLog] = useState([
         { role: 'system', text: 'KRACKED_TERMINAL booted.' },
@@ -3071,6 +3143,24 @@ const IjamOSWorkspace = ({ session, currentUser, isMobileView, deviceMode = 'des
     const [isUploading, setIsUploading] = useState(false);
     const [showcaseUrl, setShowcaseUrl] = useState('');
     const [websiteUrl, setWebsiteUrl] = useState('');
+    const [activeStatsPanel, setActiveStatsPanel] = useState('progress');
+    const [statsCustomization, setStatsCustomization] = useState(() => {
+        if (typeof window === 'undefined') {
+            return { ...DEFAULT_STATS_RPG_LOADOUT, badgeSlots: [...DEFAULT_STATS_RPG_LOADOUT.badgeSlots] };
+        }
+        try {
+            const saved = JSON.parse(window.localStorage.getItem(STATS_RPG_STORAGE_KEY) || '{}');
+            return {
+                ...DEFAULT_STATS_RPG_LOADOUT,
+                ...saved,
+                badgeSlots: Array.isArray(saved?.badgeSlots)
+                    ? [...saved.badgeSlots.slice(0, 3), ...Array(Math.max(0, 3 - saved.badgeSlots.length)).fill(null)].slice(0, 3)
+                    : [...DEFAULT_STATS_RPG_LOADOUT.badgeSlots]
+            };
+        } catch {
+            return { ...DEFAULT_STATS_RPG_LOADOUT, badgeSlots: [...DEFAULT_STATS_RPG_LOADOUT.badgeSlots] };
+        }
+    });
 
     const { speakText, playKeystroke, playSuccess, playError } = useSoundEffects();
 
@@ -3215,20 +3305,37 @@ const IjamOSWorkspace = ({ session, currentUser, isMobileView, deviceMode = 'des
     useEffect(() => {
         if (currentUser) {
             setProfileForm({
-                username: currentUser.name || '',
-                district: currentUser.district || '',
+                ...DEFAULT_BEGINNER_PROFILE_FORM,
+                builderName: currentUser.builder_name || currentUser.name || '',
+                malaysiaState: currentUser.malaysia_state || currentUser.district || '',
                 ideaTitle: currentUser.idea_title || '',
                 problemStatement: currentUser.problem_statement || '',
-                threadsHandle: currentUser.threads_handle || '',
                 whatsappContact: currentUser.whatsapp_contact || '',
-                discordTag: currentUser.discord_tag || '',
                 aboutYourself: currentUser.about_yourself || '',
-                programGoal: currentUser.program_goal || ''
+                programGoal: currentUser.program_goal || '',
+                guildStatus: currentUser.guild_status || 'not_started',
+                githubStatus: currentUser.github_status || 'not_started',
+                vercelStatus: currentUser.vercel_status || 'not_started',
+                supabaseStatus: currentUser.supabase_status || 'not_started',
+                guildProfileUrl: currentUser.guild_profile_url || ''
             });
             setShowcaseUrl(currentUser.showcase_image || localStorage.getItem('ijamos_showcase_url') || '');
             setWebsiteUrl(currentUser.website_url || localStorage.getItem('ijamos_website_url') || '');
+            if (currentUser.stats_rpg && typeof currentUser.stats_rpg === 'object') {
+                setStatsCustomization({
+                    ...DEFAULT_STATS_RPG_LOADOUT,
+                    ...currentUser.stats_rpg,
+                    badgeSlots: Array.isArray(currentUser.stats_rpg.badgeSlots)
+                        ? [...currentUser.stats_rpg.badgeSlots.slice(0, 3), ...Array(Math.max(0, 3 - currentUser.stats_rpg.badgeSlots.length)).fill(null)].slice(0, 3)
+                        : [...DEFAULT_STATS_RPG_LOADOUT.badgeSlots]
+                });
+            }
         }
     }, [currentUser]);
+
+    useEffect(() => {
+        localStorage.setItem(STATS_RPG_STORAGE_KEY, JSON.stringify(statsCustomization));
+    }, [statsCustomization]);
 
     const handleSaveSettings = async (e) => {
         if (e) e.preventDefault();
@@ -3237,17 +3344,23 @@ const IjamOSWorkspace = ({ session, currentUser, isMobileView, deviceMode = 'des
         try {
             const nextUser = {
                 ...(currentUser || {}),
-                name: profileForm.username,
-                district: profileForm.district,
+                name: profileForm.builderName,
+                district: profileForm.malaysiaState,
+                builder_name: profileForm.builderName,
+                malaysia_state: profileForm.malaysiaState,
                 idea_title: profileForm.ideaTitle,
                 problem_statement: profileForm.problemStatement,
-                threads_handle: profileForm.threadsHandle,
                 whatsapp_contact: profileForm.whatsappContact,
-                discord_tag: profileForm.discordTag,
                 about_yourself: profileForm.aboutYourself,
                 program_goal: profileForm.programGoal,
+                guild_status: profileForm.guildStatus,
+                github_status: profileForm.githubStatus,
+                vercel_status: profileForm.vercelStatus,
+                supabase_status: profileForm.supabaseStatus,
+                guild_profile_url: profileForm.guildProfileUrl,
                 showcase_image: showcaseUrl,
                 website_url: websiteUrl,
+                stats_rpg: statsCustomization,
                 updated_at: new Date().toISOString()
             };
 
@@ -3444,6 +3557,7 @@ const IjamOSWorkspace = ({ session, currentUser, isMobileView, deviceMode = 'des
                 ...(currentUser || {}),
                 ...savedProfile,
                 showcase_image: dataUrl,
+                stats_rpg: statsCustomization,
                 updated_at: new Date().toISOString()
             };
             localStorage.setItem('ijamos_profile', JSON.stringify(nextUser));
@@ -3468,6 +3582,7 @@ const IjamOSWorkspace = ({ session, currentUser, isMobileView, deviceMode = 'des
                 ...(currentUser || {}),
                 ...savedProfile,
                 website_url: websiteUrl || '',
+                stats_rpg: statsCustomization,
                 updated_at: new Date().toISOString()
             };
             localStorage.setItem('ijamos_profile', JSON.stringify(nextUser));
@@ -3621,25 +3736,47 @@ const IjamOSWorkspace = ({ session, currentUser, isMobileView, deviceMode = 'des
         () => buildCalendarCells(calendarCursor.year, calendarCursor.month),
         [calendarCursor.month, calendarCursor.year]
     );
-    const currentDesktopAppLabel = useMemo(
-        () => APP_REGISTRY.find((app) => app.type === focusedWindow)?.label || 'KRACKED_OS v3.0',
-        [focusedWindow]
-    );
     const recentApps = useMemo(
         () => APP_REGISTRY.filter((app) => windowStates[app.type]?.isOpen).slice(0, 4),
         [windowStates]
     );
     const filteredStartApps = useMemo(
-        () => APP_REGISTRY.filter((app) => !startMenuSearch || app.label.toLowerCase().includes(startMenuSearch.toLowerCase())),
+        () => {
+            const normalizedQuery = startMenuSearch.trim().toLowerCase();
+            if (!normalizedQuery) return APP_REGISTRY;
+            return APP_REGISTRY.filter((app) => {
+                const haystack = [
+                    app.label,
+                    app.title,
+                    app.category,
+                    app.description,
+                    ...(app.launcherKeywords || [])
+                ]
+                    .filter(Boolean)
+                    .join(' ')
+                    .toLowerCase();
+                return haystack.includes(normalizedQuery);
+            });
+        },
         [startMenuSearch]
     );
     const pinnedStartApps = useMemo(
-        () => APP_REGISTRY.slice(0, 12).filter((app) => !startMenuSearch || app.label.toLowerCase().includes(startMenuSearch.toLowerCase())),
-        [startMenuSearch]
+        () => filteredStartApps.filter((app) => app.pinned !== false),
+        [filteredStartApps]
     );
     const visibleStartApps = useMemo(
         () => (startPanelMode === 'all' ? filteredStartApps : pinnedStartApps),
         [filteredStartApps, pinnedStartApps, startPanelMode]
+    );
+    const runningAppTypes = useMemo(
+        () => APP_REGISTRY.filter((app) => windowStates[app.type]?.isOpen).map((app) => app.type),
+        [windowStates]
+    );
+    const mobileDockApps = useMemo(
+        () => ['files', 'kdacademy', 'mission', 'progress', 'settings']
+            .map((type) => appByType[type])
+            .filter(Boolean),
+        [appByType]
     );
     const desktopRenderableFsItems = useMemo(
         () => [...desktopFsItems].sort((left, right) => left.name.localeCompare(right.name, undefined, { numeric: true, sensitivity: 'base' })),
@@ -4776,6 +4913,593 @@ const IjamOSWorkspace = ({ session, currentUser, isMobileView, deviceMode = 'des
     const [completedLessons, setCompletedLessons] = useState([]);
     const [isNarrowScreen, setIsNarrowScreen] = useState(typeof window !== 'undefined' ? window.innerWidth < 980 : false);
     const terminalOutputRef = useRef(null);
+    const completionPct = useMemo(
+        () => (lessons.length ? Math.round((completedLessons.length / lessons.length) * 100) : 0),
+        [completedLessons.length, lessons.length]
+    );
+    const remainingModules = useMemo(
+        () => Math.max(0, lessons.length - completedLessons.length),
+        [completedLessons.length, lessons.length]
+    );
+    const stageCompletionRows = useMemo(() => {
+        const groups = [];
+        const stageMap = new Map();
+
+        lessons.forEach((lesson) => {
+            const stage = lesson.stage || 'Uncategorized';
+            if (!stageMap.has(stage)) {
+                const row = {
+                    stage,
+                    total: 0,
+                    completed: 0,
+                    percent: 0,
+                    isDone: false
+                };
+                stageMap.set(stage, row);
+                groups.push(row);
+            }
+            const row = stageMap.get(stage);
+            row.total += 1;
+            if (completedLessons.includes(lesson.id)) {
+                row.completed += 1;
+            }
+        });
+
+        return groups.map((row) => {
+            const percent = row.total ? Math.round((row.completed / row.total) * 100) : 0;
+            return {
+                ...row,
+                percent,
+                isDone: row.total > 0 && row.completed === row.total
+            };
+        });
+    }, [completedLessons, lessons]);
+    const nextStageToFocus = useMemo(
+        () => stageCompletionRows.find((row) => !row.isDone) || null,
+        [stageCompletionRows]
+    );
+    const strongestStage = useMemo(() => {
+        const candidates = stageCompletionRows.filter((row) => row.completed > 0);
+        if (!candidates.length) return null;
+        return candidates.reduce((best, row) => (row.percent > best.percent ? row : best), candidates[0]);
+    }, [stageCompletionRows]);
+    const activeStage = useMemo(
+        () => activeLesson?.stage || nextStageToFocus?.stage || stageCompletionRows[0]?.stage || 'Uncategorized',
+        [activeLesson?.stage, nextStageToFocus, stageCompletionRows]
+    );
+    const builderDisplayName = currentUser?.builder_name || currentUser?.name || profileForm.builderName || 'Local Builder';
+    const builderState = currentUser?.malaysia_state || currentUser?.district || profileForm.malaysiaState || 'Choose state';
+    const hasShowcaseProof = Boolean(showcaseUrl || websiteUrl);
+    const openSettingsSection = useCallback((sectionId = 'settings-identity') => {
+        setSettingsFocusSection(sectionId);
+        openApp('settings');
+        focusApp('settings');
+    }, [focusApp, openApp]);
+    const readinessChecklist = useMemo(() => ([
+        {
+            key: 'profile',
+            label: 'Builder profile',
+            ready: Boolean(profileForm.builderName && profileForm.malaysiaState),
+            detail: profileForm.builderName && profileForm.malaysiaState ? `${profileForm.builderName} · ${profileForm.malaysiaState}` : 'Add your name and Malaysia state',
+            target: 'settings-identity'
+        },
+        {
+            key: 'github',
+            label: 'GitHub setup',
+            ready: profileForm.githubStatus === 'ready',
+            detail: profileForm.githubStatus === 'ready' ? 'Repository workflow marked ready' : 'Mark GitHub when your repo workflow is ready',
+            target: 'settings-setup'
+        },
+        {
+            key: 'vercel',
+            label: 'Vercel setup',
+            ready: profileForm.vercelStatus === 'ready',
+            detail: profileForm.vercelStatus === 'ready' ? 'Deploy workflow marked ready' : 'Mark Vercel when your deployment flow is ready',
+            target: 'settings-setup'
+        },
+        {
+            key: 'supabase',
+            label: 'Supabase setup',
+            ready: profileForm.supabaseStatus === 'ready',
+            detail: profileForm.supabaseStatus === 'ready' ? 'Database workflow marked ready' : 'Mark Supabase when your data layer is ready',
+            target: 'settings-setup'
+        },
+        {
+            key: 'guild',
+            label: 'KrackedDevs guild',
+            ready: profileForm.guildStatus === 'ready',
+            detail: profileForm.guildStatus === 'ready' ? 'Community joined or confirmed' : 'Join or review KrackedDevs guild',
+            target: 'settings-community'
+        },
+        {
+            key: 'proof',
+            label: 'Proof of work',
+            ready: hasShowcaseProof,
+            detail: hasShowcaseProof ? 'Live URL or screenshot attached' : 'Add a live URL or screenshot',
+            target: 'settings-project'
+        }
+    ]), [hasShowcaseProof, profileForm.builderName, profileForm.githubStatus, profileForm.guildStatus, profileForm.malaysiaState, profileForm.supabaseStatus, profileForm.vercelStatus]);
+    const readySetupCount = useMemo(
+        () => readinessChecklist.filter((item) => item.ready).length,
+        [readinessChecklist]
+    );
+    const profileCompletionPct = useMemo(() => {
+        const score = [
+            Boolean(profileForm.builderName),
+            Boolean(profileForm.malaysiaState),
+            Boolean(profileForm.aboutYourself),
+            Boolean(profileForm.programGoal),
+            Boolean(profileForm.ideaTitle)
+        ].filter(Boolean).length;
+        return Math.round((score / 5) * 100);
+    }, [profileForm.aboutYourself, profileForm.builderName, profileForm.ideaTitle, profileForm.malaysiaState, profileForm.programGoal]);
+    const toolchainReadinessPct = useMemo(() => {
+        const score = ['githubStatus', 'vercelStatus', 'supabaseStatus'].filter((key) => profileForm[key] === 'ready').length;
+        return Math.round((score / 3) * 100);
+    }, [profileForm]);
+    const communityConnectedPct = useMemo(() => (
+        profileForm.guildStatus === 'ready' ? 100 : profileForm.guildStatus === 'in_progress' ? 55 : 15
+    ), [profileForm.guildStatus]);
+    const launchReadinessPct = useMemo(() => {
+        const progressWeight = completionPct * 0.45;
+        const proofWeight = hasShowcaseProof ? 30 : 0;
+        const deployWeight = profileForm.vercelStatus === 'ready' ? 15 : profileForm.vercelStatus === 'in_progress' ? 8 : 0;
+        const contextWeight = profileForm.ideaTitle ? 10 : 0;
+        return Math.min(100, Math.round(progressWeight + proofWeight + deployWeight + contextWeight));
+    }, [completionPct, hasShowcaseProof, profileForm.ideaTitle, profileForm.vercelStatus]);
+    const overallReadinessPct = useMemo(() => (
+        Math.round((profileCompletionPct * 0.3) + (toolchainReadinessPct * 0.3) + (launchReadinessPct * 0.25) + (communityConnectedPct * 0.15))
+    ), [communityConnectedPct, launchReadinessPct, profileCompletionPct, toolchainReadinessPct]);
+    const builderHealth = useMemo(() => {
+        if (overallReadinessPct >= 85) return 'Ready to ship';
+        if (overallReadinessPct >= 60) return 'Good momentum';
+        if (overallReadinessPct >= 35) return 'Setup in progress';
+        return 'Needs setup';
+    }, [overallReadinessPct]);
+    const momentumLabel = useMemo(() => {
+        if (completionPct >= 100) return 'All modules cleared';
+        if (nextStageToFocus) return `${nextStageToFocus.total - nextStageToFocus.completed} module${nextStageToFocus.total - nextStageToFocus.completed === 1 ? '' : 's'} left in ${nextStageToFocus.stage}`;
+        return `${remainingModules} module${remainingModules === 1 ? '' : 's'} left`;
+    }, [completionPct, nextStageToFocus, remainingModules]);
+    const nextBestMove = useMemo(() => {
+        if (!completedLessons.length) {
+            return {
+                label: 'Start the first module',
+                detail: 'Kick off the first lesson so the dashboard can begin tracking your progress.'
+            };
+        }
+        if (!profileForm.builderName || !profileForm.malaysiaState) {
+            return {
+                label: 'Finish your basic builder profile',
+                detail: 'Set your name and Malaysia state first so Stats can track your learning setup properly.'
+            };
+        }
+        if (profileForm.githubStatus !== 'ready') {
+            return {
+                label: 'Mark GitHub as ready',
+                detail: 'Save your code flow first. This is the safest beginner checkpoint before adding more tools.'
+            };
+        }
+        if (profileForm.vercelStatus !== 'ready') {
+            return {
+                label: 'Finish your Vercel setup',
+                detail: 'Publishing a live build gives you proof and makes the rest of the Stats console more meaningful.'
+            };
+        }
+        if (!websiteUrl) {
+            return {
+                label: 'Add your live URL',
+                detail: 'Attach your current site so the Stats app becomes a proof-of-work hub, not just an internal tracker.'
+            };
+        }
+        if (!showcaseUrl) {
+            return {
+                label: 'Upload a showcase screenshot',
+                detail: 'A visual proof makes your builder profile feel complete and easier to review.'
+            };
+        }
+        if (nextStageToFocus) {
+            return {
+                label: `Finish ${nextStageToFocus.stage}`,
+                detail: `You are ${nextStageToFocus.percent}% through this stage. Clearing it is the fastest path to stronger momentum.`
+            };
+        }
+        return {
+            label: 'Review your strongest work',
+            detail: 'Everything is in good shape. Tighten your profile, proof, and community links before sharing the build externally.'
+        };
+    }, [completedLessons.length, nextStageToFocus, profileForm.builderName, profileForm.githubStatus, profileForm.malaysiaState, profileForm.vercelStatus, showcaseUrl, websiteUrl]);
+    const startMenuCompletionSummary = useMemo(() => (
+        `${overallReadinessPct}% readiness · ${completionPct}% curriculum completion · ${nextBestMove.label}`
+    ), [completionPct, nextBestMove.label, overallReadinessPct]);
+    const startRecommendedActions = useMemo(() => {
+        const actions = [
+            {
+                id: 'next-best-move',
+                kicker: 'Recommended',
+                label: nextBestMove.label,
+                detail: nextBestMove.detail,
+                accent: '#f5d000',
+                accentBorder: 'rgba(245,208,0,0.26)',
+                background: 'linear-gradient(135deg, rgba(245,208,0,0.15) 0%, rgba(15,23,42,0.54) 100%)',
+                run: () => {
+                    if (!profileForm.builderName || !profileForm.malaysiaState) {
+                        openSettingsSection('settings-identity');
+                        return;
+                    }
+                    if (profileForm.guildStatus !== 'ready') {
+                        openSettingsSection('settings-community');
+                        return;
+                    }
+                    if (profileForm.githubStatus !== 'ready' || profileForm.vercelStatus !== 'ready' || profileForm.supabaseStatus !== 'ready') {
+                        openSettingsSection('settings-setup');
+                        return;
+                    }
+                    openApp('progress');
+                    focusApp('progress');
+                }
+            },
+            {
+                id: 'resume-learning',
+                kicker: 'Learning',
+                label: activeLesson ? `Resume ${activeLesson.title}` : 'Open KDacademy',
+                detail: activeLesson ? 'Jump back into the current lesson track without searching through the desktop.' : 'Use the learning hub as the main path for beginner progress.',
+                accent: '#34d399',
+                accentBorder: 'rgba(52,211,153,0.26)',
+                background: 'linear-gradient(135deg, rgba(16,185,129,0.14) 0%, rgba(15,23,42,0.52) 100%)',
+                run: () => {
+                    setKdacademyTab('overview');
+                    openApp('kdacademy');
+                    focusApp('kdacademy');
+                }
+            },
+            {
+                id: 'mission-console',
+                kicker: 'Ops',
+                label: 'Review mission progress',
+                detail: 'Check agent output, idle gains, and current mission momentum from one surface.',
+                accent: '#60a5fa',
+                accentBorder: 'rgba(96,165,250,0.24)',
+                background: 'linear-gradient(135deg, rgba(59,130,246,0.16) 0%, rgba(15,23,42,0.52) 100%)',
+                run: () => {
+                    openApp('mission');
+                    focusApp('mission');
+                }
+            }
+        ];
+
+        return actions;
+    }, [activeLesson, focusApp, nextBestMove.detail, nextBestMove.label, openApp, openSettingsSection, profileForm.builderName, profileForm.githubStatus, profileForm.guildStatus, profileForm.malaysiaState, profileForm.supabaseStatus, profileForm.vercelStatus, setKdacademyTab]);
+    const statsKpiCards = useMemo(() => ([
+        {
+            label: 'Completion',
+            value: `${completionPct}%`,
+            meta: `${completedLessons.length}/${lessons.length} modules`
+        },
+        {
+            label: 'Active Stage',
+            value: activeStage,
+            meta: nextStageToFocus ? `${nextStageToFocus.completed}/${nextStageToFocus.total} cleared` : 'All stages completed'
+        },
+        {
+            label: 'Setup Ready',
+            value: `${readySetupCount}/${readinessChecklist.length}`,
+            meta: `${toolchainReadinessPct}% toolchain readiness`
+        },
+        {
+            label: 'Readiness',
+            value: `${overallReadinessPct}%`,
+            meta: builderHealth
+        }
+    ]), [activeStage, builderHealth, completedLessons.length, completionPct, lessons.length, nextStageToFocus, overallReadinessPct, readinessChecklist.length, readySetupCount, toolchainReadinessPct]);
+    const completedStageCount = useMemo(
+        () => stageCompletionRows.filter((row) => row.isDone).length,
+        [stageCompletionRows]
+    );
+    const statsTraitMap = useMemo(() => ({
+        'Profile Completion': Math.max(8, profileCompletionPct),
+        'Toolchain Readiness': Math.max(8, toolchainReadinessPct),
+        'Launch Readiness': Math.max(6, launchReadinessPct),
+        'Community Connected': Math.max(8, communityConnectedPct)
+    }), [communityConnectedPct, launchReadinessPct, profileCompletionPct, toolchainReadinessPct]);
+    const unlockedStatsItems = useMemo(() => {
+        const hasLiveSite = Boolean(websiteUrl);
+        const hasShowcaseImage = Boolean(showcaseUrl);
+        const hasFullProof = hasLiveSite && hasShowcaseImage;
+        const hasProfileReady = Boolean(currentUser?.name && currentUser?.district);
+        const isFullyCleared = lessons.length > 0 && completedLessons.length === lessons.length;
+        const unlockRules = {
+            'class:signal_runner': { unlocked: true, requirement: 'Starter loadout' },
+            'class:prompt_smith': { unlocked: completionPct >= 25, requirement: 'Reach 25% completion' },
+            'class:stack_raider': { unlocked: completedStageCount >= 1, requirement: 'Complete 1 stage' },
+            'class:launch_keeper': { unlocked: hasFullProof && completionPct >= 75, requirement: 'Reach 75% and attach full proof' },
+            'title:booting_builder': { unlocked: true, requirement: 'Starter loadout' },
+            'title:checkpoint_hunter': { unlocked: completedLessons.length >= 3, requirement: 'Complete 3 modules' },
+            'title:proof_carrier': { unlocked: hasLiveSite || hasShowcaseImage, requirement: 'Attach image or live URL' },
+            'title:system_legend': { unlocked: isFullyCleared && hasFullProof, requirement: 'Complete all modules with full proof' },
+            'banner:blue_nebula': { unlocked: true, requirement: 'Starter loadout' },
+            'banner:stage_grid': { unlocked: completionPct >= 40, requirement: 'Reach 40% completion' },
+            'banner:proof_signal': { unlocked: hasFullProof, requirement: 'Attach image and live URL' },
+            'banner:final_form': { unlocked: isFullyCleared, requirement: 'Complete all modules' },
+            'frame:clean_shell': { unlocked: true, requirement: 'Starter loadout' },
+            'frame:ion_edge': { unlocked: statsTraitMap.Focus >= 45, requirement: 'Reach 45 Focus' },
+            'frame:proof_plate': { unlocked: hasShowcaseImage, requirement: 'Upload a showcase image' },
+            'frame:mythic_core': { unlocked: isFullyCleared && builderHealth === 'Launch ready', requirement: 'Launch-ready full clear' },
+            'aura:calm_sync': { unlocked: true, requirement: 'Starter loadout' },
+            'aura:focus_current': { unlocked: statsTraitMap.Focus >= 60, requirement: 'Reach 60 Focus' },
+            'aura:launch_surge': { unlocked: hasLiveSite, requirement: 'Attach a live URL' },
+            'aura:vibe_overdrive': { unlocked: userVibes >= 150 || isFullyCleared, requirement: 'Hit L3 VIBE CODER or full clear' },
+            'badge:first_boot': { unlocked: true, requirement: 'Starter badge' },
+            'badge:module_climber': { unlocked: completedLessons.length >= 3, requirement: 'Complete 3 modules' },
+            'badge:stage_sweeper': { unlocked: completedStageCount >= 1, requirement: 'Complete 1 stage' },
+            'badge:proof_online': { unlocked: hasLiveSite, requirement: 'Attach a live URL' },
+            'badge:showcase_ready': { unlocked: hasFullProof, requirement: 'Attach image and live URL' },
+            'badge:full_clear': { unlocked: isFullyCleared && hasProfileReady, requirement: 'Complete all modules with profile ready' }
+        };
+
+        return Object.entries(STATS_RPG_CATALOG).reduce((acc, [slot, items]) => {
+            acc[slot] = items.map((item) => ({
+                ...item,
+                unlocked: Boolean(unlockRules[item.id]?.unlocked),
+                requirement: unlockRules[item.id]?.requirement || 'Unknown requirement'
+            }));
+            return acc;
+        }, {});
+    }, [builderHealth, completedLessons.length, completedStageCount, completionPct, currentUser?.district, currentUser?.name, lessons.length, showcaseUrl, statsTraitMap, userVibes, websiteUrl]);
+    const equippedStatsItems = useMemo(() => {
+        const findItem = (slot, itemId) => unlockedStatsItems[slot]?.find((item) => item.id === itemId) || STATS_RPG_CATALOG[slot]?.[0] || null;
+        return {
+            class: findItem('class', statsCustomization.class),
+            title: findItem('title', statsCustomization.title),
+            banner: findItem('banner', statsCustomization.banner),
+            avatarFrame: findItem('avatarFrame', statsCustomization.avatarFrame),
+            aura: findItem('aura', statsCustomization.aura),
+            badgeSlots: (statsCustomization.badgeSlots || []).map((badgeId) => findItem('badge', badgeId)).filter(Boolean)
+        };
+    }, [statsCustomization, unlockedStatsItems]);
+    const earnedBadgeCount = useMemo(
+        () => (unlockedStatsItems.badge || []).filter((item) => item.unlocked).length,
+        [unlockedStatsItems]
+    );
+    const builderLevel = useMemo(() => {
+        const lessonLevel = Math.floor(completedLessons.length / 2);
+        const vibeLevel = Math.floor(userVibes / 40);
+        return Math.max(1, lessonLevel + vibeLevel + 1);
+    }, [completedLessons.length, userVibes]);
+    const progressConsoleRows = useMemo(() => ([
+        { label: 'Completion', value: `${completionPct}%`, meta: `${completedLessons.length}/${lessons.length} modules` },
+        { label: 'Modules Left', value: `${remainingModules}`, meta: remainingModules === 1 ? '1 module left' : `${remainingModules} modules left` },
+        { label: 'Active Stage', value: activeStage, meta: nextStageToFocus ? `${nextStageToFocus.completed}/${nextStageToFocus.total} cleared` : 'All stages complete' },
+        { label: 'Readiness', value: `${overallReadinessPct}%`, meta: nextBestMove.label }
+    ]), [activeStage, completedLessons.length, completionPct, lessons.length, nextBestMove.label, nextStageToFocus, overallReadinessPct, remainingModules]);
+    const retroStatsRows = useMemo(() => ([
+        { label: 'Max HP', value: 50 + completionPct, accent: '#6ee7b7' },
+        { label: 'Damage', value: Math.max(8, Math.round(statsTraitMap['Build Power'] / 4)), accent: '#fbbf24' },
+        { label: 'Dodge', value: `${Math.min(95, Math.round(statsTraitMap.Focus * 0.7))}%`, accent: '#60a5fa' },
+        { label: 'CDR', value: `${Math.round(statsTraitMap.Focus * 0.35)}%`, accent: '#c084fc' },
+        { label: 'DEF', value: `${Math.round(statsTraitMap.Consistency * 0.55)}%`, accent: '#a3e635' },
+        { label: 'CSC', value: `${Math.round((statsTraitMap['Build Power'] + statsTraitMap.Focus) * 0.12)}%`, accent: '#fb7185' },
+        { label: 'CSO', value: `${Math.max(100, statsTraitMap['Launch Readiness'] + 65)}%`, accent: '#34d399' }
+    ]), [completionPct, statsTraitMap]);
+    const retroGearSlots = useMemo(() => ([
+        { label: 'Frame', item: equippedStatsItems.avatarFrame, slot: 'avatarFrame' },
+        { label: 'Aura', item: equippedStatsItems.aura, slot: 'aura' },
+        { label: 'Class', item: equippedStatsItems.class, slot: 'class' },
+        { label: 'Title', item: equippedStatsItems.title, slot: 'title' },
+        { label: 'Banner', item: equippedStatsItems.banner, slot: 'banner' },
+        { label: 'Rank', item: { label: userRank }, slot: 'rank' }
+    ]), [equippedStatsItems, userRank]);
+    const retroCosmeticSlots = useMemo(() => ([
+        { label: 'Skin', value: equippedStatsItems.banner?.label || 'Blue Nebula' },
+        { label: 'Edge', value: equippedStatsItems.avatarFrame?.label || 'Clean Shell' },
+        { label: 'Glow', value: equippedStatsItems.aura?.label || 'Calm Sync' },
+        { label: 'Title', value: equippedStatsItems.title?.label || 'Booting Builder' },
+        { label: 'Role', value: equippedStatsItems.class?.label || 'Signal Runner' },
+        { label: 'Proof', value: hasShowcaseProof ? 'Online' : 'Offline' }
+    ]), [equippedStatsItems, hasShowcaseProof]);
+    const retroToolSlots = useMemo(() => ([
+        { label: 'Proof', value: websiteUrl ? 'Live URL' : 'Locked', ready: Boolean(websiteUrl) },
+        { label: 'Image', value: showcaseUrl ? 'Shot' : 'Locked', ready: Boolean(showcaseUrl) },
+        { label: 'Focus', value: nextStageToFocus?.stage?.slice(0, 8) || 'Clear', ready: Boolean(nextStageToFocus) },
+        { label: 'Stage', value: `${completedStageCount}/${stageCompletionRows.length || 0}`, ready: completedStageCount > 0 },
+        { label: 'Badge 1', value: equippedStatsItems.badgeSlots?.[0]?.label || 'Empty', ready: Boolean(equippedStatsItems.badgeSlots?.[0]) },
+        { label: 'Badge 2', value: equippedStatsItems.badgeSlots?.[1]?.label || 'Empty', ready: Boolean(equippedStatsItems.badgeSlots?.[1]) },
+        { label: 'Badge 3', value: equippedStatsItems.badgeSlots?.[2]?.label || 'Empty', ready: Boolean(equippedStatsItems.badgeSlots?.[2]) },
+        { label: 'Build', value: builderHealth, ready: builderHealth !== 'Needs momentum' }
+    ]), [websiteUrl, showcaseUrl, nextStageToFocus, completedStageCount, stageCompletionRows.length, equippedStatsItems.badgeSlots, builderHealth]);
+    const retroPixelSprite = useMemo(() => ([
+        '0000011000',
+        '0001122110',
+        '0001233210',
+        '0012333321',
+        '0012444421',
+        '0122444421',
+        '0122555521',
+        '0012555520',
+        '0012666620',
+        '0122666621',
+        '0122666621',
+        '0012777720',
+        '0002777720',
+        '0002700720',
+        '0007000070'
+    ]), []);
+    const activeStatsPanelMeta = useMemo(() => {
+        if (activeStatsPanel === 'stages') {
+            return {
+                title: 'Stages',
+                body: (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        {stageCompletionRows.map((row) => (
+                            <div key={row.stage} style={{ border: '1px solid rgba(148,163,184,0.22)', background: 'rgba(255,255,255,0.92)', padding: '12px 14px', borderRadius: '12px', color: '#0f172a' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', gap: '8px', fontSize: '13px', fontWeight: 700 }}>
+                                    <span>{row.stage.toUpperCase()}</span>
+                                    <span style={{ color: row.isDone ? '#059669' : '#2563eb' }}>{row.percent}%</span>
+                                </div>
+                                <div style={{ marginTop: '6px', fontSize: '11px', color: '#475569' }}>{row.completed}/{row.total} modules cleared</div>
+                                <div style={{ height: '8px', background: '#e2e8f0', borderRadius: '999px', overflow: 'hidden', marginTop: '8px' }}>
+                                    <div style={{ height: '100%', width: `${row.percent}%`, background: row.isDone ? 'linear-gradient(90deg, #10b981 0%, #34d399 100%)' : 'linear-gradient(90deg, #2563eb 0%, #60a5fa 100%)' }} />
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )
+            };
+        }
+        if (activeStatsPanel === 'setup') {
+            return {
+                title: 'Setup',
+                body: (
+                    <div style={{ display: 'grid', gridTemplateColumns: isNarrowScreen ? '1fr' : 'minmax(0, 1.1fr) minmax(0, 0.9fr)', gap: '16px' }}>
+                        <div style={{ display: 'grid', gap: '10px' }}>
+                            {readinessChecklist.map((item) => (
+                                <button
+                                    key={item.key}
+                                    type="button"
+                                    onClick={() => openSettingsSection(item.target)}
+                                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', textAlign: 'left', border: '1px solid rgba(148,163,184,0.22)', background: item.ready ? '#ecfdf5' : 'rgba(255,255,255,0.92)', padding: '14px', borderRadius: '14px', cursor: 'pointer' }}
+                                >
+                                    <div>
+                                        <div style={{ fontSize: '13px', fontWeight: 700, color: '#0f172a' }}>{item.label}</div>
+                                        <div style={{ fontSize: '12px', color: '#475569', marginTop: '4px', lineHeight: 1.45 }}>{item.detail}</div>
+                                    </div>
+                                    <div style={{ fontSize: '11px', fontWeight: 800, color: item.ready ? '#047857' : '#b45309' }}>
+                                        {item.ready ? 'READY' : 'FIX IN SETTINGS'}
+                                    </div>
+                                </button>
+                            ))}
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                            <div style={{ border: '1px solid rgba(148,163,184,0.22)', background: 'rgba(255,255,255,0.92)', padding: '16px', borderRadius: '14px' }}>
+                                <div style={{ fontSize: '11px', color: '#64748b', fontWeight: 700, textTransform: 'uppercase', marginBottom: '10px' }}>Readiness summary</div>
+                                <div style={{ fontSize: '28px', color: '#0f172a', fontWeight: 800 }}>{overallReadinessPct}%</div>
+                                <div style={{ marginTop: '6px', fontSize: '13px', color: '#475569', lineHeight: 1.5 }}>{builderHealth}</div>
+                            </div>
+                            <div style={{ display: 'grid', gap: '10px' }}>
+                                {Object.entries(statsTraitMap).map(([label, value]) => (
+                                    <div key={label}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', gap: '10px' }}>
+                                            <span style={{ fontSize: '13px', fontWeight: 700, color: '#0f172a' }}>{label}</span>
+                                            <span style={{ fontSize: '12px', fontWeight: 800, color: '#2563eb' }}>{value}%</span>
+                                        </div>
+                                        <div style={{ height: '10px', background: '#dbe5f1', borderRadius: '999px', overflow: 'hidden' }}>
+                                            <div style={{ height: '100%', width: `${value}%`, background: label === 'Launch Readiness' ? 'linear-gradient(90deg, #22c55e 0%, #86efac 100%)' : 'linear-gradient(90deg, #2563eb 0%, #60a5fa 100%)' }} />
+                                        </div>
+                                    </div>
+                                ))}
+                                <div style={{ fontSize: '12px', color: '#64748b', lineHeight: 1.5 }}>
+                                    Incomplete items here are clickable and will open the exact Settings section that needs attention.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )
+            };
+        }
+        if (activeStatsPanel === 'proof') {
+            return {
+                title: 'Proof',
+                body: (
+                    <div style={{ display: 'grid', gridTemplateColumns: isNarrowScreen ? '1fr' : '220px minmax(0, 1fr)', gap: '16px' }}>
+                        <div style={{ border: '1px solid rgba(148,163,184,0.22)', background: 'rgba(255,255,255,0.92)', padding: '10px', borderRadius: '12px', minHeight: '160px', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}>
+                            {showcaseUrl ? <img src={showcaseUrl} alt="Showcase" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <div style={{ fontSize: '12px', color: '#64748b', textAlign: 'center' }}>Upload a clean screenshot</div>}
+                            <input type="file" accept="image/*" onChange={handleImageUpload} disabled={isUploading} style={{ opacity: 0, position: 'absolute', inset: 0, cursor: 'pointer' }} />
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                            <div style={{ fontSize: '12px', color: '#475569', lineHeight: 1.6 }}>Keep proof-of-work lightweight here: one screenshot and one live URL.</div>
+                            <input value={websiteUrl} onChange={(e) => setWebsiteUrl(e.target.value)} placeholder="https://mywebsite.vercel.app" style={{ width: '100%', border: '1px solid rgba(148,163,184,0.28)', background: '#ffffff', color: '#0f172a', borderRadius: '10px', padding: '10px 12px', fontSize: '12px' }} />
+                            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                                <button onClick={handleSaveWebsiteUrl} style={{ border: '1px solid rgba(37,99,235,0.28)', background: 'rgba(37,99,235,0.08)', color: '#0f172a', borderRadius: '10px', padding: '10px 12px', fontSize: '12px', cursor: 'pointer', fontWeight: 700 }}>Save Live URL</button>
+                                {websiteUrl && <button onClick={() => openExternal(websiteUrl)} style={{ border: '1px solid rgba(16,185,129,0.28)', background: 'rgba(16,185,129,0.08)', color: '#0f172a', borderRadius: '10px', padding: '10px 12px', fontSize: '12px', cursor: 'pointer', fontWeight: 700 }}>Open Live Site</button>}
+                            </div>
+                        </div>
+                    </div>
+                )
+            };
+        }
+        return {
+            title: 'Progress',
+            body: (
+                <div style={{ display: 'grid', gridTemplateColumns: isNarrowScreen ? '1fr' : 'repeat(4, minmax(0, 1fr))', gap: '12px' }}>
+                    {progressConsoleRows.map((row) => (
+                        <div key={row.label} style={{ border: '1px solid rgba(148,163,184,0.22)', background: 'rgba(255,255,255,0.92)', padding: '14px', borderRadius: '12px' }}>
+                            <div style={{ fontSize: '11px', color: '#64748b', fontWeight: 700, marginBottom: '8px', textTransform: 'uppercase' }}>{row.label}</div>
+                            <div style={{ fontSize: '22px', color: '#0f172a', fontWeight: 800 }}>{row.value}</div>
+                            <div style={{ fontSize: '11px', color: '#475569', marginTop: '8px', lineHeight: 1.45 }}>{row.meta}</div>
+                        </div>
+                    ))}
+                    <div style={{ gridColumn: isNarrowScreen ? 'auto' : 'span 2', border: '1px solid rgba(148,163,184,0.22)', background: 'rgba(255,255,255,0.92)', padding: '14px', borderRadius: '12px' }}>
+                        <div style={{ fontSize: '11px', color: '#64748b', fontWeight: 700, marginBottom: '8px', textTransform: 'uppercase' }}>Current Focus</div>
+                        <div style={{ fontSize: '18px', color: '#0f172a', fontWeight: 800 }}>{nextStageToFocus ? nextStageToFocus.stage : 'All stages cleared'}</div>
+                        <div style={{ fontSize: '12px', color: '#475569', marginTop: '8px', lineHeight: 1.55 }}>
+                            {nextStageToFocus
+                                ? `Continue this stage until the remaining ${nextStageToFocus.total - nextStageToFocus.completed} module${nextStageToFocus.total - nextStageToFocus.completed === 1 ? '' : 's'} are done.`
+                                : 'Progress is complete. Use Setup and Proof for cleanup and sharing.'}
+                        </div>
+                    </div>
+                    <div style={{ gridColumn: isNarrowScreen ? 'auto' : 'span 2', border: '1px solid rgba(148,163,184,0.22)', background: 'rgba(255,255,255,0.92)', padding: '14px', borderRadius: '12px' }}>
+                        <div style={{ fontSize: '11px', color: '#64748b', fontWeight: 700, marginBottom: '8px', textTransform: 'uppercase' }}>Next Best Move</div>
+                        <div style={{ fontSize: '18px', color: '#0f172a', fontWeight: 800 }}>{nextBestMove.label}</div>
+                        <div style={{ fontSize: '12px', color: '#475569', marginTop: '8px', lineHeight: 1.55 }}>{nextBestMove.detail}</div>
+                    </div>
+                </div>
+            )
+        };
+    }, [activeStatsPanel, builderHealth, handleImageUpload, handleSaveWebsiteUrl, isNarrowScreen, isUploading, nextBestMove.detail, nextBestMove.label, nextStageToFocus, openExternal, openSettingsSection, overallReadinessPct, progressConsoleRows, readinessChecklist, showcaseUrl, stageCompletionRows, statsTraitMap, websiteUrl]);
+    const syncStatsCustomizationToProfile = useCallback((nextCustomization) => {
+        localStorage.setItem(STATS_RPG_STORAGE_KEY, JSON.stringify(nextCustomization));
+        const savedProfileRaw = localStorage.getItem('ijamos_profile');
+        const savedProfile = savedProfileRaw ? JSON.parse(savedProfileRaw) : {};
+        const nextUser = {
+            ...(currentUser || {}),
+            ...savedProfile,
+            stats_rpg: nextCustomization,
+            updated_at: new Date().toISOString()
+        };
+        localStorage.setItem('ijamos_profile', JSON.stringify(nextUser));
+        if (setCurrentUser) setCurrentUser(nextUser);
+    }, [currentUser, setCurrentUser]);
+    const handleEquipStatsItem = useCallback((slot, itemId, badgeIndex = null) => {
+        const itemPool = unlockedStatsItems[slot] || [];
+        if (slot === 'badge' && typeof badgeIndex === 'number' && !itemId) {
+            setStatsCustomization((prev) => {
+                const next = {
+                    ...prev,
+                    badgeSlots: [...(prev.badgeSlots || DEFAULT_STATS_RPG_LOADOUT.badgeSlots)]
+                };
+                next.badgeSlots[badgeIndex] = null;
+                syncStatsCustomizationToProfile(next);
+                return next;
+            });
+            return;
+        }
+        const nextItem = itemPool.find((item) => item.id === itemId);
+        if (!nextItem || !nextItem.unlocked) return;
+
+        setStatsCustomization((prev) => {
+            const next = {
+                ...prev,
+                badgeSlots: [...(prev.badgeSlots || DEFAULT_STATS_RPG_LOADOUT.badgeSlots)]
+            };
+            if (slot === 'badge' && typeof badgeIndex === 'number') {
+                next.badgeSlots[badgeIndex] = itemId;
+            } else if (slot !== 'badge') {
+                next[slot] = itemId;
+            }
+            syncStatsCustomizationToProfile(next);
+            return next;
+        });
+    }, [syncStatsCustomizationToProfile, unlockedStatsItems]);
+    const handleCycleStatsItem = useCallback((slot) => {
+        const itemPool = (unlockedStatsItems[slot] || []).filter((item) => item.unlocked);
+        if (!itemPool.length) return;
+        const currentId = statsCustomization[slot];
+        const currentIndex = itemPool.findIndex((item) => item.id === currentId);
+        const nextItem = itemPool[(currentIndex + 1 + itemPool.length) % itemPool.length];
+        if (nextItem) {
+            handleEquipStatsItem(slot, nextItem.id);
+        }
+    }, [handleEquipStatsItem, statsCustomization, unlockedStatsItems]);
 
     useEffect(() => {
         if (terminalOutputRef.current) {
@@ -5031,14 +5755,14 @@ YOU DID IT. APP DEPLOYED!`);
 
     // Get wallpaper background style for desktop (must be called before any conditional returns)
     const wallpaperStyle = useMemo(() => {
-        if (!isMacMode) return {};
+        if (!usesDesktopWallpaperLayout) return {};
         const wallpaper = wallpaperGallery.find((w) => w.id === currentWallpaper);
         if (!wallpaper) return { background: '#0b131e' };
         return {
             background: '#0b131e',
             ...resolveDesktopWallpaperStyle(wallpaper, { fit: wallpaperFit })
         };
-    }, [currentWallpaper, isMacMode, resolveDesktopWallpaperStyle, wallpaperFit, wallpaperGallery]);
+    }, [currentWallpaper, resolveDesktopWallpaperStyle, usesDesktopWallpaperLayout, wallpaperFit, wallpaperGallery]);
     const macMenus = useMemo(() => ([
         {
             id: 'system',
@@ -5069,7 +5793,7 @@ YOU DID IT. APP DEPLOYED!`);
         })),
         {
             id: 'finder',
-            label: focusedWindow ? currentDesktopAppLabel : 'Finder',
+            label: 'Finder',
             bold: true,
             items: [
                 { label: 'Open Files', action: () => openApp('files') },
@@ -5115,7 +5839,7 @@ YOU DID IT. APP DEPLOYED!`);
                 { label: 'Search Apps', action: () => { setIsStartMenuOpen(true); setStartMenuSearch(''); } }
             ]
         }
-    ]), [closeAllApps, closeApp, currentDesktopAppLabel, exitIjamOS, focusApp, minimizeApp, openApp, recentApps, resetWorkspaceSession]);
+    ]), [closeAllApps, closeApp, exitIjamOS, focusApp, minimizeApp, openApp, recentApps, resetWorkspaceSession]);
 
     if (!isBooted) {
         return (
@@ -5145,7 +5869,7 @@ YOU DID IT. APP DEPLOYED!`);
     return (
         <section id="resources-page" style={{ ...sectionStyle, ...wallpaperStyle, height: '100vh', overflow: 'hidden', position: 'relative', filter: `brightness(${workspaceBrightness})` }}>
             {isTouchIjamMode && (
-                <div style={{ position: 'absolute', top: 'max(2px, env(safe-area-inset-top, 0px))', left: 10, right: 10, zIndex: 1200 }}>
+                <div style={{ position: 'absolute', top: 'max(2px, env(safe-area-inset-top, 0px))', left: isTabletMode ? 16 : 10, right: isTabletMode ? 16 : 10, zIndex: 1200 }}>
                     <MobileStatusBar
                         timeLabel={systemTime}
                         batteryPct={powerWidgetLabel}
@@ -5159,11 +5883,11 @@ YOU DID IT. APP DEPLOYED!`);
                                     left: '50%',
                                     top: '50%',
                                     transform: 'translate(-50%, -50%)',
-                                    width: isPhoneMode ? 'min(58%, 246px)' : 'min(46%, 290px)',
+                                    width: isPhoneMode ? 'min(58%, 246px)' : 'min(40%, 250px)',
                                     background: 'rgba(10,10,10,0.95)',
                                     color: '#fff',
-                                    borderRadius: 14,
-                                    padding: '5px 8px',
+                                    borderRadius: isTabletMode ? 12 : 14,
+                                    padding: isTabletMode ? '4px 7px' : '5px 8px',
                                     textAlign: 'center',
                                     display: 'flex',
                                     alignItems: 'center',
@@ -5178,7 +5902,7 @@ YOU DID IT. APP DEPLOYED!`);
                                 }}
                             >
                                 <span style={{ pointerEvents: 'none', flex: 1, minWidth: 0, textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                    {activeWindow ? (APP_REGISTRY.find((a) => a.type === activeWindow)?.label || 'KRACKED_OS') : 'KRACKED_OS'}
+                                    {SHELL_HEADER_LABEL}
                                 </span>
                                 <button
                                     type="button"
@@ -5212,7 +5936,7 @@ YOU DID IT. APP DEPLOYED!`);
                 width: '100%',
                 maxWidth: '100%',
                 margin: 0,
-                padding: isPhoneMode ? '12px 10px 12px' : (isTabletMode ? '16px 14px 16px' : (isMacMode ? '8px 8px 12px' : '36px 20px 110px')),
+                padding: isPhoneMode ? '12px 10px 12px' : (isTabletMode ? '20px 18px 22px' : (isMacMode ? '8px 8px 12px' : '36px 20px 110px')),
                 height: 'auto',
                 minHeight: 0,
                 boxSizing: 'border-box',
@@ -5220,16 +5944,16 @@ YOU DID IT. APP DEPLOYED!`);
                 display: 'grid',
                 gridTemplateColumns: isMacMode
                     ? `repeat(${Math.max(1, desktopGridColumns || 1)}, minmax(0, 1fr))`
-                    : (isTabletMode ? 'repeat(auto-fill, minmax(92px, 1fr))' : 'repeat(4, minmax(0, 1fr))'),
+                    : (isTabletMode ? 'repeat(auto-fit, minmax(112px, 118px))' : 'repeat(4, minmax(0, 1fr))'),
                 gridTemplateRows: isMacMode
                     ? `repeat(${Math.max(1, desktopGridRows || 1)}, ${DESKTOP_SLOT_HEIGHT}px)`
                     : undefined,
-                gridAutoRows: isMacMode ? undefined : 'minmax(86px, auto)',
-                gap: isMacMode ? `${DESKTOP_SLOT_GAP}px` : '12px',
+                gridAutoRows: isMacMode ? undefined : (isTabletMode ? 'minmax(116px, auto)' : 'minmax(86px, auto)'),
+                gap: isMacMode ? `${DESKTOP_SLOT_GAP}px` : (isTabletMode ? '18px' : '12px'),
                 alignItems: 'start',
                 alignContent: isMacMode ? 'start' : 'start',
-                justifyContent: isMacMode ? 'start' : 'stretch',
-                justifyItems: isMacMode ? 'center' : 'stretch',
+                justifyContent: isMacMode ? 'start' : (isTabletMode ? 'center' : 'stretch'),
+                justifyItems: isMacMode ? 'center' : (isTabletMode ? 'center' : 'stretch'),
                 contentVisibility: 'auto',
                 overflow: 'hidden'
             }}
@@ -5266,7 +5990,7 @@ YOU DID IT. APP DEPLOYED!`);
                             data-desktop-slot-index={slotIndex}
                             style={{
                                 ...getDesktopSlotPlacement(cell.position),
-                                minHeight: isPhoneMode ? '78px' : `${DESKTOP_SLOT_HEIGHT}px`,
+                                minHeight: isPhoneMode ? '78px' : (isTabletMode ? '112px' : `${DESKTOP_SLOT_HEIGHT}px`),
                                 height: isMacMode ? '100%' : 'auto',
                                 width: '100%',
                                 borderRadius: '12px',
@@ -5970,7 +6694,497 @@ YOU DID IT. APP DEPLOYED!`);
             {/* 3. Settings/Stats Window */}
             {windowStates.progress?.isOpen && (
                 <WindowFrame {...mobileWindowProps} winState={windowStates.progress} title="Stats" AppIcon={User} onClose={() => closeApp('progress')} onMinimize={() => minimizeApp('progress')} onMaximize={() => maximizeApp('progress')} onFocus={() => focusApp('progress')} onMove={(x, y) => moveApp('progress', x, y)} onResize={(w, h) => resizeApp('progress', w, h)}>
-                    <div className="os-thin-scroll" style={{ display: 'flex', flexDirection: 'column', gap: '12px', padding: '14px', color: '#0f172a', overflowY: 'auto', height: '100%', background: 'linear-gradient(180deg, #f7faff 0%, #edf3fb 100%)' }}>
+                    <div className="os-thin-scroll" style={{ display: 'flex', flexDirection: 'column', gap: '14px', padding: '16px', color: '#0f172a', overflowY: 'auto', height: '100%', background: 'linear-gradient(180deg, #f8fbff 0%, #eaf1fb 100%)' }}>
+                        <div style={{ background: 'rgba(255,255,255,0.72)', border: '1px solid rgba(148,163,184,0.22)', borderRadius: '20px', padding: isNarrowScreen ? '14px' : '18px', boxShadow: '0 18px 36px rgba(148,163,184,0.14)' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', gap: '14px', alignItems: 'center', flexWrap: 'wrap', marginBottom: '14px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
+                                    <div style={{ width: '52px', height: '52px', borderRadius: '14px', background: 'linear-gradient(180deg, #eff6ff 0%, #dbeafe 100%)', border: '1px solid rgba(96,165,250,0.28)', display: 'grid', placeItems: 'center', overflow: 'hidden', flexShrink: 0, fontSize: '22px', fontWeight: 800, color: '#1d4ed8' }}>
+                                        {(builderDisplayName || 'L')[0].toUpperCase()}
+                                    </div>
+                                    <div style={{ minWidth: 0 }}>
+                                        <div style={{ fontSize: '11px', color: '#64748b', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '4px' }}>Progress Console</div>
+                                        <div style={{ fontSize: '22px', color: '#0f172a', fontWeight: 800, lineHeight: 1 }}>{builderDisplayName}</div>
+                                        <div style={{ fontSize: '12px', color: '#475569', marginTop: '6px' }}>{builderState} | {activeStage} | {overallReadinessPct}% readiness</div>
+                                    </div>
+                                </div>
+                                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                                    <span style={{ padding: '8px 12px', borderRadius: '999px', background: 'rgba(37,99,235,0.08)', color: '#1d4ed8', fontSize: '12px', fontWeight: 700 }}>{builderHealth}</span>
+                                    <span style={{ padding: '8px 12px', borderRadius: '999px', background: readySetupCount === readinessChecklist.length ? 'rgba(16,185,129,0.08)' : 'rgba(148,163,184,0.12)', color: readySetupCount === readinessChecklist.length ? '#047857' : '#64748b', fontSize: '12px', fontWeight: 700 }}>{readySetupCount}/{readinessChecklist.length} setup checkpoints ready</span>
+                                </div>
+                            </div>
+
+                            <div style={{ display: 'grid', gridTemplateColumns: isNarrowScreen ? '1fr' : 'repeat(4, minmax(0, 1fr))', gap: '12px', marginBottom: '14px' }}>
+                                {statsKpiCards.map((card) => (
+                                    <div key={card.label} style={{ border: '1px solid rgba(148,163,184,0.22)', background: 'rgba(255,255,255,0.92)', padding: '14px', borderRadius: '14px' }}>
+                                        <div style={{ fontSize: '11px', color: '#64748b', fontWeight: 700, textTransform: 'uppercase', marginBottom: '8px' }}>{card.label}</div>
+                                        <div style={{ fontSize: '22px', color: '#0f172a', fontWeight: 800 }}>{card.value}</div>
+                                        <div style={{ fontSize: '11px', color: '#475569', marginTop: '8px', lineHeight: 1.45 }}>{card.meta}</div>
+                                    </div>
+                                ))}
+                            </div>
+
+                            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '14px' }}>
+                                {[
+                                    ['progress', 'Progress'],
+                                    ['stages', 'Stages'],
+                                    ['setup', 'Setup'],
+                                    ['proof', 'Proof']
+                                ].map(([panelId, label]) => (
+                                    <button key={panelId} onClick={() => setActiveStatsPanel(panelId)} style={{ border: '1px solid rgba(148,163,184,0.28)', background: activeStatsPanel === panelId ? 'rgba(37,99,235,0.12)' : '#ffffff', color: activeStatsPanel === panelId ? '#1d4ed8' : '#334155', borderRadius: '10px', padding: '9px 12px', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}>
+                                        {label}
+                                    </button>
+                                ))}
+                            </div>
+
+                            <div>
+                                {activeStatsPanelMeta.body}
+                            </div>
+                        </div>
+
+                        {false && (
+                        <>
+                        <div style={{ background: 'linear-gradient(180deg, rgba(15,23,42,0.96) 0%, rgba(30,41,59,0.98) 100%)', border: '1px solid rgba(148,163,184,0.28)', borderRadius: '18px', boxShadow: '0 22px 44px rgba(15,23,42,0.24)', padding: isNarrowScreen ? '14px' : '16px', color: '#e2e8f0', fontFamily: '"SF Mono", "Consolas", monospace' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: '12px', marginBottom: '14px', flexWrap: 'wrap' }}>
+                                <div>
+                                    <div style={{ fontSize: '12px', color: '#94a3b8', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: '6px', fontWeight: 700 }}>Stats App</div>
+                                    <div style={{ fontSize: '24px', color: '#f8fafc', fontWeight: 800, lineHeight: 1 }}>{currentUser?.name || 'Local Builder'}</div>
+                                </div>
+                                <div style={{ fontSize: '12px', color: '#93c5fd', fontWeight: 700 }}>Level {builderLevel} | {userRank}</div>
+                            </div>
+                            <div style={{ display: 'grid', gridTemplateColumns: isNarrowScreen ? '1fr' : '124px minmax(180px, 0.75fr) 124px', gap: '12px', alignItems: 'start' }}>
+                                <div style={{ border: '1px solid rgba(99,102,241,0.34)', borderRadius: '12px', background: 'rgba(15,23,42,0.72)', padding: '12px' }}>
+                                    <div style={{ fontSize: '14px', color: '#f8fafc', marginBottom: '10px', textTransform: 'uppercase', fontWeight: 700 }}>Stats</div>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '12px' }}>
+                                        {retroStatsRows.map((row) => (
+                                            <div key={row.label} style={{ display: 'flex', justifyContent: 'space-between', gap: '8px', fontSize: '11px' }}>
+                                                <span style={{ color: '#cbd5e1' }}>{row.label}</span>
+                                                <span style={{ color: row.accent, fontWeight: 700 }}>{row.value}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <button onClick={() => setActiveStatsPanel('stats')} style={{ width: '100%', border: '1px solid rgba(99,102,241,0.5)', background: activeStatsPanel === 'stats' ? 'rgba(79,70,229,0.24)' : 'rgba(15,23,42,0.88)', color: '#f8fafc', borderRadius: '8px', padding: '8px 6px', fontSize: '11px', cursor: 'pointer', marginBottom: '12px' }}>Stat Menu</button>
+                                    <div style={{ fontSize: '14px', color: '#f8fafc', marginBottom: '10px', textTransform: 'uppercase', fontWeight: 700 }}>Tools</div>
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                                        {retroToolSlots.map((slot) => (
+                                            <button key={slot.label} onClick={() => setActiveStatsPanel(slot.label === 'Proof' || slot.label === 'Image' ? 'proof' : 'skills')} style={{ minHeight: '42px', border: `1px solid ${slot.ready ? 'rgba(129,140,248,0.48)' : 'rgba(71,85,105,0.5)'}`, background: slot.ready ? 'rgba(30,41,59,0.96)' : 'rgba(15,23,42,0.72)', color: slot.ready ? '#f8fafc' : '#94a3b8', borderRadius: '8px', padding: '4px', fontSize: '9px', lineHeight: 1.25, cursor: 'pointer' }}>
+                                                <div>{slot.label}</div>
+                                                <div style={{ marginTop: '4px', fontSize: '8px' }}>{slot.value}</div>
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div style={{ border: '1px solid rgba(99,102,241,0.26)', borderRadius: '12px', background: 'rgba(15,23,42,0.44)', padding: '12px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start' }}>
+                                    <div style={{ textAlign: 'center', marginBottom: '10px' }}>
+                                        <div style={{ fontSize: '14px', color: '#f8fafc', fontWeight: 700 }}>{currentUser?.name || 'guest_e78feb'}</div>
+                                        <div style={{ fontSize: '12px', color: '#93c5fd', marginTop: '3px', fontWeight: 700 }}>Level {builderLevel}</div>
+                                        <div style={{ marginTop: '4px', fontSize: '10px', color: '#cbd5e1' }}>{equippedStatsItems.class?.label || 'Signal Runner'} | {equippedStatsItems.title?.label || 'Booting Builder'}</div>
+                                    </div>
+                                    <div style={{ width: '100%', maxWidth: '114px', minHeight: '108px', border: '1px solid rgba(71,85,105,0.72)', borderRadius: '10px', background: 'linear-gradient(180deg, rgba(15,23,42,0.96) 0%, rgba(2,6,23,0.98) 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '10px', position: 'relative', overflow: 'hidden' }}>
+                                        <div style={{ position: 'absolute', bottom: '12px', width: '62px', height: '12px', borderRadius: '999px', background: equippedStatsItems.aura?.id === 'aura:vibe_overdrive' ? 'rgba(251,191,36,0.28)' : equippedStatsItems.aura?.id === 'aura:launch_surge' ? 'rgba(34,197,94,0.24)' : 'rgba(96,165,250,0.2)', filter: 'blur(5px)' }} />
+                                        <div style={{ display: 'grid', gridTemplateColumns: `repeat(${retroPixelSprite[0].length}, 6px)`, gridAutoRows: '6px', gap: 0, imageRendering: 'pixelated' }}>
+                                            {retroPixelSprite.flatMap((row, rowIndex) => row.split('').map((cell, colIndex) => {
+                                                const colorMap = {
+                                                    '0': 'transparent',
+                                                    '1': '#c4b5fd',
+                                                    '2': '#e9d5ff',
+                                                    '3': '#9f7aea',
+                                                    '4': '#64748b',
+                                                    '5': '#1e293b',
+                                                    '6': '#f8fafc',
+                                                    '7': '#312e81'
+                                                };
+                                                return <div key={`${rowIndex}-${colIndex}`} style={{ width: '6px', height: '6px', background: colorMap[cell] || 'transparent' }} />;
+                                            }))}
+                                        </div>
+                                    </div>
+                                    <div style={{ width: '100%', marginTop: '10px', display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '6px' }}>
+                                        {[
+                                            ['stats', 'Stats'],
+                                            ['skills', 'Skills'],
+                                            ['abilities', 'Ability'],
+                                            ['proof', 'Proof']
+                                        ].map(([panelId, label]) => (
+                                            <button key={panelId} onClick={() => setActiveStatsPanel(panelId)} style={{ border: '1px solid rgba(99,102,241,0.5)', background: activeStatsPanel === panelId ? 'rgba(79,70,229,0.24)' : 'rgba(15,23,42,0.88)', color: '#f8fafc', borderRadius: '8px', padding: '7px 4px', fontSize: '10px', cursor: 'pointer' }}>
+                                                {label}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                    <div style={{ border: '1px solid rgba(99,102,241,0.34)', borderRadius: '12px', background: 'rgba(15,23,42,0.72)', padding: '12px' }}>
+                                        <div style={{ fontSize: '14px', color: '#f8fafc', marginBottom: '10px', textTransform: 'uppercase', fontWeight: 700 }}>Gear</div>
+                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                                            {retroGearSlots.map((slot) => (
+                                                <button key={slot.label} onClick={() => slot.slot !== 'rank' && handleCycleStatsItem(slot.slot)} style={{ minHeight: '48px', border: '1px solid rgba(99,102,241,0.42)', background: 'rgba(15,23,42,0.92)', color: '#f8fafc', borderRadius: '8px', padding: '6px', fontSize: '9px', lineHeight: 1.2, cursor: slot.slot === 'rank' ? 'default' : 'pointer' }}>
+                                                    <div style={{ color: '#93c5fd' }}>{slot.label}</div>
+                                                    <div style={{ marginTop: '6px', fontSize: '8px' }}>{slot.item?.label || '--'}</div>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                    <div style={{ border: '1px solid rgba(99,102,241,0.34)', borderRadius: '12px', background: 'rgba(15,23,42,0.72)', padding: '12px' }}>
+                                        <div style={{ fontSize: '14px', color: '#f8fafc', marginBottom: '10px', textTransform: 'uppercase', fontWeight: 700 }}>Cosmetics</div>
+                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                                            {retroCosmeticSlots.map((slot, index) => {
+                                                const slotKeys = ['banner', 'avatarFrame', 'aura', 'title', 'class', null];
+                                                const slotKey = slotKeys[index] || null;
+                                                return (
+                                                    <button key={slot.label} onClick={() => slotKey && handleCycleStatsItem(slotKey)} style={{ minHeight: '48px', border: '1px solid rgba(99,102,241,0.42)', background: 'rgba(15,23,42,0.92)', color: '#f8fafc', borderRadius: '8px', padding: '6px', fontSize: '9px', lineHeight: 1.2, cursor: slotKey ? 'pointer' : 'default' }}>
+                                                        <div style={{ color: '#93c5fd' }}>{slot.label}</div>
+                                                        <div style={{ marginTop: '6px', fontSize: '8px' }}>{slot.value}</div>
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div style={{ marginTop: '12px', border: '1px solid rgba(99,102,241,0.34)', borderRadius: '12px', background: 'rgba(15,23,42,0.72)', padding: '12px' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', marginBottom: '10px', color: '#94a3b8', fontSize: '11px', textTransform: 'uppercase' }}>
+                                    <span>{activeStatsPanelMeta.title}</span>
+                                    <button onClick={() => setActiveStatsPanel('proof')} style={{ border: '1px solid rgba(99,102,241,0.5)', background: activeStatsPanel === 'proof' ? 'rgba(79,70,229,0.24)' : 'rgba(15,23,42,0.88)', color: '#f8fafc', borderRadius: '8px', padding: '6px 8px', fontSize: '10px', cursor: 'pointer' }}>Proof / Portfolio</button>
+                                </div>
+                                {activeStatsPanelMeta.body}
+                            </div>
+                        </div>
+
+                        </>
+                        )}
+
+                        {false && (
+                        <>
+                        <div style={{ background: 'linear-gradient(135deg, rgba(15,23,42,0.98) 0%, rgba(37,99,235,0.94) 52%, rgba(56,189,248,0.88) 100%)', borderRadius: '26px', padding: '24px', color: '#f8fafc', boxShadow: '0 28px 60px rgba(37,99,235,0.22)', border: '1px solid rgba(255,255,255,0.08)', position: 'relative', overflow: 'hidden' }}>
+                            <div style={{ position: 'absolute', inset: 'auto -50px -54px auto', width: '210px', height: '210px', borderRadius: '999px', background: equippedStatsItems.aura?.id === 'aura:vibe_overdrive' ? 'radial-gradient(circle, rgba(251,191,36,0.42) 0%, rgba(251,191,36,0) 74%)' : equippedStatsItems.aura?.id === 'aura:launch_surge' ? 'radial-gradient(circle, rgba(34,197,94,0.35) 0%, rgba(34,197,94,0) 74%)' : 'radial-gradient(circle, rgba(191,219,254,0.30) 0%, rgba(191,219,254,0) 74%)' }} />
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '18px', flexWrap: 'wrap', position: 'relative' }}>
+                                <div style={{ display: 'flex', gap: '18px', alignItems: 'center', flexWrap: 'wrap' }}>
+                                    <div style={{ padding: '3px', borderRadius: '28px', background: equippedStatsItems.avatarFrame?.id === 'frame:mythic_core' ? 'linear-gradient(135deg, #f8fafc 0%, #fbbf24 100%)' : equippedStatsItems.avatarFrame?.id === 'frame:proof_plate' ? 'linear-gradient(135deg, #f8fafc 0%, #34d399 100%)' : equippedStatsItems.avatarFrame?.id === 'frame:ion_edge' ? 'linear-gradient(135deg, #f8fafc 0%, #60a5fa 100%)' : 'linear-gradient(135deg, rgba(255,255,255,0.92) 0%, rgba(191,219,254,0.75) 100%)' }}>
+                                        <div style={{ width: '92px', height: '92px', borderRadius: '24px', background: 'linear-gradient(180deg, rgba(15,23,42,0.92) 0%, rgba(30,41,59,0.9) 100%)', display: 'grid', placeItems: 'center', fontSize: '34px', fontWeight: 900, color: '#eff6ff', border: '1px solid rgba(255,255,255,0.12)' }}>
+                                            {(currentUser?.name || 'A')[0].toUpperCase()}
+                                        </div>
+                                    </div>
+                                    <div style={{ maxWidth: isNarrowScreen ? '100%' : '460px' }}>
+                                        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '10px' }}>
+                                            <span style={{ padding: '6px 10px', borderRadius: '999px', background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.12)', fontSize: '11px', fontWeight: 800, letterSpacing: '0.08em' }}>{equippedStatsItems.class?.label || 'Signal Runner'}</span>
+                                            <span style={{ padding: '6px 10px', borderRadius: '999px', background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.12)', fontSize: '11px', fontWeight: 800, letterSpacing: '0.08em' }}>{equippedStatsItems.title?.label || 'Booting Builder'}</span>
+                                        </div>
+                                        <div style={{ fontSize: '11px', color: 'rgba(191,219,254,0.92)', fontWeight: 800, letterSpacing: '0.14em', marginBottom: '8px' }}>RPG BUILDER SHEET</div>
+                                        <div style={{ fontSize: '30px', fontWeight: 900, lineHeight: 1.02 }}>{currentUser?.name || 'Anonymous Builder'}</div>
+                                        <div style={{ fontSize: '13px', color: 'rgba(226,232,240,0.92)', fontWeight: 600, marginTop: '6px' }}>
+                                            {userRank} | {userVibes} vibes | {currentUser?.district || 'Selangor'}
+                                        </div>
+                                        <div style={{ marginTop: '12px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '8px 12px', borderRadius: '999px', background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.08)', fontSize: '12px', fontWeight: 700 }}>
+                                                <span style={{ width: '8px', height: '8px', borderRadius: '999px', background: completionPct >= 75 ? '#4ade80' : (completionPct >= 30 ? '#facc15' : '#f97316') }} />
+                                                {builderHealth}
+                                            </span>
+                                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '8px 12px', borderRadius: '999px', background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.08)', fontSize: '12px', fontWeight: 700 }}>
+                                                {earnedBadgeCount}/{(STATS_RPG_CATALOG.badge || []).length} badges earned
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div style={{ minWidth: isNarrowScreen ? '100%' : '260px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                    <div style={{ fontSize: '11px', letterSpacing: '0.12em', color: 'rgba(191,219,254,0.9)', fontWeight: 800 }}>NEXT BEST MOVE</div>
+                                    <div style={{ fontSize: '20px', fontWeight: 900, lineHeight: 1.12 }}>{nextBestMove.label}</div>
+                                    <div style={{ fontSize: '13px', color: 'rgba(226,232,240,0.88)', lineHeight: 1.55 }}>{nextBestMove.detail}</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style={{ background: 'linear-gradient(135deg, rgba(15,23,42,0.96) 0%, rgba(37,99,235,0.9) 100%)', borderRadius: '24px', padding: '24px', color: '#f8fafc', boxShadow: '0 24px 54px rgba(37,99,235,0.18)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '18px', flexWrap: 'wrap' }}>
+                                <div style={{ display: 'flex', gap: '18px', alignItems: 'center' }}>
+                                    <div style={{ width: '82px', height: '82px', borderRadius: '22px', background: 'linear-gradient(180deg, rgba(255,255,255,0.22) 0%, rgba(191,219,254,0.18) 100%)', display: 'grid', placeItems: 'center', fontSize: '32px', fontWeight: 900, color: '#eff6ff', flexShrink: 0, border: '1px solid rgba(255,255,255,0.16)' }}>
+                                        {(currentUser?.name || 'A')[0].toUpperCase()}
+                                    </div>
+                                    <div>
+                                        <div style={{ fontSize: '11px', color: 'rgba(191,219,254,0.9)', fontWeight: 700, letterSpacing: '0.14em', marginBottom: '8px' }}>BUILDER COCKPIT</div>
+                                        <div style={{ fontSize: '28px', fontWeight: 800, lineHeight: 1.05 }}>{currentUser?.name || 'Anonymous Builder'}</div>
+                                        <div style={{ fontSize: '13px', color: 'rgba(226,232,240,0.92)', fontWeight: 600, marginTop: '6px' }}>
+                                            {userRank} · {userVibes} vibes · {currentUser?.district || 'Selangor'}
+                                        </div>
+                                        <div style={{ marginTop: '12px', display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '8px 12px', borderRadius: '999px', background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.08)', fontSize: '12px', fontWeight: 700 }}>
+                                            <span style={{ width: '8px', height: '8px', borderRadius: '999px', background: completionPct >= 75 ? '#4ade80' : (completionPct >= 30 ? '#facc15' : '#f97316') }} />
+                                            {builderHealth}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div style={{ minWidth: isNarrowScreen ? '100%' : '220px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                    <div style={{ fontSize: '11px', letterSpacing: '0.12em', color: 'rgba(191,219,254,0.9)', fontWeight: 700 }}>NEXT BEST MOVE</div>
+                                    <div style={{ fontSize: '20px', fontWeight: 800, lineHeight: 1.12 }}>{nextBestMove.label}</div>
+                                    <div style={{ fontSize: '13px', color: 'rgba(226,232,240,0.88)', lineHeight: 1.5 }}>{nextBestMove.detail}</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: isNarrowScreen ? '1fr 1fr' : 'repeat(4, minmax(0, 1fr))', gap: '12px' }}>
+                            {statsKpiCards.map((card) => (
+                                <div key={card.label} style={{ background: 'rgba(255,255,255,0.84)', padding: '18px', border: '1px solid rgba(148,163,184,0.24)', borderRadius: '18px', boxShadow: '0 16px 40px rgba(148,163,184,0.14)' }}>
+                                    <div style={{ fontSize: '11px', color: '#64748b', marginBottom: '8px', letterSpacing: '0.08em', fontWeight: 700, textTransform: 'uppercase' }}>{card.label}</div>
+                                    <div style={{ fontSize: '24px', fontWeight: 800, color: '#0f172a', lineHeight: 1.05 }}>{card.value}</div>
+                                    <div style={{ fontSize: '12px', color: '#475569', marginTop: '8px', lineHeight: 1.45 }}>{card.meta}</div>
+                                </div>
+                            ))}
+                        </div>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: isNarrowScreen ? '1fr' : 'minmax(0, 1.35fr) minmax(280px, 0.9fr)', gap: '14px' }}>
+                            <div style={{ background: 'rgba(255,255,255,0.84)', border: '1px solid rgba(148,163,184,0.24)', borderRadius: '22px', boxShadow: '0 16px 40px rgba(148,163,184,0.14)', padding: '20px' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', marginBottom: '14px', flexWrap: 'wrap' }}>
+                                    <div>
+                                        <div style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', letterSpacing: '0.08em' }}>PROGRESS INTELLIGENCE</div>
+                                        <div style={{ marginTop: '6px', fontSize: '22px', fontWeight: 800, color: '#0f172a' }}>System Ready Index</div>
+                                    </div>
+                                    <div style={{ fontSize: '28px', fontWeight: 800, color: '#2563eb' }}>{completionPct}%</div>
+                                </div>
+                                <div style={{ height: '12px', background: '#dbe5f1', borderRadius: '999px', overflow: 'hidden', marginBottom: '14px' }}>
+                                    <div style={{ height: '100%', width: `${completionPct}%`, background: 'linear-gradient(90deg, #2563eb 0%, #60a5fa 100%)', transition: 'width 1s ease-out' }} />
+                                </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                    {stageCompletionRows.map((row) => {
+                                        const isFocus = nextStageToFocus?.stage === row.stage;
+                                        const isStrongest = strongestStage?.stage === row.stage && !isFocus;
+                                        const tone = row.isDone ? '#10b981' : (isFocus ? '#2563eb' : '#94a3b8');
+                                        return (
+                                            <div key={row.stage} style={{ padding: '14px', borderRadius: '16px', border: `1px solid ${row.isDone ? 'rgba(16,185,129,0.18)' : isFocus ? 'rgba(37,99,235,0.22)' : 'rgba(226,232,240,0.95)'}`, background: row.isDone ? '#ecfdf5' : isFocus ? 'rgba(239,246,255,0.96)' : 'rgba(248,250,252,0.94)' }}>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', marginBottom: '10px' }}>
+                                                    <div>
+                                                        <div style={{ fontSize: '14px', fontWeight: 800, color: '#0f172a' }}>{row.stage.toUpperCase()}</div>
+                                                        <div style={{ fontSize: '12px', color: '#475569', marginTop: '4px' }}>
+                                                            {row.completed}/{row.total} modules complete
+                                                        </div>
+                                                    </div>
+                                                    <div style={{ textAlign: 'right' }}>
+                                                        <div style={{ fontSize: '18px', fontWeight: 800, color: tone }}>{row.percent}%</div>
+                                                        <div style={{ fontSize: '11px', color: row.isDone ? '#047857' : isFocus ? '#1d4ed8' : '#64748b', fontWeight: 700 }}>
+                                                            {row.isDone ? 'CLEARED' : isFocus ? 'NEXT FOCUS' : isStrongest ? 'STRONGEST' : 'IN PROGRESS'}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div style={{ height: '8px', background: '#e2e8f0', borderRadius: '999px', overflow: 'hidden' }}>
+                                                    <div style={{ height: '100%', width: `${row.percent}%`, background: row.isDone ? 'linear-gradient(90deg, #10b981 0%, #34d399 100%)' : isFocus ? 'linear-gradient(90deg, #2563eb 0%, #60a5fa 100%)' : 'linear-gradient(90deg, #94a3b8 0%, #cbd5e1 100%)' }} />
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                                <div style={{ background: 'rgba(255,255,255,0.84)', border: '1px solid rgba(148,163,184,0.24)', borderRadius: '22px', boxShadow: '0 16px 40px rgba(148,163,184,0.14)', padding: '20px' }}>
+                                    <div style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', letterSpacing: '0.08em', marginBottom: '10px' }}>MOMENTUM SIGNAL</div>
+                                    <div style={{ fontSize: '24px', fontWeight: 800, color: '#0f172a', lineHeight: 1.08 }}>{momentumLabel}</div>
+                                    <div style={{ marginTop: '10px', fontSize: '13px', color: '#475569', lineHeight: 1.55 }}>
+                                        {nextStageToFocus
+                                            ? `Stay on ${nextStageToFocus.stage} until the remaining ${nextStageToFocus.total - nextStageToFocus.completed} module${nextStageToFocus.total - nextStageToFocus.completed === 1 ? '' : 's'} are cleared.`
+                                            : 'You have cleared the curriculum. Polish the proof-of-work surfaces and prepare to share.'}
+                                    </div>
+                                </div>
+                                <div style={{ background: 'rgba(255,255,255,0.84)', border: '1px solid rgba(148,163,184,0.24)', borderRadius: '22px', boxShadow: '0 16px 40px rgba(148,163,184,0.14)', padding: '20px' }}>
+                                    <div style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', letterSpacing: '0.08em', marginBottom: '12px' }}>PROFILE READINESS</div>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                        {[
+                                            { label: 'Showcase image', ready: Boolean(showcaseUrl), detail: showcaseUrl ? 'Attached' : 'Missing visual proof' },
+                                            { label: 'Live URL', ready: Boolean(websiteUrl), detail: websiteUrl ? 'Attached' : 'Missing deploy link' },
+                                            { label: 'Builder profile', ready: Boolean(currentUser?.name && currentUser?.district), detail: currentUser?.name ? `${currentUser?.name} · ${currentUser?.district || 'No district'}` : 'Incomplete profile' }
+                                        ].map((item) => (
+                                            <div key={item.label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', padding: '10px 12px', borderRadius: '14px', background: item.ready ? '#ecfdf5' : 'rgba(248,250,252,0.94)', border: `1px solid ${item.ready ? 'rgba(16,185,129,0.16)' : 'rgba(226,232,240,0.95)'}` }}>
+                                                <div>
+                                                    <div style={{ fontSize: '13px', fontWeight: 700, color: '#0f172a' }}>{item.label}</div>
+                                                    <div style={{ fontSize: '11px', color: '#64748b', marginTop: '4px' }}>{item.detail}</div>
+                                                </div>
+                                                <div style={{ fontSize: '11px', fontWeight: 800, color: item.ready ? '#047857' : '#b45309' }}>
+                                                    {item.ready ? 'READY' : 'PENDING'}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: isNarrowScreen ? '1fr' : 'minmax(0, 1.08fr) minmax(320px, 0.92fr)', gap: '14px' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                                <div style={{ background: 'rgba(255,255,255,0.84)', border: '1px solid rgba(148,163,184,0.24)', borderRadius: '22px', boxShadow: '0 16px 40px rgba(148,163,184,0.14)', padding: '20px' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', marginBottom: '14px', flexWrap: 'wrap' }}>
+                                        <div>
+                                            <div style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', letterSpacing: '0.08em' }}>TRAITS</div>
+                                            <div style={{ marginTop: '6px', fontSize: '22px', fontWeight: 800, color: '#0f172a' }}>Builder attributes</div>
+                                        </div>
+                                        <div style={{ fontSize: '12px', color: '#475569', fontWeight: 700 }}>Display only</div>
+                                    </div>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                        {Object.entries(statsTraitMap).map(([label, value]) => (
+                                            <div key={label}>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', gap: '10px' }}>
+                                                    <span style={{ fontSize: '13px', fontWeight: 700, color: '#0f172a' }}>{label}</span>
+                                                    <span style={{ fontSize: '12px', fontWeight: 800, color: '#2563eb' }}>{value}</span>
+                                                </div>
+                                                <div style={{ height: '10px', background: '#dbe5f1', borderRadius: '999px', overflow: 'hidden' }}>
+                                                    <div style={{ height: '100%', width: `${value}%`, background: label === 'Launch Readiness' ? 'linear-gradient(90deg, #22c55e 0%, #86efac 100%)' : label === 'Build Power' ? 'linear-gradient(90deg, #2563eb 0%, #60a5fa 100%)' : 'linear-gradient(90deg, #7c3aed 0%, #c4b5fd 100%)' }} />
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div style={{ background: 'rgba(255,255,255,0.84)', border: '1px solid rgba(148,163,184,0.24)', borderRadius: '22px', boxShadow: '0 16px 40px rgba(148,163,184,0.14)', padding: '20px' }}>
+                                    <div style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', letterSpacing: '0.08em', marginBottom: '12px' }}>LOADOUT SNAPSHOT</div>
+                                    <div style={{ display: 'grid', gridTemplateColumns: isNarrowScreen ? '1fr' : '1fr 1fr', gap: '10px' }}>
+                                        {[
+                                            ['Class', equippedStatsItems.class?.label],
+                                            ['Title', equippedStatsItems.title?.label],
+                                            ['Banner', equippedStatsItems.banner?.label],
+                                            ['Frame', equippedStatsItems.avatarFrame?.label],
+                                            ['Aura', equippedStatsItems.aura?.label]
+                                        ].map(([label, value]) => (
+                                            <div key={label} style={{ padding: '12px', borderRadius: '14px', background: 'rgba(248,250,252,0.92)', border: '1px solid rgba(226,232,240,0.95)' }}>
+                                                <div style={{ fontSize: '11px', color: '#64748b', fontWeight: 700, letterSpacing: '0.08em', marginBottom: '6px' }}>{label}</div>
+                                                <div style={{ fontSize: '14px', color: '#0f172a', fontWeight: 800 }}>{value}</div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '12px' }}>
+                                        {equippedStatsItems.badgeSlots.map((badge) => (
+                                            <span key={badge.id} style={{ padding: '8px 10px', borderRadius: '999px', background: 'rgba(37,99,235,0.1)', color: '#1d4ed8', fontSize: '12px', fontWeight: 700 }}>
+                                                {badge.label}
+                                            </span>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                                <div style={{ background: 'rgba(255,255,255,0.84)', border: '1px solid rgba(148,163,184,0.24)', borderRadius: '22px', boxShadow: '0 16px 40px rgba(148,163,184,0.14)', padding: '20px' }}>
+                                    <div style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', letterSpacing: '0.08em', marginBottom: '12px' }}>EQUIPMENT / CUSTOMIZATION</div>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                        {['class', 'title', 'banner', 'avatarFrame', 'aura'].map((slot) => (
+                                            <div key={slot}>
+                                                <div style={{ fontSize: '12px', fontWeight: 800, color: '#334155', marginBottom: '6px', textTransform: 'uppercase' }}>{slot === 'avatarFrame' ? 'Avatar Frame' : slot}</div>
+                                                <select
+                                                    value={statsCustomization[slot]}
+                                                    onChange={(event) => handleEquipStatsItem(slot, event.target.value)}
+                                                    style={{ width: '100%', background: '#fff', border: '1px solid rgba(148,163,184,0.28)', borderRadius: '12px', padding: '10px 12px', color: '#0f172a', fontSize: '13px' }}
+                                                >
+                                                    {(unlockedStatsItems[slot] || []).map((item) => (
+                                                        <option key={item.id} value={item.id} disabled={!item.unlocked}>
+                                                            {item.label}{item.unlocked ? '' : ` [LOCKED: ${item.requirement}]`}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                        ))}
+                                        <div>
+                                            <div style={{ fontSize: '12px', fontWeight: 800, color: '#334155', marginBottom: '8px', textTransform: 'uppercase' }}>Badge Slots</div>
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                                {[0, 1, 2].map((badgeIndex) => (
+                                                    <select
+                                                        key={`badge-slot-${badgeIndex}`}
+                                                        value={statsCustomization.badgeSlots?.[badgeIndex] || ''}
+                                                        onChange={(event) => handleEquipStatsItem('badge', event.target.value || null, badgeIndex)}
+                                                        style={{ width: '100%', background: '#fff', border: '1px solid rgba(148,163,184,0.28)', borderRadius: '12px', padding: '10px 12px', color: '#0f172a', fontSize: '13px' }}
+                                                    >
+                                                        <option value="">Empty slot</option>
+                                                        {(unlockedStatsItems.badge || []).map((item) => (
+                                                            <option key={`${badgeIndex}-${item.id}`} value={item.id} disabled={!item.unlocked}>
+                                                                {item.label}{item.unlocked ? '' : ` [LOCKED: ${item.requirement}]`}
+                                                            </option>
+                                                        ))}
+                                                    </select>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div style={{ background: 'rgba(255,255,255,0.84)', border: '1px solid rgba(148,163,184,0.24)', borderRadius: '22px', boxShadow: '0 16px 40px rgba(148,163,184,0.14)', padding: '20px' }}>
+                                    <div style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', letterSpacing: '0.08em', marginBottom: '12px' }}>UNLOCKS / ACHIEVEMENTS</div>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: isNarrowScreen ? 'none' : '420px', overflowY: 'auto', paddingRight: '4px' }}>
+                                        {Object.entries(unlockedStatsItems).flatMap(([slot, items]) => items.map((item) => (
+                                            <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', padding: '12px 14px', borderRadius: '14px', background: item.unlocked ? '#ecfdf5' : 'rgba(248,250,252,0.94)', border: `1px solid ${item.unlocked ? 'rgba(16,185,129,0.16)' : 'rgba(226,232,240,0.95)'}` }}>
+                                                <div>
+                                                    <div style={{ fontSize: '13px', fontWeight: 800, color: '#0f172a' }}>{item.label}</div>
+                                                    <div style={{ fontSize: '11px', color: '#64748b', marginTop: '4px' }}>{slot.toUpperCase()} | {item.rarity}</div>
+                                                    <div style={{ fontSize: '11px', color: '#475569', marginTop: '4px', lineHeight: 1.45 }}>{item.description}</div>
+                                                </div>
+                                                <div style={{ textAlign: 'right', minWidth: '88px' }}>
+                                                    <div style={{ fontSize: '11px', fontWeight: 800, color: item.unlocked ? '#047857' : '#b45309' }}>{item.unlocked ? 'UNLOCKED' : 'LOCKED'}</div>
+                                                    <div style={{ fontSize: '11px', color: '#64748b', marginTop: '6px', lineHeight: 1.45 }}>{item.requirement}</div>
+                                                </div>
+                                            </div>
+                                        )))}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style={{ background: 'rgba(255,255,255,0.84)', padding: '24px', borderRadius: '22px', border: '1px solid rgba(148,163,184,0.24)', boxShadow: '0 16px 40px rgba(148,163,184,0.14)' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', flexWrap: 'wrap', marginBottom: '16px' }}>
+                                <div>
+                                    <div style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', letterSpacing: '0.08em' }}>SHOWCASE + PROOF OF WORK</div>
+                                    <div style={{ marginTop: '6px', fontSize: '22px', fontWeight: 800, color: '#0f172a' }}>Builder portfolio attachment</div>
+                                </div>
+                                <div style={{ fontSize: '12px', color: '#475569', fontWeight: 600 }}>
+                                    {hasShowcaseProof ? 'Proof attached' : 'Add proof to strengthen your profile'}
+                                </div>
+                            </div>
+
+                            <div style={{ display: 'grid', gridTemplateColumns: isNarrowScreen ? '1fr' : 'minmax(260px, 0.95fr) minmax(0, 1.05fr)', gap: '20px' }}>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                                    <div style={{ background: 'rgba(248,250,252,0.98)', border: '1px dashed rgba(148,163,184,0.6)', borderRadius: '16px', padding: '18px', textAlign: 'center', position: 'relative', minHeight: '220px', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+                                        {showcaseUrl ? (
+                                            <img src={showcaseUrl} alt="Showcase" style={{ width: '100%', borderRadius: '8px', display: 'block' }} />
+                                        ) : (
+                                            <div style={{ color: '#64748b', fontSize: '13px', lineHeight: 1.6, maxWidth: '220px' }}>No screenshot uploaded yet. Add one so this profile reads like a shipped build, not a draft.</div>
+                                        )}
+                                        <input
+                                            type="file"
+                                            accept="image/*"
+                                            onChange={handleImageUpload}
+                                            disabled={isUploading}
+                                            style={{ opacity: 0, position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', cursor: 'pointer' }}
+                                        />
+                                    </div>
+                                    <button style={{ border: '1px solid rgba(29,78,216,0.22)', background: 'rgba(37,99,235,0.12)', color: '#0f172a', padding: '10px 16px', borderRadius: '12px', fontWeight: 700, cursor: 'pointer' }}>
+                                        {isUploading ? 'UPLOADING...' : (showcaseUrl ? 'CHANGE_IMAGE' : 'UPLOAD_IMAGE')}
+                                    </button>
+                                </div>
+
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', justifyContent: 'center' }}>
+                                    <p style={{ color: '#64748b', fontSize: '13px', lineHeight: 1.65, margin: 0 }}>
+                                        Add the live link and a clean screenshot so your Stats app doubles as a lightweight builder profile. This keeps proof-of-work visible without pulling focus away from progress.
+                                    </p>
+                                    <div>
+                                        <label style={{ display: 'block', fontSize: '11px', color: '#64748b', marginBottom: '8px', fontWeight: 700, letterSpacing: '0.08em' }}>LIVE URL</label>
+                                        <div style={{ display: 'flex', gap: '8px' }}>
+                                            <input
+                                                value={websiteUrl}
+                                                onChange={e => setWebsiteUrl(e.target.value)}
+                                                placeholder="https://mywebsite.vercel.app"
+                                                style={{ flex: 1, background: '#ffffff', border: '1px solid rgba(148,163,184,0.24)', padding: '10px 12px', color: '#0f172a', borderRadius: '12px', fontSize: '12px' }}
+                                            />
+                                            <button onClick={handleSaveWebsiteUrl} style={{ border: '1px solid rgba(29,78,216,0.22)', background: 'rgba(37,99,235,0.12)', color: '#0f172a', padding: '0 16px', borderRadius: '12px', fontWeight: 700, cursor: 'pointer' }}>SAVE</button>
+                                        </div>
+                                    </div>
+                                    {websiteUrl && (
+                                        <button
+                                            onClick={() => openExternal(websiteUrl)}
+                                            style={{ background: 'rgba(255,255,255,0.92)', border: '1px solid rgba(148,163,184,0.24)', color: '#0f172a', padding: '10px', borderRadius: '12px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', width: '100%' }}
+                                        >
+                                            OPEN_LIVE_SITE <ExternalLink size={14} />
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
+                        </>
+                        )}
+
+                        {false && (
+                        <>
                         {/* Builder Identity Card */}
                         <div style={{ background: 'rgba(255,255,255,0.82)', border: '1px solid rgba(148,163,184,0.24)', borderRadius: '18px', padding: '24px', display: 'flex', alignItems: 'center', gap: '20px', boxShadow: '0 16px 40px rgba(148,163,184,0.16)' }}>
                             <div style={{ width: '80px', height: '80px', borderRadius: '20px', background: 'linear-gradient(180deg, #2563eb 0%, #1d4ed8 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '32px', fontWeight: 900, color: '#eff6ff', flexShrink: 0 }}>
@@ -6095,7 +7309,8 @@ YOU DID IT. APP DEPLOYED!`);
                                 </div>
                             </div>
                         </div>
-
+                        </>
+                        )}
                     </div>
                 </WindowFrame>
             )}
@@ -6125,6 +7340,14 @@ YOU DID IT. APP DEPLOYED!`);
                                 openWindowsCount={openWindowsCount}
                                 missionEvents={missionEvents}
                                 latestMissionEvent={latestMissionEvent}
+                                missionState={missionState}
+                                onToggleAssignment={missionActions.toggleAssignment}
+                                onBuyUpgrade={missionActions.buyUpgrade}
+                                onClaimMissionReward={missionActions.claimMissionReward}
+                                onCycleLane={missionActions.cycleLane}
+                                onCycleStance={missionActions.cycleStance}
+                                onChooseSpecialization={missionActions.chooseSpecialization}
+                                onPrestigeCampaign={missionActions.prestigeCampaign}
                             />
                         </Suspense>
                     </div>
@@ -6260,7 +7483,7 @@ YOU DID IT. APP DEPLOYED!`);
                             userRank={userRank}
                             userVibes={userVibes}
                             completedLessonsCount={completedLessons.length}
-                            builderName={profileForm.username}
+                            builderName={profileForm.builderName}
                             workshopPane={(
                                 <Suspense fallback={<WindowModuleLoader label="IJAM_TERMINAL" />}>
                                     <KrackedIjamTerminal
@@ -6448,6 +7671,10 @@ YOU DID IT. APP DEPLOYED!`);
                         }}
                         powerStatus={powerStatus}
                         isNarrowScreen={isNarrowScreen}
+                        websiteUrl={websiteUrl}
+                        setWebsiteUrl={setWebsiteUrl}
+                        onOpenExternal={openExternal}
+                        focusSectionId={settingsFocusSection}
                     />
                 </WindowFrame>
             )}
@@ -6513,168 +7740,103 @@ YOU DID IT. APP DEPLOYED!`);
                 </WindowFrame>
             )}
 
-                        {/* Start Panel Overlay (Windows style, top-left) */}
-            {isStartMenuOpen && (
-                <>
-                    <div onClick={() => setIsStartMenuOpen(false)} style={{ position: 'absolute', inset: 0, zIndex: 9998 }} />
-                    <div
-                        data-mac-menu-root
-                        role="dialog"
-                        aria-label="Start panel"
-                        style={{
-                            position: 'absolute',
-                            top: '34px',
-                            left: '12px',
-                            width: 'min(680px, calc(100vw - 24px))',
-                            maxHeight: 'min(82vh, 740px)',
-                            background: 'linear-gradient(160deg, rgba(15,23,42,0.94) 0%, rgba(30,41,59,0.9) 42%, rgba(51,65,85,0.88) 100%)',
-                            backdropFilter: 'blur(22px) saturate(1.15)',
-                            WebkitBackdropFilter: 'blur(22px) saturate(1.15)',
-                            border: '1px solid rgba(245,208,0,0.22)',
-                            borderRadius: '20px',
-                            boxShadow: '0 28px 60px rgba(2,6,23,0.62), inset 0 1px 0 rgba(255,255,255,0.04)',
-                            zIndex: 9999,
-                            display: 'grid',
-                            gridTemplateRows: 'auto auto 1fr auto',
-                            overflow: 'hidden'
-                        }}
-                    >
-                        <div style={{ padding: '16px 20px 10px' }}>
-                            <div style={{ position: 'relative' }}>
-                                <Search size={16} color="rgba(248,250,252,0.7)" style={{ position: 'absolute', left: '14px', top: '12px' }} />
-                                <input
-                                    ref={startSearchInputRef}
-                                    type="text"
-                                    placeholder="Search for apps, settings, and documents"
-                                    value={startMenuSearch}
-                                    onChange={(e) => setStartMenuSearch(e.target.value)}
-                                    onKeyDown={(e) => {
-                                        if (e.key === 'Enter' && filteredStartApps.length) {
-                                            openApp(filteredStartApps[0].type);
-                                            setIsStartMenuOpen(false);
-                                        }
-                                    }}
-                                    style={{
-                                        width: '100%',
-                                        padding: '10px 12px 10px 40px',
-                                        borderRadius: '999px',
-                                        border: '1px solid rgba(245,208,0,0.26)',
-                                        background: 'rgba(15,23,42,0.72)',
-                                        color: '#f8fafc',
-                                        fontSize: '13px',
-                                        fontFamily: 'system-ui, -apple-system, sans-serif',
-                                        outline: 'none',
-                                        boxSizing: 'border-box'
-                                    }}
-                                />
-                            </div>
-                        </div>
-
-                        <div style={{ padding: '0 22px 10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                            <div style={{ fontSize: '14px', fontWeight: 700, color: '#f8fafc', fontFamily: 'system-ui, -apple-system, sans-serif' }}>{startPanelMode === 'all' ? 'All apps' : 'Pinned'}</div>
-                            <button
-                                type="button"
-                                onClick={() => setStartPanelMode((prev) => (prev === 'all' ? 'pinned' : 'all'))}
-                                style={{ border: '1px solid rgba(245,208,0,0.26)', borderRadius: '10px', background: 'rgba(245,208,0,0.14)', color: '#f5d000', fontSize: '12px', fontWeight: 600, padding: '5px 10px', cursor: 'pointer' }}
-                            >
-                                {startPanelMode === 'all' ? 'Pinned' : 'All apps'}
-                            </button>
-                        </div>
-
-                        <div style={{ padding: '0 22px 18px', overflowY: 'auto' }}>
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(88px, 1fr))', gap: '12px' }}>
-                                {visibleStartApps.map((app) => (
-                                    <button
-                                        key={app.type}
-                                        type="button"
-                                        onClick={() => { openApp(app.type); setIsStartMenuOpen(false); }}
-                                        style={{ border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', background: 'rgba(15,23,42,0.4)', color: '#e2e8f0', padding: '8px 6px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', cursor: 'pointer' }}
-                                    >
-                                        <div style={{ width: '40px', height: '40px', borderRadius: '10px', border: app.desktopIconImage ? 'none' : `1px solid ${app.color}`, background: 'rgba(255,255,255,0.06)', display: 'grid', placeItems: 'center', overflow: 'hidden' }}>
-                                            {app.desktopIconImage ? (
-                                                <img src={app.desktopIconImage} alt={`${app.label} icon`} style={{ width: '36px', height: '36px', objectFit: 'contain', transform: `scale(${app.desktopIconScale || 1})` }} />
-                                            ) : (
-                                                <app.icon size={20} color={app.color} />
-                                            )}
-                                        </div>
-                                        <span style={{ fontSize: '12px', fontWeight: 600, lineHeight: 1.2, color: '#e2e8f0', textAlign: 'center', fontFamily: 'system-ui, -apple-system, sans-serif' }}>{app.label}</span>
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-
-                        <div style={{ borderTop: '1px solid rgba(245,208,0,0.16)', background: 'rgba(15,23,42,0.64)', padding: '12px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#f8fafc', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-                                <div style={{ width: '54px', height: '54px', borderRadius: '18px', display: 'grid', placeItems: 'center', background: 'linear-gradient(180deg, #2563eb 0%, #1d4ed8 100%)', color: '#eff6ff', fontSize: '22px', fontWeight: 700 }}>
-                                    {(currentUser?.name || 'L')[0].toUpperCase()}
-                                </div>
-                                <span style={{ fontSize: '15px', fontWeight: 600 }}>{currentUser?.name || 'Local Builder'}</span>
-                            </div>
-                            <button
-                                aria-label="Power off"
-                                type="button"
-                                onClick={() => { if (window.confirm('Power off KRACKED_OS session?')) { localStorage.removeItem('vibe_os_booted'); window.location.reload(); } }}
-                                style={{ border: '1px solid rgba(239,68,68,0.45)', background: 'rgba(239,68,68,0.15)', color: '#b91c1c', width: '34px', height: '34px', borderRadius: '999px', display: 'grid', placeItems: 'center', cursor: 'pointer' }}
-                            >
-                                <Power size={16} />
-                            </button>
-                        </div>
-                    </div>
-                </>
-            )}
+            <StartMenu
+                isOpen={isStartMenuOpen}
+                searchValue={startMenuSearch}
+                inputRef={startSearchInputRef}
+                panelMode={startPanelMode}
+                onSearchChange={setStartMenuSearch}
+                onPanelModeChange={setStartPanelMode}
+                onSubmitSearch={() => {
+                    if (filteredStartApps.length) {
+                        openApp(filteredStartApps[0].type);
+                        setIsStartMenuOpen(false);
+                    }
+                }}
+                onOpenApp={(type) => {
+                    openApp(type);
+                    setIsStartMenuOpen(false);
+                }}
+                onClose={() => setIsStartMenuOpen(false)}
+                onPowerOff={() => {
+                    if (window.confirm('Power off KRACKED_OS session?')) {
+                        localStorage.removeItem('vibe_os_booted');
+                        window.location.reload();
+                    }
+                }}
+                onOpenSettings={() => {
+                    openApp('settings');
+                    focusApp('settings');
+                    setIsStartMenuOpen(false);
+                }}
+                currentUser={currentUser}
+                visibleApps={visibleStartApps}
+                recentApps={recentApps}
+                recommendedActions={startRecommendedActions}
+                focusedWindow={focusedWindow}
+                runningAppTypes={runningAppTypes}
+                completionSummary={startMenuCompletionSummary}
+            />
 
 
             {isTouchIjamMode && (
                 <div
                     style={{
                         position: 'absolute',
-                        left: 10,
-                        right: 10,
-                        bottom: 10,
+                        left: isTabletMode ? 24 : 10,
+                        right: isTabletMode ? 24 : 10,
+                        bottom: isTabletMode ? 16 : 10,
                         zIndex: 1200,
-                        borderRadius: 18,
+                        borderRadius: isTabletMode ? 24 : 18,
                         border: '1px solid rgba(255,255,255,0.24)',
                         background: 'rgba(255,255,255,0.22)',
                         backdropFilter: 'blur(22px) saturate(1.15)',
                         WebkitBackdropFilter: 'blur(22px) saturate(1.15)',
-                        padding: '8px 10px',
+                        padding: isTabletMode ? '12px 16px' : '8px 10px',
                         display: 'grid',
                         gridTemplateColumns: 'repeat(5, minmax(0, 1fr))',
-                        gap: 8
+                        gap: isTabletMode ? 12 : 8,
+                        boxShadow: isTabletMode ? '0 18px 40px rgba(15,23,42,0.24)' : 'none'
                     }}
                 >
-                    {[
-                        { id: 'files', label: 'Files', icon: Folder, onTap: () => openApp('files') },
-                        { id: 'kdacademy', label: 'Academy', icon: Globe, onTap: () => { setKdacademyTab('overview'); openApp('kdacademy'); } },
-                        { id: 'home', label: 'Home', icon: Home, onTap: () => closeAllApps() },
-                        { id: 'progress', label: 'Stats', icon: User, onTap: () => openApp('progress') },
-                        { id: 'settings', label: 'Settings', icon: Settings, onTap: () => openApp('settings') }
-                    ].map((item) => {
-                        const active = item.id === activeWindow || (item.id === 'home' && !activeWindow);
+                    {[...mobileDockApps.slice(0, 2), { type: 'home', label: 'Home', icon: Home }, ...mobileDockApps.slice(2)].map((item) => {
+                        const active = item.type === activeWindow || (item.type === 'home' && !activeWindow);
+                        const running = item.type !== 'home' && runningAppTypes.includes(item.type);
                         const Icon = item.icon;
                         return (
                             <button
-                                key={item.id}
+                                key={item.type}
                                 type="button"
                                 onClick={() => {
                                     triggerHaptic();
-                                    item.onTap();
+                                    if (item.type === 'home') {
+                                        closeAllApps();
+                                        return;
+                                    }
+                                    if (item.type === 'kdacademy') {
+                                        setKdacademyTab('overview');
+                                    }
+                                    openApp(item.type);
                                 }}
                                 style={{
-                                    borderRadius: 12,
+                                    position: 'relative',
+                                    borderRadius: isTabletMode ? 16 : 12,
                                     border: active ? '1px solid rgba(245,208,0,0.55)' : '1px solid rgba(148,163,184,0.4)',
                                     background: active ? 'rgba(245,208,0,0.18)' : 'rgba(15,23,42,0.42)',
                                     color: '#f8fafc',
-                                    minHeight: 46,
+                                    minHeight: isTabletMode ? 56 : 46,
                                     display: 'flex',
                                     flexDirection: 'column',
                                     alignItems: 'center',
                                     justifyContent: 'center',
-                                    gap: 3
+                                    gap: isTabletMode ? 5 : 3
                                 }}
                             >
-                                <Icon size={14} />
-                                <span style={{ fontSize: 9, fontWeight: 600, lineHeight: 1 }}>{item.label}</span>
+                                <Icon size={isTabletMode ? 16 : 14} />
+                                <span style={{ fontSize: isTabletMode ? 10 : 9, fontWeight: 600, lineHeight: 1 }}>{item.type === 'kdacademy' ? 'Academy' : (item.title || item.label)}</span>
+                                {running && (
+                                    <span style={{ position: 'absolute', bottom: isTabletMode ? 5 : 4, left: '50%', transform: 'translateX(-50%)', width: active ? 16 : 8, height: 4, borderRadius: 999, background: active ? '#f5d000' : 'rgba(248,250,252,0.85)' }} />
+                                )}
                             </button>
                         );
                     })}
@@ -6766,8 +7928,8 @@ YOU DID IT. APP DEPLOYED!`);
                         ))}
                     </div>
 
-                    <div style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', fontSize: '11px', fontWeight: 800, color: focusedWindow ? (APP_REGISTRY.find((a) => a.type === focusedWindow)?.color ?? '#cbd5e1') : 'rgba(255,255,255,0.35)', letterSpacing: '0.05em', whiteSpace: 'nowrap', pointerEvents: 'none' }}>
-                        {currentDesktopAppLabel}
+                    <div style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', fontSize: '11px', fontWeight: 800, color: 'rgba(255,255,255,0.35)', letterSpacing: '0.05em', whiteSpace: 'nowrap', pointerEvents: 'none' }}>
+                        {SHELL_HEADER_LABEL}
                     </div>
 
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -7019,8 +8181,8 @@ YOU DID IT. APP DEPLOYED!`);
                     </div>
 
                     {/* Center: focused app name */}
-                    <div style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', fontSize: '11px', fontWeight: 700, fontFamily: 'monospace', color: focusedWindow ? (APP_REGISTRY.find(a => a.type === focusedWindow)?.color ?? 'rgba(255,255,255,0.5)') : 'rgba(255,255,255,0.25)', letterSpacing: '0.06em', whiteSpace: 'nowrap' }}>
-                        {focusedWindow ? APP_REGISTRY.find(a => a.type === focusedWindow)?.label : 'KRACKED_OS v3.0'}
+                    <div style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', fontSize: '11px', fontWeight: 700, fontFamily: 'monospace', color: 'rgba(255,255,255,0.25)', letterSpacing: '0.06em', whiteSpace: 'nowrap' }}>
+                        {SHELL_HEADER_LABEL}
                     </div>
 
                     {/* Right: weather + clock */}

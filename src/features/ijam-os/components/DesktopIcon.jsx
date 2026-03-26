@@ -31,11 +31,11 @@ const DesktopIcon = ({
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
-        gap: isPhoneMode ? '4px' : '6px',
+        gap: isPhoneMode ? '4px' : (isTabletMode ? '8px' : '6px'),
         background: 'transparent',
         border: usesRawIcon ? 'none' : '1px solid transparent',
         cursor: 'pointer',
-        padding: isPhoneMode ? '8px 6px' : (isTabletMode ? '10px' : '12px'),
+        padding: isPhoneMode ? '8px 6px' : (isTabletMode ? '12px 10px' : '12px'),
         borderRadius: '16px',
         transition: 'background 0.18s ease, border-color 0.18s ease, transform 0.18s ease',
         outline: 'none',
@@ -60,8 +60,8 @@ const DesktopIcon = ({
           padding: 0,
           borderRadius: '18px',
           boxShadow: usesRawIcon ? 'none' : '0 12px 24px rgba(2,6,23,0.18)',
-          width: isPhoneMode ? '56px' : '68px',
-          height: isPhoneMode ? '56px' : '68px',
+          width: isPhoneMode ? '56px' : (isTabletMode ? '76px' : '68px'),
+          height: isPhoneMode ? '56px' : (isTabletMode ? '76px' : '68px'),
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -76,8 +76,8 @@ const DesktopIcon = ({
             src={imageSrc}
             alt={`${label} icon`}
             style={{
-              width: isPhoneMode ? '50px' : '64px',
-              height: isPhoneMode ? '50px' : '64px',
+              width: isPhoneMode ? '50px' : (isTabletMode ? '72px' : '64px'),
+              height: isPhoneMode ? '50px' : (isTabletMode ? '72px' : '64px'),
               objectFit: 'contain',
               imageRendering: 'auto',
               transform: `scale(${iconScale})`,
@@ -85,13 +85,13 @@ const DesktopIcon = ({
             }}
           />
         ) : (
-          <Icon size={isPhoneMode ? 34 : 42} />
+          <Icon size={isPhoneMode ? 34 : (isTabletMode ? 46 : 42)} />
         )}
       </div>
       <span
         style={{
           color: '#f8fafc',
-          fontSize: isPhoneMode ? '10px' : '11px',
+          fontSize: isPhoneMode ? '10px' : (isTabletMode ? '12px' : '11px'),
           fontWeight: 700,
           fontFamily: '"SF Pro Text", "Segoe UI", system-ui, sans-serif',
           textShadow: '0 1px 3px rgba(2,6,23,0.7)',
