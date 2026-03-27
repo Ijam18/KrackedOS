@@ -2851,8 +2851,6 @@ const IjamOSWorkspace = ({ session, currentUser, isMobileView, deviceMode = 'des
     const getRoleHintFromApp = useCallback((appType) => {
         if (appType === 'terminal' || appType === 'prompt_forge') return 'engineer';
         if (appType === 'files' || appType === 'mind_mapper') return 'analyst';
-        if (appType === 'settings' || appType === 'trash') return 'security';
-        if (appType === 'progress' || appType === 'mission') return 'master';
         return 'devops';
     }, []);
     const emitMissionEvent = useCallback((type, message, meta = {}) => {
@@ -3773,7 +3771,7 @@ const IjamOSWorkspace = ({ session, currentUser, isMobileView, deviceMode = 'des
         [windowStates]
     );
     const mobileDockApps = useMemo(
-        () => ['files', 'kdacademy', 'mission', 'progress', 'settings']
+        () => ['files', 'wallpaper', 'mind_mapper', 'prompt_forge', 'simulator']
             .map((type) => appByType[type])
             .filter(Boolean),
         [appByType]
@@ -5770,7 +5768,6 @@ YOU DID IT. APP DEPLOYED!`);
             accent: '#f5d000',
             items: [
                 { label: 'About This Mac', action: () => { setIsStartMenuOpen(true); setStartMenuSearch(''); } },
-                { label: 'System Preferences', action: () => openApp('settings') },
                 { label: 'Recent Items', action: () => openApp('files') },
                 { label: 'Force Quit Finder', action: () => closeAllApps() },
                 { separator: true },
@@ -5797,8 +5794,8 @@ YOU DID IT. APP DEPLOYED!`);
             bold: true,
             items: [
                 { label: 'Open Files', action: () => openApp('files') },
-                { label: 'Open Stats', action: () => openApp('progress') },
-                { label: 'Empty Trash', action: () => openApp('trash') }
+                { label: 'Search Files', action: () => { openApp('files'); setExplorerSearch(''); } },
+                { label: 'New Window', action: () => openApp('files') }
             ]
         },
         {
@@ -5825,8 +5822,6 @@ YOU DID IT. APP DEPLOYED!`);
             id: 'window',
             label: 'Window',
             items: [
-                { label: 'Show Academy', action: () => { setKdacademyTab('overview'); openApp('kdacademy'); } },
-                { label: 'Show Mission', action: () => openApp('mission') },
                 { label: 'Close All Windows', action: () => closeAllApps() }
             ]
         },
@@ -5835,7 +5830,6 @@ YOU DID IT. APP DEPLOYED!`);
             label: 'Help',
             items: [
                 { label: 'Open Prompt Forge', action: () => openApp('prompt_forge') },
-                { label: 'Builder Arcade', action: () => openApp('arcade') },
                 { label: 'Search Apps', action: () => { setIsStartMenuOpen(true); setStartMenuSearch(''); } }
             ]
         }
@@ -7764,9 +7758,9 @@ YOU DID IT. APP DEPLOYED!`);
                         window.location.reload();
                     }
                 }}
-                onOpenSettings={() => {
-                    openApp('settings');
-                    focusApp('settings');
+                onOpenFiles={() => {
+                    openApp('files');
+                    focusApp('files');
                     setIsStartMenuOpen(false);
                 }}
                 currentUser={currentUser}
@@ -7813,9 +7807,6 @@ YOU DID IT. APP DEPLOYED!`);
                                         closeAllApps();
                                         return;
                                     }
-                                    if (item.type === 'kdacademy') {
-                                        setKdacademyTab('overview');
-                                    }
                                     openApp(item.type);
                                 }}
                                 style={{
@@ -7833,7 +7824,7 @@ YOU DID IT. APP DEPLOYED!`);
                                 }}
                             >
                                 <Icon size={isTabletMode ? 16 : 14} />
-                                <span style={{ fontSize: isTabletMode ? 10 : 9, fontWeight: 600, lineHeight: 1 }}>{item.type === 'kdacademy' ? 'Academy' : (item.title || item.label)}</span>
+                                <span style={{ fontSize: isTabletMode ? 10 : 9, fontWeight: 600, lineHeight: 1 }}>{item.title || item.label}</span>
                                 {running && (
                                     <span style={{ position: 'absolute', bottom: isTabletMode ? 5 : 4, left: '50%', transform: 'translateX(-50%)', width: active ? 16 : 8, height: 4, borderRadius: 999, background: active ? '#f5d000' : 'rgba(248,250,252,0.85)' }} />
                                 )}
@@ -8207,14 +8198,3 @@ YOU DID IT. APP DEPLOYED!`);
 };
 
 export default IjamOSWorkspace;
-
-
-
-
-
-
-
-
-
-
-

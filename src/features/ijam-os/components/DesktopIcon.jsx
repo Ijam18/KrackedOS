@@ -99,8 +99,8 @@ const DesktopIcon = ({
           padding: '2px 8px',
           borderRadius: '999px',
           background: 'rgba(15,23,42,0.36)',
-          backdropFilter: 'blur(8px)',
-          WebkitBackdropFilter: 'blur(8px)'
+          backdropFilter: 'blur(6px)',
+          WebkitBackdropFilter: 'blur(6px)'
         }}
       >
         {label}

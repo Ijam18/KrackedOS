@@ -1,5 +1,5 @@
 import React from 'react';
-import { Power, Search, Settings } from 'lucide-react';
+import { FolderOpen, Power, Search } from 'lucide-react';
 
 const shellText = {
   muted: 'rgba(226,232,240,0.72)',
@@ -75,7 +75,7 @@ const StartMenu = ({
   onSubmitSearch,
   onClose,
   onPowerOff,
-  onOpenSettings,
+  onOpenFiles,
   currentUser,
   visibleApps,
   focusedWindow,
@@ -186,7 +186,7 @@ const StartMenu = ({
             ))}
           </div>
           {!visibleApps.length && (
-            <div style={{ padding: '22px 6px 8px', fontSize: '12px', color: shellText.muted }}>No apps matched this search. Try broader keywords like `learn`, `settings`, or `ops`.</div>
+            <div style={{ padding: '22px 6px 8px', fontSize: '12px', color: shellText.muted }}>No apps matched this search. Try broader keywords like `files`, `prompt`, or `wallpaper`.</div>
           )}
         </div>
 
@@ -203,11 +203,11 @@ const StartMenu = ({
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <button
               type="button"
-              onClick={onOpenSettings}
+              onClick={onOpenFiles}
               style={{ border: '1px solid rgba(148,163,184,0.38)', background: 'rgba(255,255,255,0.06)', color: shellText.strong, borderRadius: '999px', padding: '8px 12px', display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: 700 }}
             >
-              <Settings size={14} />
-              Settings
+              <FolderOpen size={14} />
+              Open Files
             </button>
             <button
               aria-label="Power off"
