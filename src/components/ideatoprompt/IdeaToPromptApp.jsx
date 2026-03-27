@@ -49,6 +49,7 @@ const NODE_CATALOG = {
         icon: Bot,
         color: '#c4b5fd',
         accent: '#7c3aed',
+        category: 'core',
         description: 'Define the AI persona and embed the preferred tech stack here.'
     },
     objective: {
@@ -56,6 +57,7 @@ const NODE_CATALOG = {
         icon: Target,
         color: '#fde68a',
         accent: '#d97706',
+        category: 'core',
         description: 'State the business problem the app must solve.'
     },
     target_user: {
@@ -63,6 +65,7 @@ const NODE_CATALOG = {
         icon: Users,
         color: '#bfdbfe',
         accent: '#2563eb',
+        category: 'core',
         description: 'Describe who the product is for and what context they are in.'
     },
     feature: {
@@ -70,6 +73,7 @@ const NODE_CATALOG = {
         icon: Sparkles,
         color: '#bbf7d0',
         accent: '#16a34a',
+        category: 'core',
         description: 'List one must-have product capability per node.'
     },
     constraint: {
@@ -77,6 +81,7 @@ const NODE_CATALOG = {
         icon: ShieldCheck,
         color: '#fecaca',
         accent: '#dc2626',
+        category: 'delivery',
         description: 'Guardrails, limitations, and non-negotiables.'
     },
     output: {
@@ -84,6 +89,7 @@ const NODE_CATALOG = {
         icon: FileText,
         color: '#fbcfe8',
         accent: '#db2777',
+        category: 'delivery',
         description: 'Define how the AI should respond and what to deliver.'
     },
     reference: {
@@ -91,6 +97,7 @@ const NODE_CATALOG = {
         icon: Lightbulb,
         color: '#fde68a',
         accent: '#ca8a04',
+        category: 'signals',
         description: 'Competitor, inspiration, or benchmark product.'
     },
     unique_value: {
@@ -98,6 +105,7 @@ const NODE_CATALOG = {
         icon: Wand2,
         color: '#fdba74',
         accent: '#ea580c',
+        category: 'signals',
         description: 'What makes this idea meaningfully different.'
     },
     flow: {
@@ -105,6 +113,7 @@ const NODE_CATALOG = {
         icon: GitBranch,
         color: '#ddd6fe',
         accent: '#7c3aed',
+        category: 'delivery',
         description: 'Important sequence, build order, or user flow notes.'
     },
     custom: {
@@ -112,12 +121,38 @@ const NODE_CATALOG = {
         icon: StickyNote,
         color: '#e2e8f0',
         accent: '#475569',
+        category: 'notes',
         description: 'Any extra context that should be attached to the final prompt.'
     }
 };
 
 const REQUIRED_TYPES = ['role', 'objective', 'target_user', 'feature', 'constraint', 'output'];
-const OPTIONAL_TYPES = ['reference', 'unique_value', 'flow', 'custom'];
+const DOCK_GROUPS = [
+    {
+        key: 'core',
+        label: 'ROFCO Core',
+        helper: 'Place the main brief nodes first so the map has a working backbone.',
+        types: ['role', 'objective', 'target_user', 'feature']
+    },
+    {
+        key: 'delivery',
+        label: 'Rules + Output',
+        helper: 'Add constraints, output format, and sequencing that shape execution.',
+        types: ['constraint', 'output', 'flow']
+    },
+    {
+        key: 'signals',
+        label: 'References',
+        helper: 'Attach inspiration, benchmarks, and differentiators that sharpen the brief.',
+        types: ['reference', 'unique_value']
+    },
+    {
+        key: 'notes',
+        label: 'Notes',
+        helper: 'Keep miscellaneous context here when it should not override ROFCO.',
+        types: ['custom']
+    }
+];
 const REVIEW_SECTION_ORDER = ['role', 'objective', 'features', 'constraints', 'output'];
 const EDGE_TYPE = 'orthogonal';
 const FIT_VIEW_PADDING = 0.28;
@@ -807,6 +842,8 @@ function IdeaCanvas({
     onRenameIdea,
     onDeleteIdea,
     onSaveIdea,
+    activeDockGroup,
+    onDockGroupChange,
     nodesTrayOpen,
     onToggleNodesTray
 }) {
@@ -915,10 +952,12 @@ function IdeaCanvas({
     }, [selectedNodeId, setEdges, setNodes, setSelectedNodeId]);
 
     const missingRequired = completenessSummary.filter((item) => !item.complete).map((item) => item.type);
-    const guidedTypes = [...missingRequired, ...OPTIONAL_TYPES];
+    const activeDock = DOCK_GROUPS.find((group) => group.key === activeDockGroup) || DOCK_GROUPS[0];
+    const dockTypes = activeDock.types;
+    const recommendedTypes = dockTypes.filter((type) => missingRequired.includes(type));
 
     return (
-        <div style={{ width: '100%', height: '100%', display: 'flex', position: 'relative', background: 'linear-gradient(180deg, #f7faff 0%, #edf3fb 100%)' }}>
+        <div style={{ width: '100%', height: '100%', display: 'flex', position: 'relative', background: 'linear-gradient(180deg, #f2f6fc 0%, #e8eef8 100%)' }}>
             {compact && !panelOpen && (
                 <button
                     type="button"
@@ -1040,233 +1079,300 @@ function IdeaCanvas({
                 </div>
             </div>
 
-            {(!compact || panelOpen) && (
-                <aside className="os-thin-scroll" style={{
-                    position: 'absolute',
-                    left: compact ? 0 : 18,
-                    top: compact ? 0 : 78,
-                    bottom: compact ? 0 : 18,
-                    zIndex: 24,
-                    width: compact ? 'min(78vw, 300px)' : 310,
-                    background: 'rgba(255,255,255,0.92)',
-                    border: '1px solid rgba(148,163,184,0.24)',
-                    borderRadius: compact ? 0 : 20,
-                    boxShadow: '0 22px 50px rgba(148,163,184,0.18)',
-                    padding: compact ? 14 : 18,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: 14,
-                    overflowY: 'auto'
-                }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
-                        <div>
-                            <div style={{ fontSize: 16, fontWeight: 800, color: '#0f172a' }}>Idea to Prompt</div>
-                            <div style={{ marginTop: 4, fontSize: 12, color: '#64748b', lineHeight: 1.45 }}>
-                                Build the map first. Prompt review comes after this and only refines wording from the map.
-                            </div>
-                        </div>
-                        {compact && (
-                            <button type="button" onClick={onClosePanel} style={{ border: '1px solid rgba(148,163,184,0.24)', borderRadius: 10, background: 'rgba(255,255,255,0.92)', color: '#334155', width: 28, height: 28 }}>
-                                <PanelLeft size={12} />
-                            </button>
-                        )}
-                    </div>
-
-                    {importedLegacy && (
-                        <div style={{ borderRadius: 16, border: '1px solid rgba(234,88,12,0.24)', background: 'rgba(255,237,213,0.9)', padding: 12, fontSize: 11, color: '#9a3412', lineHeight: 1.55 }}>
-                            Legacy Mind Map data was imported as a starting graph. Review custom nodes and fill in missing ROFCO sections before copying the prompt.
-                        </div>
-                    )}
-
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                        {completenessSummary.map((item) => (
-                            <div key={item.type} style={{ borderRadius: 999, padding: '6px 10px', fontSize: 11, fontWeight: 800, background: item.complete ? 'rgba(220,252,231,0.95)' : 'rgba(254,226,226,0.95)', color: item.complete ? '#166534' : '#b91c1c', border: item.complete ? '1px solid rgba(22,163,74,0.18)' : '1px solid rgba(239,68,68,0.18)' }}>
-                                {item.complete ? 'Ready' : 'Missing'} {item.label}
-                            </div>
-                        ))}
-                    </div>
-
-                    <div style={{ border: '1px solid rgba(148,163,184,0.2)', borderRadius: 18, background: 'rgba(255,255,255,0.92)', padding: 14 }}>
-                        <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#475569', marginBottom: 10 }}>
-                            Selected Node
-                        </div>
-                        {selectedNode ? (
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                                <div style={{ fontSize: 11, color: '#64748b', fontWeight: 700 }}>
-                                    {NODE_CATALOG[selectedNode.type]?.label || selectedNode.type}
-                                </div>
-                                <div style={{ fontSize: 11, color: '#475569', lineHeight: 1.5, padding: '10px 12px', borderRadius: 12, background: 'rgba(248,250,252,0.94)', border: '1px solid rgba(148,163,184,0.18)' }}>
-                                    {NODE_EDITOR_HELPERS[selectedNode.type] || 'Keep this note specific so the generated prompt stays clear.'}
-                                </div>
-                                <input
-                                    value={selectedNode.data?.title || ''}
-                                    onChange={(event) => handleSelectedFieldChange('title', event.target.value)}
-                                    placeholder="Node title"
-                                    style={{ width: '100%', border: '1px solid rgba(148,163,184,0.24)', borderRadius: 12, padding: '10px 12px', fontSize: 12, color: '#0f172a', background: '#fff', boxSizing: 'border-box' }}
-                                />
-                                <textarea
-                                    value={selectedNode.data?.details || ''}
-                                    onChange={(event) => handleSelectedFieldChange('details', event.target.value)}
-                                    rows={4}
-                                    placeholder="More detail for this section"
-                                    style={{ width: '100%', resize: 'vertical', border: '1px solid rgba(148,163,184,0.24)', borderRadius: 12, padding: '10px 12px', fontSize: 12, color: '#0f172a', background: '#fff', boxSizing: 'border-box' }}
-                                />
-                                {selectedNode.type === 'feature' && (
-                                    <label style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 11, color: '#64748b', fontWeight: 700 }}>
-                                        Priority
-                                        <input
-                                            type="number"
-                                            min="1"
-                                            value={selectedNode.data?.priority || 1}
-                                            onChange={(event) => handleSelectedFieldChange('priority', event.target.value)}
-                                            style={{ width: '100%', border: '1px solid rgba(148,163,184,0.24)', borderRadius: 12, padding: '10px 12px', fontSize: 12, color: '#0f172a', background: '#fff', boxSizing: 'border-box' }}
-                                        />
-                                    </label>
-                                )}
-                                <button
-                                    type="button"
-                                    onClick={handleDeleteSelected}
-                                    style={{ border: '1px solid rgba(239,68,68,0.24)', borderRadius: 12, background: 'rgba(254,226,226,0.92)', color: '#b91c1c', padding: '10px 12px', fontSize: 11, fontWeight: 800, cursor: 'pointer' }}
-                                >
-                                    Delete Selected
-                                </button>
-                            </div>
-                        ) : (
-                            <div style={{ border: '1px dashed rgba(148,163,184,0.42)', borderRadius: 16, background: 'rgba(248,250,252,0.84)', padding: 12, fontSize: 12, color: '#64748b', lineHeight: 1.5 }}>
-                                Click a node to edit it. Use `Delete` or `Backspace` to remove the selected node.
-                            </div>
-                        )}
-                    </div>
-
-                    {warnings.length > 0 && (
-                        <div style={{ borderRadius: 18, border: '1px solid rgba(239,68,68,0.18)', background: 'rgba(254,242,242,0.95)', padding: 14 }}>
-                            <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#b91c1c', marginBottom: 8 }}>
-                                Prompt Warnings
-                            </div>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                                {warnings.map((warning) => (
-                                    <div key={warning} style={{ fontSize: 12, color: '#7f1d1d', lineHeight: 1.45 }}>
-                                        {warning}
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-                </aside>
-            )}
-
-            <div ref={wrapperRef} style={{ flex: 1, minWidth: 0, minHeight: 0, padding: compact ? '58px 10px 10px' : '78px 18px 18px', display: 'flex' }}>
+            <div style={{ position: 'absolute', inset: compact ? '58px 10px 10px' : '78px 18px 18px', minHeight: 0, display: 'flex' }}>
                 {activeStep === 'map' ? (
-                    <div style={{ flex: 1, minWidth: 0, minHeight: 0, position: 'relative', borderRadius: 24, overflow: 'hidden', border: '1px solid rgba(148,163,184,0.24)', boxShadow: '0 22px 50px rgba(148,163,184,0.16)' }}>
-                        <ReactFlow
-                            nodes={nodes}
-                            edges={edges}
-                            onNodesChange={onNodesChange}
-                            onEdgesChange={onEdgesChange}
-                            onConnect={onConnect}
-                            isValidConnection={(connection) => isValidSemanticConnection(connection, nodes)}
-                            onDrop={onDrop}
-                            onDragOver={onDragOver}
-                            onNodeClick={(_, node) => setSelectedNodeId(node.id)}
-                            onPaneClick={() => setSelectedNodeId(null)}
-                            nodeTypes={nodeTypes}
-                            edgeTypes={edgeTypes}
-                            fitView
-                        >
-                            <Controls style={{ border: '1px solid rgba(148,163,184,0.24)', borderRadius: 14, boxShadow: '0 12px 24px rgba(148,163,184,0.16)', background: 'rgba(255,255,255,0.94)', transform: compact ? 'scale(0.86)' : 'scale(1)', transformOrigin: 'top left' }} />
-                            <Background color="#cbd5e1" variant="dots" gap={20} size={2} />
-                        </ReactFlow>
-                        {!nodes.length && (
-                            <div style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', pointerEvents: 'none' }}>
-                                <div style={{ width: 'min(500px, 88%)', borderRadius: 24, border: '1px solid rgba(148,163,184,0.22)', background: 'rgba(255,255,255,0.92)', boxShadow: '0 18px 42px rgba(148,163,184,0.18)', padding: 24, textAlign: 'center', color: '#334155' }}>
-                                    <div style={{ fontSize: 14, fontWeight: 800, color: '#0f172a' }}>Step 1: map the idea</div>
-                                    <div style={{ marginTop: 8, fontSize: 12, lineHeight: 1.6 }}>
-                                        Add the required sections first, then connect supporting notes around them. Prompt review comes after the map is complete.
+                    <div style={{ flex: 1, minWidth: 0, minHeight: 0, display: 'grid', gridTemplateColumns: compact ? '1fr' : '320px minmax(0, 1fr)', gap: compact ? 0 : 14 }}>
+                        {(!compact || panelOpen) && (
+                            <aside className="os-thin-scroll" style={{
+                                position: compact ? 'absolute' : 'relative',
+                                left: compact ? 0 : 'auto',
+                                top: compact ? 0 : 'auto',
+                                bottom: compact ? 0 : 'auto',
+                                zIndex: compact ? 24 : 'auto',
+                                width: compact ? 'min(82vw, 320px)' : 'auto',
+                                minHeight: 0,
+                                background: 'linear-gradient(180deg, rgba(255,255,255,0.97) 0%, rgba(244,248,253,0.97) 100%)',
+                                border: '1px solid rgba(148,163,184,0.22)',
+                                borderRadius: compact ? 18 : 24,
+                                boxShadow: compact ? '0 22px 50px rgba(148,163,184,0.22)' : '0 14px 36px rgba(148,163,184,0.12)',
+                                padding: compact ? 14 : 16,
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: 12,
+                                overflowY: 'auto'
+                            }}>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+                                    <div>
+                                        <div style={{ fontSize: 10, fontWeight: 900, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#64748b' }}>Workspace Utility</div>
+                                        <div style={{ marginTop: 6, fontSize: 18, fontWeight: 900, color: '#0f172a' }}>Idea to Prompt</div>
+                                        <div style={{ marginTop: 6, fontSize: 12, color: '#64748b', lineHeight: 1.5 }}>
+                                            Build the map first. Prompt review only cleans up wording after the graph is complete.
+                                        </div>
+                                    </div>
+                                    {compact && (
+                                        <button type="button" onClick={onClosePanel} style={{ border: '1px solid rgba(148,163,184,0.24)', borderRadius: 10, background: '#fff', color: '#334155', width: 30, height: 30 }}>
+                                            <PanelLeft size={12} />
+                                        </button>
+                                    )}
+                                </div>
+
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 8 }}>
+                                    {completenessSummary.map((item) => (
+                                        <div key={item.type} style={{ borderRadius: 14, padding: '10px 12px', background: item.complete ? 'rgba(220,252,231,0.95)' : 'rgba(255,255,255,0.95)', color: item.complete ? '#166534' : '#334155', border: item.complete ? '1px solid rgba(22,163,74,0.2)' : '1px solid rgba(148,163,184,0.2)' }}>
+                                            <div style={{ fontSize: 9, fontWeight: 900, letterSpacing: '0.1em', textTransform: 'uppercase', opacity: 0.76 }}>{item.complete ? 'Ready' : 'Missing'}</div>
+                                            <div style={{ marginTop: 4, fontSize: 12, fontWeight: 800 }}>{item.label}</div>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                {importedLegacy && (
+                                    <div style={{ borderRadius: 16, border: '1px solid rgba(234,88,12,0.24)', background: 'rgba(255,237,213,0.9)', padding: 12, fontSize: 11, color: '#9a3412', lineHeight: 1.55 }}>
+                                        Legacy Mind Map data was imported as a starting graph. Review custom nodes and fill in missing ROFCO sections before copying the prompt.
+                                    </div>
+                                )}
+
+                                {warnings.length > 0 && (
+                                    <div style={{ borderRadius: 16, border: '1px solid rgba(239,68,68,0.18)', background: 'rgba(254,242,242,0.95)', padding: 12 }}>
+                                        <div style={{ fontSize: 10, fontWeight: 900, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#b91c1c', marginBottom: 8 }}>
+                                            Prompt Warnings
+                                        </div>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                                            {warnings.map((warning) => (
+                                                <div key={warning} style={{ fontSize: 11, color: '#7f1d1d', lineHeight: 1.45 }}>
+                                                    {warning}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                <div style={{ borderRadius: 18, border: '1px solid rgba(148,163,184,0.2)', background: 'rgba(255,255,255,0.96)', padding: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'baseline' }}>
+                                        <div style={{ fontSize: 11, fontWeight: 900, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#475569' }}>
+                                            Selected Node
+                                        </div>
+                                        {selectedNode && (
+                                            <div style={{ fontSize: 11, color: '#64748b', fontWeight: 700 }}>
+                                                {NODE_CATALOG[selectedNode.type]?.label || selectedNode.type}
+                                            </div>
+                                        )}
+                                    </div>
+                                    {selectedNode ? (
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                                            <div style={{ fontSize: 11, color: '#475569', lineHeight: 1.5, padding: '10px 12px', borderRadius: 12, background: 'rgba(248,250,252,0.94)', border: '1px solid rgba(148,163,184,0.18)' }}>
+                                                {NODE_EDITOR_HELPERS[selectedNode.type] || 'Keep this note specific so the generated prompt stays clear.'}
+                                            </div>
+                                            <input
+                                                value={selectedNode.data?.title || ''}
+                                                onChange={(event) => handleSelectedFieldChange('title', event.target.value)}
+                                                placeholder="Node title"
+                                                style={{ width: '100%', border: '1px solid rgba(148,163,184,0.24)', borderRadius: 12, padding: '10px 12px', fontSize: 12, color: '#0f172a', background: '#fff', boxSizing: 'border-box' }}
+                                            />
+                                            <textarea
+                                                value={selectedNode.data?.details || ''}
+                                                onChange={(event) => handleSelectedFieldChange('details', event.target.value)}
+                                                rows={6}
+                                                placeholder="More detail for this section"
+                                                style={{ width: '100%', resize: 'vertical', border: '1px solid rgba(148,163,184,0.24)', borderRadius: 12, padding: '10px 12px', fontSize: 12, color: '#0f172a', background: '#fff', boxSizing: 'border-box' }}
+                                            />
+                                            {selectedNode.type === 'feature' && (
+                                                <label style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 11, color: '#64748b', fontWeight: 700 }}>
+                                                    Priority
+                                                    <input
+                                                        type="number"
+                                                        min="1"
+                                                        value={selectedNode.data?.priority || 1}
+                                                        onChange={(event) => handleSelectedFieldChange('priority', event.target.value)}
+                                                        style={{ width: '100%', border: '1px solid rgba(148,163,184,0.24)', borderRadius: 12, padding: '10px 12px', fontSize: 12, color: '#0f172a', background: '#fff', boxSizing: 'border-box' }}
+                                                    />
+                                                </label>
+                                            )}
+                                            <button
+                                                type="button"
+                                                onClick={handleDeleteSelected}
+                                                style={{ border: '1px solid rgba(239,68,68,0.24)', borderRadius: 12, background: 'rgba(254,226,226,0.92)', color: '#b91c1c', padding: '10px 12px', fontSize: 11, fontWeight: 800, cursor: 'pointer' }}
+                                            >
+                                                Delete Selected
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <div style={{ border: '1px dashed rgba(148,163,184,0.42)', borderRadius: 16, background: 'rgba(248,250,252,0.84)', padding: 12, fontSize: 12, color: '#64748b', lineHeight: 1.5 }}>
+                                            Click a node to edit it. Use `Delete` or `Backspace` to remove the selected node.
+                                        </div>
+                                    )}
+                                </div>
+                            </aside>
+                        )}
+
+                        <div style={{ minWidth: 0, minHeight: 0, display: 'grid', gridTemplateRows: 'minmax(0, 1fr) auto', gap: 12 }}>
+                            <div ref={wrapperRef} style={{ minHeight: 0, minWidth: 0, display: 'flex' }}>
+                                <div style={{ flex: 1, minWidth: 0, minHeight: 0, position: 'relative', borderRadius: 24, overflow: 'hidden', border: '1px solid rgba(148,163,184,0.24)', background: 'linear-gradient(180deg, rgba(255,255,255,0.92) 0%, rgba(241,245,249,0.92) 100%)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.7), 0 16px 36px rgba(148,163,184,0.16)' }}>
+                                    <div style={{ position: 'absolute', top: 0, left: 0, right: 0, zIndex: 9, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: compact ? '12px 14px' : '14px 16px', background: 'linear-gradient(180deg, rgba(248,250,252,0.94) 0%, rgba(248,250,252,0.72) 100%)', borderBottom: '1px solid rgba(148,163,184,0.18)' }}>
+                                        <div>
+                                            <div style={{ fontSize: 10, fontWeight: 900, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#64748b' }}>Logical Workspace</div>
+                                            <div style={{ marginTop: 4, fontSize: 14, fontWeight: 800, color: '#0f172a' }}>Map the ROFCO graph</div>
+                                        </div>
+                                        {!isReadyForReview && (
+                                            <div style={{ maxWidth: compact ? 180 : 260, fontSize: 11, color: '#475569', lineHeight: 1.45, textAlign: 'right' }}>
+                                                Complete the required ROFCO nodes first, then review the generated prompt.
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <ReactFlow
+                                        nodes={nodes}
+                                        edges={edges}
+                                        onNodesChange={onNodesChange}
+                                        onEdgesChange={onEdgesChange}
+                                        onConnect={onConnect}
+                                        isValidConnection={(connection) => isValidSemanticConnection(connection, nodes)}
+                                        onDrop={onDrop}
+                                        onDragOver={onDragOver}
+                                        onNodeClick={(_, node) => setSelectedNodeId(node.id)}
+                                        onPaneClick={() => setSelectedNodeId(null)}
+                                        nodeTypes={nodeTypes}
+                                        edgeTypes={edgeTypes}
+                                        fitView
+                                    >
+                                        <Controls style={{ marginTop: compact ? 58 : 64, border: '1px solid rgba(148,163,184,0.24)', borderRadius: 14, boxShadow: '0 12px 24px rgba(148,163,184,0.16)', background: 'rgba(255,255,255,0.94)', transform: compact ? 'scale(0.86)' : 'scale(1)', transformOrigin: 'top left' }} />
+                                        <Background color="#cbd5e1" variant="dots" gap={20} size={2} />
+                                    </ReactFlow>
+
+                                    {!nodes.length && (
+                                        <div style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', pointerEvents: 'none' }}>
+                                            <div style={{ width: 'min(500px, 88%)', borderRadius: 24, border: '1px solid rgba(148,163,184,0.22)', background: 'rgba(255,255,255,0.92)', boxShadow: '0 18px 42px rgba(148,163,184,0.18)', padding: 24, textAlign: 'center', color: '#334155' }}>
+                                                <div style={{ fontSize: 14, fontWeight: 800, color: '#0f172a' }}>Step 1: map the idea</div>
+                                                <div style={{ marginTop: 8, fontSize: 12, lineHeight: 1.6 }}>
+                                                    Add the required sections first, then connect supporting notes around them. Prompt review comes after the map is complete.
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    <div style={{ position: 'absolute', right: compact ? 12 : 16, bottom: compact ? 12 : 16, zIndex: 10, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8 }}>
+                                        <button
+                                            type="button"
+                                            onClick={() => onStepChange('review')}
+                                            style={{
+                                                border: isReadyForReview ? '1px solid rgba(37,99,235,0.32)' : '1px solid rgba(148,163,184,0.24)',
+                                                borderRadius: 14,
+                                                background: isReadyForReview ? 'linear-gradient(135deg, #2563eb, #1d4ed8)' : 'rgba(255,255,255,0.96)',
+                                                color: isReadyForReview ? '#ffffff' : '#334155',
+                                                padding: '12px 16px',
+                                                fontWeight: 800,
+                                                fontSize: 12,
+                                                boxShadow: isReadyForReview ? '0 14px 28px rgba(37,99,235,0.24)' : '0 12px 24px rgba(148,163,184,0.12)'
+                                            }}
+                                        >
+                                            {isReadyForReview ? 'Generate Prompt Review' : 'Review Incomplete Prompt'}
+                                        </button>
                                     </div>
                                 </div>
                             </div>
-                        )}
-                        <div style={{ position: 'absolute', right: compact ? 10 : 16, bottom: compact ? 10 : 16, zIndex: 10, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8 }}>
-                            {!isReadyForReview && (
-                                <div style={{ maxWidth: 320, padding: '10px 12px', borderRadius: 14, background: 'rgba(255,255,255,0.94)', border: '1px solid rgba(148,163,184,0.22)', boxShadow: '0 12px 24px rgba(148,163,184,0.12)', fontSize: 11, lineHeight: 1.55, color: '#475569' }}>
-                                    Complete the required ROFCO nodes first, then review the generated prompt.
-                                </div>
-                            )}
-                            <button
-                                type="button"
-                                onClick={() => onStepChange('review')}
-                                style={{
-                                    border: isReadyForReview ? '1px solid rgba(37,99,235,0.32)' : '1px solid rgba(148,163,184,0.24)',
-                                    borderRadius: 14,
-                                    background: isReadyForReview ? 'linear-gradient(135deg, #2563eb, #1d4ed8)' : 'rgba(255,255,255,0.94)',
-                                    color: isReadyForReview ? '#ffffff' : '#334155',
-                                    padding: '12px 16px',
-                                    fontWeight: 800,
-                                    fontSize: 12,
-                                    boxShadow: isReadyForReview ? '0 14px 28px rgba(37,99,235,0.24)' : '0 12px 24px rgba(148,163,184,0.12)'
-                                }}
-                            >
-                                {isReadyForReview ? 'Generate Prompt Review' : 'Review Incomplete Prompt'}
-                            </button>
-                        </div>
-                        <div style={{ position: 'absolute', left: compact ? 10 : 16, right: compact ? 10 : 16, bottom: compact ? 10 : 16, zIndex: 11, pointerEvents: 'none' }}>
-                            <div style={{ pointerEvents: 'auto', borderRadius: 20, border: '1px solid rgba(148,163,184,0.22)', background: 'rgba(255,255,255,0.92)', boxShadow: '0 18px 42px rgba(148,163,184,0.18)', overflow: 'hidden' }}>
+
+                            <div style={{ borderRadius: 22, border: '1px solid rgba(148,163,184,0.24)', background: 'linear-gradient(180deg, rgba(243,247,252,0.98) 0%, rgba(232,239,248,0.98) 100%)', boxShadow: '0 16px 34px rgba(148,163,184,0.14)', overflow: 'hidden' }}>
                                 <button
                                     type="button"
                                     onClick={onToggleNodesTray}
-                                    style={{ width: '100%', border: 'none', background: 'rgba(248,250,252,0.94)', padding: '12px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', color: '#0f172a', fontWeight: 800, fontSize: 12 }}
+                                    style={{ width: '100%', border: 'none', borderBottom: nodesTrayOpen ? '1px solid rgba(148,163,184,0.18)' : 'none', background: 'rgba(233,240,248,0.92)', padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', color: '#0f172a', fontWeight: 900, fontSize: 12, letterSpacing: '0.04em', textTransform: 'uppercase' }}
                                 >
-                                    <span>Guided Nodes</span>
-                                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, color: '#64748b', fontWeight: 700 }}>
-                                        {guidedTypes.length} available
+                                    <span>Device-Type Selection</span>
+                                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, color: '#475569', fontWeight: 800 }}>
+                                        {activeDock.label}
                                         {nodesTrayOpen ? <ChevronDown size={15} /> : <ChevronUp size={15} />}
                                     </span>
                                 </button>
+
                                 {nodesTrayOpen && (
-                                    <div className="os-thin-scroll" style={{ padding: 12, maxHeight: compact ? 188 : 170, overflowY: 'auto' }}>
-                                        <div style={{ display: 'grid', gridTemplateColumns: compact ? '1fr' : 'repeat(2, minmax(0, 1fr))', gap: 8 }}>
-                                            {guidedTypes.map((type) => {
-                                                const definition = NODE_CATALOG[type];
-                                                const Icon = definition.icon;
-                                                const isRecommended = missingRequired.includes(type);
+                                    <div style={{ display: 'grid', gridTemplateColumns: compact ? '1fr' : '220px minmax(0, 1fr)' }}>
+                                        <div style={{ borderRight: compact ? 'none' : '1px solid rgba(148,163,184,0.18)', borderBottom: compact ? '1px solid rgba(148,163,184,0.18)' : 'none', background: 'rgba(239,244,250,0.96)', padding: 12, display: 'flex', flexDirection: compact ? 'row' : 'column', gap: 8, overflowX: compact ? 'auto' : 'visible' }}>
+                                            {DOCK_GROUPS.map((group) => {
+                                                const isActive = group.key === activeDock.key;
+                                                const pendingCount = group.types.filter((type) => missingRequired.includes(type)).length;
                                                 return (
                                                     <button
-                                                        key={type}
+                                                        key={group.key}
                                                         type="button"
-                                                        draggable
-                                                        onDragStart={(event) => {
-                                                            event.dataTransfer.setData('application/reactflow', type);
-                                                            event.dataTransfer.effectAllowed = 'move';
-                                                        }}
-                                                        onClick={() => onQuickAddRequest(type)}
+                                                        onClick={() => onDockGroupChange(group.key)}
                                                         style={{
-                                                            display: 'flex',
-                                                            alignItems: 'center',
-                                                            gap: 10,
-                                                            padding: '10px 12px',
-                                                            borderRadius: 14,
-                                                            border: isRecommended ? `1px solid ${definition.accent}55` : '1px solid rgba(148,163,184,0.24)',
-                                                            background: isRecommended ? `${definition.accent}12` : 'rgba(255,255,255,0.94)',
+                                                            border: isActive ? '1px solid rgba(37,99,235,0.28)' : '1px solid rgba(148,163,184,0.2)',
+                                                            borderRadius: 16,
+                                                            background: isActive ? 'linear-gradient(135deg, rgba(37,99,235,0.14), rgba(59,130,246,0.08))' : 'rgba(255,255,255,0.9)',
                                                             color: '#0f172a',
-                                                            boxShadow: '0 10px 22px rgba(148,163,184,0.12)',
-                                                            cursor: 'grab',
-                                                            textAlign: 'left'
+                                                            padding: '11px 12px',
+                                                            minWidth: compact ? 180 : 'auto',
+                                                            textAlign: 'left',
+                                                            boxShadow: isActive ? '0 10px 24px rgba(37,99,235,0.12)' : 'none'
                                                         }}
                                                     >
-                                                        <div style={{ width: 30, height: 30, borderRadius: 12, background: `${definition.accent}18`, display: 'grid', placeItems: 'center', flexShrink: 0 }}>
-                                                            <Icon size={15} color={definition.accent} />
-                                                        </div>
-                                                        <div style={{ minWidth: 0 }}>
-                                                            <div style={{ fontSize: 12, fontWeight: 800 }}>
-                                                                {definition.label}{isRecommended ? ' (Next)' : ''}
-                                                            </div>
-                                                            <div style={{ fontSize: 10, color: '#64748b', lineHeight: 1.45 }}>
-                                                                {definition.description}
-                                                            </div>
+                                                        <div style={{ fontSize: 11, fontWeight: 900 }}>{group.label}</div>
+                                                        <div style={{ marginTop: 4, fontSize: 10, color: '#64748b', lineHeight: 1.45 }}>{group.helper}</div>
+                                                        <div style={{ marginTop: 8, fontSize: 10, fontWeight: 800, color: pendingCount ? '#b91c1c' : '#166534' }}>
+                                                            {pendingCount ? `${pendingCount} required missing` : 'Ready'}
                                                         </div>
                                                     </button>
                                                 );
                                             })}
+                                        </div>
+
+                                        <div style={{ padding: 12 }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 12, flexWrap: 'wrap' }}>
+                                                <div>
+                                                    <div style={{ fontSize: 10, fontWeight: 900, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#64748b' }}>Device-Specific Selection</div>
+                                                    <div style={{ marginTop: 4, fontSize: 15, fontWeight: 800, color: '#0f172a' }}>{activeDock.label}</div>
+                                                    <div style={{ marginTop: 4, fontSize: 11, color: '#64748b', lineHeight: 1.5 }}>{activeDock.helper}</div>
+                                                </div>
+                                                <div style={{ fontSize: 11, fontWeight: 800, color: recommendedTypes.length ? '#b91c1c' : '#166534' }}>
+                                                    {recommendedTypes.length ? `${recommendedTypes.length} recommended next` : `${dockTypes.length} node types available`}
+                                                </div>
+                                            </div>
+
+                                            <div className="os-thin-scroll" style={{ maxHeight: compact ? 224 : 176, overflowY: 'auto' }}>
+                                                <div style={{ display: 'grid', gridTemplateColumns: compact ? '1fr' : 'repeat(2, minmax(0, 1fr))', gap: 8 }}>
+                                                    {dockTypes.map((type) => {
+                                                        const definition = NODE_CATALOG[type];
+                                                        const Icon = definition.icon;
+                                                        const isRecommended = missingRequired.includes(type);
+                                                        return (
+                                                            <button
+                                                                key={type}
+                                                                type="button"
+                                                                draggable
+                                                                onDragStart={(event) => {
+                                                                    event.dataTransfer.setData('application/reactflow', type);
+                                                                    event.dataTransfer.effectAllowed = 'move';
+                                                                }}
+                                                                onClick={() => onQuickAddRequest(type)}
+                                                                style={{
+                                                                    display: 'flex',
+                                                                    alignItems: 'center',
+                                                                    gap: 10,
+                                                                    padding: '12px',
+                                                                    borderRadius: 16,
+                                                                    border: isRecommended ? `1px solid ${definition.accent}55` : '1px solid rgba(148,163,184,0.2)',
+                                                                    background: isRecommended ? `linear-gradient(135deg, ${definition.accent}18, rgba(255,255,255,0.96))` : 'rgba(255,255,255,0.96)',
+                                                                    color: '#0f172a',
+                                                                    boxShadow: isRecommended ? `0 12px 26px ${definition.accent}18` : '0 10px 20px rgba(148,163,184,0.1)',
+                                                                    cursor: 'grab',
+                                                                    textAlign: 'left'
+                                                                }}
+                                                            >
+                                                                <div style={{ width: 34, height: 34, borderRadius: 12, background: `${definition.accent}18`, border: `1px solid ${definition.accent}30`, display: 'grid', placeItems: 'center', flexShrink: 0 }}>
+                                                                    <Icon size={16} color={definition.accent} />
+                                                                </div>
+                                                                <div style={{ minWidth: 0 }}>
+                                                                    <div style={{ fontSize: 12, fontWeight: 900 }}>
+                                                                        {definition.label}{isRecommended ? ' (Next)' : ''}
+                                                                    </div>
+                                                                    <div style={{ marginTop: 3, fontSize: 10, color: '#64748b', lineHeight: 1.45 }}>
+                                                                        {definition.description}
+                                                                    </div>
+                                                                </div>
+                                                            </button>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 )}
@@ -1401,6 +1507,7 @@ export default function IdeaToPromptApp() {
     const [promptDirty, setPromptDirty] = useState(Boolean(activeIdea?.promptDirty));
     const [promptCopied, setPromptCopied] = useState(false);
     const [nodesTrayOpen, setNodesTrayOpen] = useState(() => !(typeof window !== 'undefined' ? window.innerWidth <= 960 : false));
+    const [activeDockGroup, setActiveDockGroup] = useState('core');
     const importedLegacy = Boolean(activeIdea?.importedLegacy);
     const [syncedGeneratedPrompt, setSyncedGeneratedPrompt] = useState(() => activeIdea?.syncedGeneratedPrompt || buildRoFcoPrompt(activeIdea?.graph?.nodes || []));
 
@@ -1596,6 +1703,8 @@ export default function IdeaToPromptApp() {
             onRenameIdea={handleRenameIdea}
             onDeleteIdea={handleDeleteIdea}
             onSaveIdea={handleSaveIdea}
+            activeDockGroup={activeDockGroup}
+            onDockGroupChange={setActiveDockGroup}
             nodesTrayOpen={nodesTrayOpen}
             onToggleNodesTray={() => setNodesTrayOpen((open) => !open)}
         />
