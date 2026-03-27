@@ -5,7 +5,7 @@ import {
     Settings2, TrendingUp, Rocket, Code2
 } from 'lucide-react';
 
-const STEPS = ['Role (R)', 'Objective (O)', 'Features & Constraints (F, C)', 'Tech Stack (T)', 'Output Format (O)'];
+const STEPS = ['Role + Stack (R)', 'Objective (O)', 'Features (F)', 'Constraints (C)', 'Output Format (O)'];
 const NB_FONT = "'Courier New', Courier, monospace";
 const UI_FONT = "system-ui, -apple-system, BlinkMacSystemFont, sans-serif";
 
@@ -248,9 +248,12 @@ Build the simplest thing that SHIPS. Save clever for v2.
 ═══════════════════════════════════════════════════════════════════
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-[R] ROLE: ${r.label}
+[R] ROLE + TECH STACK: ${r.label}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Please adopt this persona carefully to guide your focus. Every decision you make should align with the expertise of a ${r.label}.
+
+TECH STACK:
+${stack.length ? stack.map(t => `► ${t}`).join('\n') : '► React\n► Vite'}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 [O] OBJECTIVE & CONTEXT
@@ -262,7 +265,7 @@ ${inspiration ? `Inspiration:  ${inspiration}` : ''}
 ${inspirationUrl ? `Reference:    ${inspirationUrl}${competitors ? `\n              Improve: ${competitors}` : ''}` : ''}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-[F & C] FEATURES AND CONSTRAINTS
+[F] FEATURES
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 MUST-BUILD FEATURES:
 ${mustHaveTags.length ? mustHaveTags.map(f => `► ${f}`).join('\n') : '► [Define your core features]'}
@@ -271,12 +274,11 @@ NICE TO HAVE (Build after MVP ships):
 ${niceToHaveTags.length ? niceToHaveTags.map(f => `  · ${f}`).join('\n') : '  · None specified'}
 
 ${uniqueFeature ? `UNIQUE DIFFERENTIATOR:\n${uniqueFeature}\n` : ''}
-${techConstraints ? `CONSTRAINTS (Adhere strictly):\n${techConstraints}\n` : ''}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-[T] TECH STACK
+[C] CONSTRAINTS
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-${stack.length ? stack.map(t => `► ${t}`).join('\n') : '► React\n► Vite'}
+${techConstraints ? techConstraints : 'No specific constraints defined — use best practices.'}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 DESIGN SYSTEM
@@ -433,7 +435,7 @@ DEPLOY CHECKLIST (copy-paste when ready)
 □ Share your link — you shipped!
 
 ═══════════════════════════════════════════════════════════════════
-Built with Prompt Forge — Based on ROFTCO Framework
+Built with Prompt Forge — Based on ROFCO Framework
 "Developer yang mahir prompting akan berada di hadapan." – Ajwad
 ═══════════════════════════════════════════════════════════════════`;
     };
@@ -461,7 +463,7 @@ Built with Prompt Forge — Based on ROFTCO Framework
                     <Wand2 size={28} strokeWidth={2.5} />
                 </div>
                 <div>
-                    <h2 style={{ fontSize: '18px', fontWeight: 900, color: '#F5D000', margin: 0, fontFamily: NB_FONT }}>[ PROMPT_FORGE: FRAMEWORK ROFTCO ]</h2>
+                    <h2 style={{ fontSize: '18px', fontWeight: 900, color: '#F5D000', margin: 0, fontFamily: NB_FONT }}>[ PROMPT_FORGE: FRAMEWORK ROFCO ]</h2>
                     <p style={{ margin: '3px 0 0', color: 'rgba(245,208,0,0.45)', fontSize: '12px' }}>"Developer yang mahir prompting akan berada di hadapan." – Ajwad</p>
                 </div>
             </div>
@@ -478,13 +480,13 @@ Built with Prompt Forge — Based on ROFTCO Framework
                 ))}
             </div>
 
-            {/* ── STEP 0: Assign AI Role ─────────────────────────────────────────── */}
+            {/* ── STEP 0: Assign AI Role + Tech Stack ───────────────────────────── */}
             {step === 0 && (
                 <div style={{ flex: 1 }}>
-                    <TipCard title="R - ROLE">
-                        Define the role of the AI in the project. This helps in guiding the AI's focus and setting expectations for its output. AI functions based on the instructions given; quality instructions produce quality outputs.
+                    <TipCard title="R - ROLE + TECH STACK">
+                        Define the role of the AI and the tech stack for the project. The role guides the AI's focus and expertise, while the tech stack defines the tools and technologies to build with.
                     </TipCard>
-                    <h3 style={{ fontSize: '15px', fontWeight: 900, color: '#F5D000', marginBottom: '6px', fontFamily: NB_FONT }}>1. ROLE (R) - ASSIGN AI PERSONA</h3>
+                    <h3 style={{ fontSize: '15px', fontWeight: 900, color: '#F5D000', marginBottom: '6px', fontFamily: NB_FONT }}>1. ROLE + STACK (R) - AI PERSONA & TOOLS</h3>
                     <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '12px', marginBottom: '16px' }}>Select the persona the AI should adopt. Click a card for details.</p>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
                         {ROLES.map(r => (
@@ -508,6 +510,34 @@ Built with Prompt Forge — Based on ROFTCO Framework
                                     style={{ marginTop: '8px', background: 'none', border: `1px solid ${r.color}44`, color: r.color, borderRadius: '4px', fontSize: '9px', padding: '2px 7px', cursor: 'pointer', fontWeight: 700 }}>
                                     DETAILS →
                                 </button>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Tech Stack section within Role */}
+                    <div style={{ marginTop: '24px', paddingTop: '20px', borderTop: '1px dashed rgba(245,208,0,0.15)' }}>
+                        <h4 style={{ fontSize: '13px', fontWeight: 900, color: '#F5D000', marginBottom: '12px', fontFamily: NB_FONT }}>⚡ TECH STACK</h4>
+                        {TECH_CATEGORIES.map(cat => (
+                            <div key={cat.label} style={{ marginBottom: '12px' }}>
+                                <FieldLabel>{cat.label}</FieldLabel>
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '7px' }}>
+                                    {cat.options.map(tech => (
+                                        <div key={tech.id} style={{ display: 'flex', gap: '2px' }}>
+                                            <button onClick={() => toggleStack(tech.id)}
+                                                style={{ padding: '6px 12px', background: stack.includes(tech.id) ? '#F5D000' : '#0d1928',
+                                                    color: stack.includes(tech.id) ? '#0b1220' : 'rgba(255,255,255,0.55)',
+                                                    border: stack.includes(tech.id) ? '2px solid #121417' : '2px solid #1e2d3d',
+                                                    boxShadow: stack.includes(tech.id) ? '2px 2px 0 #121417' : 'none',
+                                                    borderRadius: '20px 0 0 20px', fontWeight: 700, fontSize: '12px', cursor: 'pointer', fontFamily: UI_FONT }}>
+                                                {tech.id}
+                                            </button>
+                                            <button onClick={() => setTechDetail(tech)}
+                                                style={{ padding: '6px 8px', background: '#0d1928', color: 'rgba(255,255,255,0.35)',
+                                                    border: '2px solid #1e2d3d', borderLeft: 'none',
+                                                    borderRadius: '0 20px 20px 0', cursor: 'pointer', fontSize: '11px' }}>ℹ</button>
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
                         ))}
                     </div>
@@ -536,6 +566,32 @@ Built with Prompt Forge — Based on ROFTCO Framework
                                 style={{ width: '100%', padding: '12px', background: roleDetail.color, color: 'white', border: '2px solid #121417', boxShadow: '3px 3px 0 #121417', borderRadius: '8px', fontWeight: 900, fontSize: '14px', cursor: 'pointer', fontFamily: NB_FONT }}>
                                 SELECT THIS ROLE ✓
                             </button>
+                        </Popup>
+                    )}
+
+                    {/* Tech detail popup */}
+                    {techDetail && (
+                        <Popup onClose={() => setTechDetail(null)}>
+                            <h3 style={{ fontSize: '16px', fontWeight: 900, color: '#F5D000', marginBottom: '8px', fontFamily: NB_FONT }}>{techDetail.id}</h3>
+                            <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.7)', lineHeight: 1.6, marginBottom: '12px' }}>{techDetail.desc}</p>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '12px' }}>
+                                <div style={{ background: '#0b1220', padding: '10px', borderRadius: '8px', border: '1px solid #166534' }}>
+                                    <div style={{ fontSize: '9px', fontWeight: 700, color: '#4ade80', textTransform: 'uppercase', marginBottom: '4px' }}>Pros</div>
+                                    <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.55)' }}>{techDetail.pros}</div>
+                                </div>
+                                <div style={{ background: '#0b1220', padding: '10px', borderRadius: '8px', border: '1px solid #7f1d1d' }}>
+                                    <div style={{ fontSize: '9px', fontWeight: 700, color: '#f87171', textTransform: 'uppercase', marginBottom: '4px' }}>Cons</div>
+                                    <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.55)' }}>{techDetail.cons}</div>
+                                </div>
+                            </div>
+                            <div style={{ marginBottom: '14px' }}>
+                                <div style={{ fontSize: '10px', fontWeight: 700, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', marginBottom: '4px' }}>Best For</div>
+                                <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.55)' }}>{techDetail.bestFor}</div>
+                            </div>
+                            <a href={techDetail.docs} target="_blank" rel="noopener noreferrer"
+                                style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#60a5fa', fontSize: '13px', textDecoration: 'none', fontWeight: 600 }}>
+                                <ExternalLink size={14} /> View Docs
+                            </a>
                         </Popup>
                     )}
                 </div>
@@ -592,14 +648,13 @@ Built with Prompt Forge — Based on ROFTCO Framework
                 </div>
             )}
 
-            {/* ── STEP 2: Feature Wishlist ──────────────────────────────────────── */}
+            {/* ── STEP 2: Features ──────────────────────────────────────────────── */}
             {step === 2 && (
                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '18px' }}>
-                    <TipCard title="F - FEATURES & C - CONSTRAINTS">
-                        <strong>Features:</strong> Detail specific capabilities needed to fulfill project objectives.<br/><br/>
-                        <strong>Constraints:</strong> Add constraints to focus the AI. Avoid ambiguity in your queries to get cleaner results. Constraints guide the boundary of development.
+                    <TipCard title="F - FEATURES">
+                        Detail specific capabilities needed to fulfill project objectives. List all must-have and nice-to-have features to give the AI a clear picture of what to build.
                     </TipCard>
-                    <h3 style={{ fontSize: '15px', fontWeight: 900, color: '#F5D000', marginBottom: '0', fontFamily: NB_FONT }}>3. FEATURES & CONSTRAINTS (F & C)</h3>
+                    <h3 style={{ fontSize: '15px', fontWeight: 900, color: '#F5D000', marginBottom: '0', fontFamily: NB_FONT }}>3. FEATURES (F)</h3>
 
                     {/* Must Have */}
                     <div>
@@ -637,46 +692,21 @@ Built with Prompt Forge — Based on ROFTCO Framework
                         <FieldLabel>What makes this app unique?</FieldLabel>
                         <TextInput value={uniqueFeature} onChange={e => setUniqueFeature(e.target.value)} placeholder="e.g. AI-generated invoice summaries, voice input, works fully offline..." rows={2} />
                     </div>
-
-                    <div>
-                        <FieldLabel>Technical constraints or requirements?</FieldLabel>
-                        <TextInput value={techConstraints} onChange={e => setTechConstraints(e.target.value)} placeholder="e.g. Must work offline, under 5MB bundle, no third-party auth..." rows={2} />
-                    </div>
                 </div>
             )}
 
-            {/* ── STEP 3: Tech Stack & Design Vibe ─────────────────────────────── */}
+            {/* ── STEP 3: Constraints ────────────────────────────────────────────── */}
             {step === 3 && (
-                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                    <TipCard title="T - TECH STACK">
-                        Identify tools and technology you want to build with. Choosing the right stack is critical to the efficiency and success of the project.
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '18px' }}>
+                    <TipCard title="C - CONSTRAINTS">
+                        Add constraints to focus the AI. Avoid ambiguity in your queries to get cleaner results. Constraints guide the boundary of development and prevent scope creep.
                     </TipCard>
-                    <h3 style={{ fontSize: '15px', fontWeight: 900, color: '#F5D000', marginBottom: '0', fontFamily: NB_FONT }}>4. TECH STACK (T)</h3>
+                    <h3 style={{ fontSize: '15px', fontWeight: 900, color: '#F5D000', marginBottom: '0', fontFamily: NB_FONT }}>4. CONSTRAINTS (C)</h3>
 
-                    {/* Tech Stack */}
-                    {TECH_CATEGORIES.map(cat => (
-                        <div key={cat.label}>
-                            <FieldLabel>{cat.label}</FieldLabel>
-                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '7px' }}>
-                                {cat.options.map(tech => (
-                                    <div key={tech.id} style={{ display: 'flex', gap: '2px' }}>
-                                        <button onClick={() => toggleStack(tech.id)}
-                                            style={{ padding: '6px 12px', background: stack.includes(tech.id) ? '#F5D000' : '#0d1928',
-                                                color: stack.includes(tech.id) ? '#0b1220' : 'rgba(255,255,255,0.55)',
-                                                border: stack.includes(tech.id) ? '2px solid #121417' : '2px solid #1e2d3d',
-                                                boxShadow: stack.includes(tech.id) ? '2px 2px 0 #121417' : 'none',
-                                                borderRadius: '20px 0 0 20px', fontWeight: 700, fontSize: '12px', cursor: 'pointer', fontFamily: UI_FONT }}>
-                                            {tech.id}
-                                        </button>
-                                        <button onClick={() => setTechDetail(tech)}
-                                            style={{ padding: '6px 8px', background: '#0d1928', color: 'rgba(255,255,255,0.35)',
-                                                border: '2px solid #1e2d3d', borderLeft: 'none',
-                                                borderRadius: '0 20px 20px 0', cursor: 'pointer', fontSize: '11px' }}>ℹ</button>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    ))}
+                    <div>
+                        <FieldLabel>Technical constraints or requirements</FieldLabel>
+                        <TextInput value={techConstraints} onChange={e => setTechConstraints(e.target.value)} placeholder="e.g. Must work offline, under 5MB bundle, no third-party auth, must support RTL..." rows={4} />
+                    </div>
 
                     {/* Design Vibe */}
                     <div>
@@ -706,32 +736,6 @@ Built with Prompt Forge — Based on ROFTCO Framework
                         <TextInput value={customStyle} onChange={e => setCustomStyle(e.target.value)} placeholder="e.g. Use Inter font, keep primary color #C8102E, no animations on mobile..." />
                     </div>
 
-                    {/* Tech detail popup */}
-                    {techDetail && (
-                        <Popup onClose={() => setTechDetail(null)}>
-                            <h3 style={{ fontSize: '16px', fontWeight: 900, color: '#F5D000', marginBottom: '8px', fontFamily: NB_FONT }}>{techDetail.id}</h3>
-                            <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.7)', lineHeight: 1.6, marginBottom: '12px' }}>{techDetail.desc}</p>
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '12px' }}>
-                                <div style={{ background: '#0b1220', padding: '10px', borderRadius: '8px', border: '1px solid #166534' }}>
-                                    <div style={{ fontSize: '9px', fontWeight: 700, color: '#4ade80', textTransform: 'uppercase', marginBottom: '4px' }}>Pros</div>
-                                    <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.55)' }}>{techDetail.pros}</div>
-                                </div>
-                                <div style={{ background: '#0b1220', padding: '10px', borderRadius: '8px', border: '1px solid #7f1d1d' }}>
-                                    <div style={{ fontSize: '9px', fontWeight: 700, color: '#f87171', textTransform: 'uppercase', marginBottom: '4px' }}>Cons</div>
-                                    <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.55)' }}>{techDetail.cons}</div>
-                                </div>
-                            </div>
-                            <div style={{ marginBottom: '14px' }}>
-                                <div style={{ fontSize: '10px', fontWeight: 700, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', marginBottom: '4px' }}>Best For</div>
-                                <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.55)' }}>{techDetail.bestFor}</div>
-                            </div>
-                            <a href={techDetail.docs} target="_blank" rel="noopener noreferrer"
-                                style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#60a5fa', fontSize: '13px', textDecoration: 'none', fontWeight: 600 }}>
-                                <ExternalLink size={14} /> View Docs
-                            </a>
-                        </Popup>
-                    )}
-
                     {/* Vibe detail popup */}
                     {vibeDetail && (
                         <Popup onClose={() => setVibeDetail(null)}>
@@ -750,6 +754,8 @@ Built with Prompt Forge — Based on ROFTCO Framework
                 </div>
             )}
 
+
+
             {/* ── STEP 4: Master Prompt Output ─────────────────────────────────── */}
             {step === 4 && (
                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
@@ -757,7 +763,7 @@ Built with Prompt Forge — Based on ROFTCO Framework
                         <strong>Prompt Layering:</strong> Don't ask everything at once! Layer your prompts. Focus on one element at a time to keep interactions natural and prompts clear.
                     </TipCard>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', gap: '8px', flexWrap: 'wrap' }}>
-                        <h3 style={{ fontSize: '15px', fontWeight: 900, color: '#22c55e', margin: 0, fontFamily: NB_FONT }}>5. OUTPUT FORMAT (O) - MASTER PROMPT</h3>
+                        <h3 style={{ fontSize: '15px', fontWeight: 900, color: '#22c55e', margin: 0, fontFamily: NB_FONT }}>5. OUTPUT (O) - MASTER PROMPT</h3>
                         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                             <button onClick={copyToClipboard}
                                 style={{ display: 'flex', alignItems: 'center', gap: '6px', background: copied ? '#22c55e' : '#F5D000',
