@@ -64,6 +64,7 @@ import { basenameFromPath, dirnameFromPath, extnameFromPath, joinOsPath, normali
 
 const BuilderStudioLocal = lazy(() => import('./components/BuilderStudioLocal'));
 const VibeSimulator = lazy(() => import('../../components/simulator/VibeSimulator'));
+const IdeaToPromptApp = lazy(() => import('../../components/ideatoprompt/IdeaToPromptApp'));
 const MindMapperApp = lazy(() => import('../../components/mindmapper/MindMapperApp'));
 const PromptForgeApp = lazy(() => import('../../components/promptforge/PromptForgeApp'));
 const KrackedMissionConsole = lazy(() => import('./components/windows/KrackedMissionConsole'));
@@ -2849,7 +2850,7 @@ const IjamOSWorkspace = ({ session, currentUser, isMobileView, deviceMode = 'des
     const [bluetoothEnabled, setBluetoothEnabled] = useState(true);
     const [focusModeEnabled, setFocusModeEnabled] = useState(false);
     const getRoleHintFromApp = useCallback((appType) => {
-        if (appType === 'terminal' || appType === 'prompt_forge') return 'engineer';
+        if (appType === 'terminal' || appType === 'prompt_forge' || appType === 'idea_to_prompt') return 'engineer';
         if (appType === 'files' || appType === 'mind_mapper') return 'analyst';
         return 'devops';
     }, []);
@@ -3771,7 +3772,7 @@ const IjamOSWorkspace = ({ session, currentUser, isMobileView, deviceMode = 'des
         [windowStates]
     );
     const mobileDockApps = useMemo(
-        () => ['files', 'wallpaper', 'mind_mapper', 'prompt_forge', 'simulator']
+        () => ['files', 'wallpaper', 'idea_to_prompt', 'mind_mapper', 'simulator']
             .map((type) => appByType[type])
             .filter(Boolean),
         [appByType]
@@ -3815,6 +3816,34 @@ const IjamOSWorkspace = ({ session, currentUser, isMobileView, deviceMode = 'des
         window.addEventListener('keydown', handleEscape);
         return () => window.removeEventListener('keydown', handleEscape);
     }, []);
+
+    useEffect(() => {
+        const handleWindowShortcuts = (event) => {
+            const isCommandLike = event.metaKey || event.ctrlKey;
+            if (!isCommandLike || event.altKey) return;
+            if (event.defaultPrevented) return;
+
+            const target = event.target;
+            const tagName = target?.tagName?.toLowerCase?.() || '';
+            const isEditable = target?.isContentEditable || ['input', 'textarea', 'select'].includes(tagName);
+            if (isEditable) return;
+            if (!focusedWindow || !appByType[focusedWindow]) return;
+
+            const key = event.key.toLowerCase();
+            if (key === 'w') {
+                event.preventDefault();
+                closeApp(focusedWindow);
+                return;
+            }
+            if (key === 'm') {
+                event.preventDefault();
+                minimizeApp(focusedWindow);
+            }
+        };
+
+        window.addEventListener('keydown', handleWindowShortcuts);
+        return () => window.removeEventListener('keydown', handleWindowShortcuts);
+    }, [appByType, closeApp, focusedWindow, minimizeApp]);
 
     const handleWifiToggle = useCallback(async () => {
         if (!networkCanToggleWifi || !runtime?.device?.setWifiEnabled) return;
@@ -5815,7 +5844,7 @@ YOU DID IT. APP DEPLOYED!`);
             items: [
                 { label: 'Open Wallpaper Gallery', action: () => openApp('wallpaper') },
                 { label: 'Open Simulator', action: () => openApp('simulator') },
-                { label: 'Open Mind Map', action: () => openApp('mind_mapper') }
+                { label: 'Open Idea to Prompt', action: () => openApp('idea_to_prompt') }
             ]
         },
         {
@@ -5829,7 +5858,8 @@ YOU DID IT. APP DEPLOYED!`);
             id: 'help',
             label: 'Help',
             items: [
-                { label: 'Open Prompt Forge', action: () => openApp('prompt_forge') },
+                { label: 'Open Idea to Prompt', action: () => openApp('idea_to_prompt') },
+                { label: 'Open Prompt Forge (Legacy)', action: () => openApp('prompt_forge') },
                 { label: 'Search Apps', action: () => { setIsStartMenuOpen(true); setStartMenuSearch(''); } }
             ]
         }
@@ -7695,7 +7725,18 @@ YOU DID IT. APP DEPLOYED!`);
                 </WindowFrame>
             )}
 
-            {/* 8. Mind Mapper Window */}
+            {/* 8. Idea To Prompt Window */}
+            {windowStates.idea_to_prompt?.isOpen && (
+                <WindowFrame {...mobileWindowProps} winState={windowStates.idea_to_prompt} title="Idea to Prompt" AppIcon={Brain} onClose={() => closeApp('idea_to_prompt')} onMinimize={() => minimizeApp('idea_to_prompt')} onMaximize={() => maximizeApp('idea_to_prompt')} onFocus={() => focusApp('idea_to_prompt')} onMove={(x, y) => moveApp('idea_to_prompt', x, y)} onResize={(w, h) => resizeApp('idea_to_prompt', w, h)}>
+                    <div style={{ flex: 1, minHeight: 0, overflow: 'hidden', background: 'linear-gradient(180deg, #f7faff 0%, #edf3fb 100%)' }}>
+                        <Suspense fallback={<WindowModuleLoader label="IDEA_TO_PROMPT" background="transparent" />}>
+                            <IdeaToPromptApp />
+                        </Suspense>
+                    </div>
+                </WindowFrame>
+            )}
+
+            {/* 9. Mind Mapper Window */}
             {windowStates.mind_mapper?.isOpen && (
                 <WindowFrame {...mobileWindowProps} winState={windowStates.mind_mapper} title="Mind Map" AppIcon={Waypoints} onClose={() => closeApp('mind_mapper')} onMinimize={() => minimizeApp('mind_mapper')} onMaximize={() => maximizeApp('mind_mapper')} onFocus={() => focusApp('mind_mapper')} onMove={(x, y) => moveApp('mind_mapper', x, y)} onResize={(w, h) => resizeApp('mind_mapper', w, h)}>
                     <div style={{ flex: 1, minHeight: 0, overflow: 'hidden', background: 'linear-gradient(180deg, #f7faff 0%, #edf3fb 100%)' }}>
@@ -7706,7 +7747,7 @@ YOU DID IT. APP DEPLOYED!`);
                 </WindowFrame>
             )}
 
-            {/* 9. Prompt Forge Window */}
+            {/* 10. Prompt Forge Window */}
             {windowStates.prompt_forge?.isOpen && (
                 <WindowFrame {...mobileWindowProps} winState={windowStates.prompt_forge} title="Prompt Forge" AppIcon={Wand2} onClose={() => closeApp('prompt_forge')} onMinimize={() => minimizeApp('prompt_forge')} onMaximize={() => maximizeApp('prompt_forge')} onFocus={() => focusApp('prompt_forge')} onMove={(x, y) => moveApp('prompt_forge', x, y)} onResize={(w, h) => resizeApp('prompt_forge', w, h)}>
                     <div style={{ flex: 1, minHeight: 0, background: 'linear-gradient(180deg, #f7faff 0%, #edf3fb 100%)', overflow: 'hidden' }}>
@@ -7872,7 +7913,18 @@ YOU DID IT. APP DEPLOYED!`);
                                         }
                                         setIsStartMenuOpen(false);
                                         setShowDateTimePanel(false);
+                                        setShowBatteryPopup(false);
+                                        setShowControlCenter(false);
                                         setActiveMacMenu((prev) => prev === menu.id ? null : menu.id);
+                                    }}
+                                    onMouseEnter={() => {
+                                        if (menu.id === 'system') return;
+                                        if (!activeMacMenu) return;
+                                        setIsStartMenuOpen(false);
+                                        setShowDateTimePanel(false);
+                                        setShowBatteryPopup(false);
+                                        setShowControlCenter(false);
+                                        setActiveMacMenu(menu.id);
                                     }}
                                     style={{
                                         height: '28px',

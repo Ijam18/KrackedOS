@@ -2,13 +2,13 @@ import React from 'react';
 import { Handle, Position } from '@xyflow/react';
 import { Lightbulb, Layers, Layout, ServerCog, Database } from 'lucide-react';
 
-const BaseNode = ({ id, label, icon: Icon, color, children }) => (
+const BaseNode = ({ id, label, icon: Icon, color, children, selected = false }) => (
     <div style={{
         background: color,
-        border: '3px solid #0b1220',
+        border: selected ? '3px solid #2563eb' : '3px solid #0b1220',
         borderRadius: '8px',
         padding: '16px',
-        boxShadow: '6px 6px 0px #0b1220',
+        boxShadow: selected ? '0 0 0 4px rgba(37,99,235,0.16), 6px 6px 0px #0b1220' : '6px 6px 0px #0b1220',
         minWidth: '160px',
         fontFamily: 'monospace',
         position: 'relative',
@@ -22,7 +22,7 @@ const BaseNode = ({ id, label, icon: Icon, color, children }) => (
             background: '#fff',
             borderRadius: '50%',
             padding: '8px',
-            border: '3px solid #0b1220',
+            border: selected ? '3px solid #2563eb' : '3px solid #0b1220',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -51,32 +51,32 @@ const omniHandles = (isConnectable) => (
     </>
 );
 
-export const CoreProblemNode = ({ data, isConnectable }) => (
-    <BaseNode id="core_problem" label={data.label || 'CORE PROBLEM'} icon={Lightbulb} color="#fca5a5">
+export const CoreProblemNode = ({ data, isConnectable, selected }) => (
+    <BaseNode id="core_problem" label={data.label || 'CORE PROBLEM'} icon={Lightbulb} color="#fca5a5" selected={selected}>
         {omniHandles(isConnectable)}
     </BaseNode>
 );
 
-export const CoreFeatureNode = ({ data, isConnectable }) => (
-    <BaseNode id="core_feature" label={data.label || 'MVP FEATURE'} icon={Layers} color="#fef08a">
+export const CoreFeatureNode = ({ data, isConnectable, selected }) => (
+    <BaseNode id="core_feature" label={data.label || 'MVP FEATURE'} icon={Layers} color="#fef08a" selected={selected}>
         {omniHandles(isConnectable)}
     </BaseNode>
 );
 
-export const FrontendNode = ({ data, isConnectable }) => (
-    <BaseNode id="frontend" label={data.label || 'UI / FRONTEND'} icon={Layout} color="#bfdbfe">
+export const FrontendNode = ({ data, isConnectable, selected }) => (
+    <BaseNode id="frontend" label={data.label || 'UI / FRONTEND'} icon={Layout} color="#bfdbfe" selected={selected}>
         {omniHandles(isConnectable)}
     </BaseNode>
 );
 
-export const BackendNode = ({ data, isConnectable }) => (
-    <BaseNode id="backend" label={data.label || 'LOGIC / BACKEND'} icon={ServerCog} color="#bbf7d0">
+export const BackendNode = ({ data, isConnectable, selected }) => (
+    <BaseNode id="backend" label={data.label || 'LOGIC / BACKEND'} icon={ServerCog} color="#bbf7d0" selected={selected}>
         {omniHandles(isConnectable)}
     </BaseNode>
 );
 
-export const DatabaseNode = ({ data, isConnectable }) => (
-    <BaseNode id="database" label={data.label || 'DATA / STORAGE'} icon={Database} color="#e9d5ff">
+export const DatabaseNode = ({ data, isConnectable, selected }) => (
+    <BaseNode id="database" label={data.label || 'DATA / STORAGE'} icon={Database} color="#e9d5ff" selected={selected}>
         {omniHandles(isConnectable)}
     </BaseNode>
 );

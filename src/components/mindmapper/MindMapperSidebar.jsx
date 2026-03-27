@@ -1,5 +1,5 @@
 import React from 'react';
-import { Lightbulb, Layers, Layout, ServerCog, Database, X } from 'lucide-react';
+import { Lightbulb, Layers, Layout, ServerCog, Database, RotateCcw, Trash2, X } from 'lucide-react';
 
 const NODE_TYPES = [
     { type: 'core_problem', label: 'Core Problem', icon: Lightbulb, color: '#fca5a5' },
@@ -9,7 +9,16 @@ const NODE_TYPES = [
     { type: 'database', label: 'Data / Storage', icon: Database, color: '#e9d5ff' },
 ];
 
-export default function MindMapperSidebar({ compact = false, onClose = null, onQuickAdd = null }) {
+export default function MindMapperSidebar({
+    compact = false,
+    onClose = null,
+    onQuickAdd = null,
+    selectedNode = null,
+    onSelectedLabelChange = null,
+    onDeleteSelected = null,
+    onReset = null,
+    nodeCount = 0
+}) {
     const onDragStart = (event, nodeType) => {
         event.dataTransfer.setData('application/reactflow', nodeType);
         event.dataTransfer.effectAllowed = 'move';
@@ -41,6 +50,32 @@ export default function MindMapperSidebar({ compact = false, onClose = null, onQ
             <p style={{ fontSize: '12px', color: '#64748b', margin: 0, lineHeight: 1.5 }}>
                 Drag these concepts onto the canvas. Map your biggest problem into 1-3 core features. Deconstruct each feature into its tech stack.
             </p>
+
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                <button
+                    type="button"
+                    onClick={onReset}
+                    style={{
+                        border: '1px solid rgba(148,163,184,0.24)',
+                        borderRadius: '12px',
+                        background: 'rgba(255,255,255,0.92)',
+                        color: '#334155',
+                        padding: '8px 10px',
+                        fontSize: '11px',
+                        fontWeight: 700,
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        cursor: 'pointer'
+                    }}
+                >
+                    <RotateCcw size={13} />
+                    Reset
+                </button>
+                <div style={{ padding: '8px 10px', borderRadius: '12px', background: 'rgba(248,250,252,0.92)', border: '1px solid rgba(148,163,184,0.18)', fontSize: '11px', fontWeight: 700, color: '#475569' }}>
+                    {nodeCount} node{nodeCount === 1 ? '' : 's'}
+                </div>
+            </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: compact ? '8px' : '12px', marginTop: compact ? '6px' : '12px' }}>
                 {NODE_TYPES.map((node) => {
@@ -76,6 +111,61 @@ export default function MindMapperSidebar({ compact = false, onClose = null, onQ
                         </div>
                     );
                 })}
+            </div>
+
+            <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: '10px', paddingTop: compact ? '6px' : '10px' }}>
+                <div style={{ fontSize: '11px', fontWeight: 800, color: '#334155', letterSpacing: '0.06em' }}>
+                    SELECTED NODE
+                </div>
+                {selectedNode ? (
+                    <div style={{ border: '1px solid rgba(148,163,184,0.24)', borderRadius: '16px', background: 'rgba(255,255,255,0.92)', padding: '12px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        <div style={{ fontSize: '11px', color: '#64748b', fontWeight: 700 }}>
+                            {selectedNode.type.replaceAll('_', ' ').toUpperCase()}
+                        </div>
+                        <textarea
+                            value={selectedNode.data?.label || ''}
+                            onChange={(event) => onSelectedLabelChange?.(event.target.value)}
+                            rows={3}
+                            placeholder="Rename this node"
+                            style={{
+                                width: '100%',
+                                resize: 'vertical',
+                                border: '1px solid rgba(148,163,184,0.24)',
+                                borderRadius: '12px',
+                                padding: '10px 12px',
+                                fontSize: '12px',
+                                color: '#0f172a',
+                                background: '#fff',
+                                boxSizing: 'border-box'
+                            }}
+                        />
+                        <button
+                            type="button"
+                            onClick={onDeleteSelected}
+                            style={{
+                                border: '1px solid rgba(239,68,68,0.24)',
+                                borderRadius: '12px',
+                                background: 'rgba(254,226,226,0.9)',
+                                color: '#b91c1c',
+                                padding: '9px 10px',
+                                fontSize: '11px',
+                                fontWeight: 800,
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: '6px',
+                                cursor: 'pointer'
+                            }}
+                        >
+                            <Trash2 size={13} />
+                            Delete Selected
+                        </button>
+                    </div>
+                ) : (
+                    <div style={{ border: '1px dashed rgba(148,163,184,0.4)', borderRadius: '16px', background: 'rgba(248,250,252,0.84)', padding: '12px', fontSize: '12px', color: '#64748b', lineHeight: 1.5 }}>
+                        Click a node to rename or delete it. Tip: press `Delete` / `Backspace` to remove the selected node.
+                    </div>
+                )}
             </div>
         </aside>
     );
