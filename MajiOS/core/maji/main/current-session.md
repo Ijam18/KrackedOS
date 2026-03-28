@@ -2,26 +2,26 @@
 *Temporary working memory - resets each session, provides recap when AI restarts*
 
 ## Session RAM Status
-**Current Session**: Active - BMAD Integration Complete  
-**Last Activity**: 2026-03-28 23:15:42 +08  
-**Session Focus**: Embedding BMAD Method System inside MAJI for Kracked_OS  
-**Context State**: MAJI now includes a dedicated BMAD-based planning and review subsystem
+**Current Session**: Active - BMAD Loaded, Persona Updated, Memory Paths Aligned  
+**Last Activity**: 2026-03-29 00:00:00 +08  
+**Session Focus**: Activating BMAD in live use, updating MAJI defaults, and aligning startup docs with repo truth  
+**Context State**: MAJI now includes a dedicated BMAD-based planning and review subsystem with Muslim-friendly Bahasa Melayu-first defaults
 
 ## 💭 Working Memory (RAM)
 *Temporary storage - cleared when session ends*
 
 ### Active Context
-- **Current Topic**: BMAD inside MAJI integration for Kracked_OS
-- **Immediate Goals**: Add BMAD feature subsystem, command model, and save routing into MAJI
-- **Recent Progress**: BMAD Method System has been added into the canonical `MajiOS` method layer and wired into MAJI memory and save protocol
-- **Next Steps**: Use `load bmad` and BMAD commands during future Kracked_OS sessions, then save durable outcomes
+- **Current Topic**: Using BMAD as the active routing layer for Kracked_OS while refining MAJI startup and persona defaults
+- **Immediate Goals**: Keep BMAD active, preserve MAJI's new Muslim-friendly Bahasa Melayu-first identity, and eliminate stale memory path references in docs
+- **Recent Progress**: BMAD has been loaded in-session, MAJI identity/relationship docs were updated, and startup guidance now points to the real `MajiOS/engine/memory/` path in key files
+- **Next Steps**: Continue normal Kracked_OS work with `bmad plan` or `bmad review`, then `save` durable outcomes back into MAJI memory
 
 ### Session Recap (For AI Restart)
 *Quick summary when AI loads after close/reopen*
-- **Previous Session Summary**: MAJI was personalized and then upgraded to include BMAD as its method engine
-- **Where We Left Off**: Core files, save protocol, and a dedicated BMAD subsystem were aligned around Kracked_OS  
+- **Previous Session Summary**: MAJI was personalized, upgraded with BMAD, then updated to default to Muslim-friendly Bahasa Melayu-first communication
+- **Where We Left Off**: Core identity files and key startup docs were aligned around the new defaults and corrected memory paths  
 - **Important Context**: MAJI remains primary; BMAD is the embedded workflow layer; code truth overrides stale memory
-- **User's Current State**: Ready to use MAJI as a structured operator system for planning, reviewing, and improving Kracked_OS
+- **User's Current State**: Ready to use MAJI as a structured operator system for planning, reviewing, and improving Kracked_OS in Bahasa Melayu by default
 
 ## 🔄 Session Lifecycle
 *How this RAM-like memory works*

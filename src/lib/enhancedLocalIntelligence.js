@@ -318,8 +318,8 @@ export class EnhancedLocalIntelligence {
             },
             {
                 keywords: ['onboarding', 'skill', 'skills', 'learn', 'belajar', 'library', 'vibe coding', 'builder guide', 'skill creator', 'pustaka'],
-                answer: `library kita ada 4 core skills. onboarding untuk setup, vibe coding untuk sembang dengan ai, builder guide untuk mindset, dengan skill creator.\n\nsemua ada dalam folder vs_skills. kau godek je kat situ.`,
-                followUp: `pasal vibe coding tu, ingat "2-3 tries rule". kalau ai tak dapat buat dalam 3 kali cuba, stop jap, rethink approach. jangan paksa sangai.\n\nguna master prompt template: saya buat [app], setelkan [masalah] untuk [user], guna [tech]. ni memang power.`,
+                answer: `skills canon sekarang duduk dalam MajiOS, tepatnya ` + "`MajiOS/skills/local-skills/`" + `. kat situ ada skill repo-owned untuk workflow macam builder proxy, website config, nilai islamik, community building, dan lain-lain.\n\nkalau nak cari capability yang sesuai, start situ dulu.`,
+                followUp: `kalau pattern kerja dah repeat beberapa kali, kita ikut polisi MajiOS: propose dulu skill baru bila context dah cukup, lepas tu baru create bila kau confirm.\n\nuntuk startup dan operating doctrine pula, rujuk ` + "`MajiOS/system/IJAM_UNIFIED.md`" + ` dengan ` + "`MajiOS/index/master-majios.md`" + `.`,
                 relatedTopics: ['apa itu vibe coding', 'macam mana guna antigravity', 'apa itu builder guide']
             },
             {
@@ -751,5 +751,4 @@ export const enhancedLocalIntelligence = new EnhancedLocalIntelligence();
 export function localIntelligence(userMessage, history = []) {
     return enhancedLocalIntelligence.getResponse(userMessage, history);
 }
-
 

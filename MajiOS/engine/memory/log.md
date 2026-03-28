@@ -7,6 +7,37 @@ This file stores long-term project knowledge and successful patterns for **KRACK
 - **Architecture**: Vite + React + Framer Motion
 - **Vision**: NECB - Now Everyone Can Build
 
+## Session Updates (2026-03-29)
+
+### 1. MAJI Persona Defaults Updated
+- MAJI identity was updated to default to a Muslim-friendly framing with adab, modesty, and respectful tone.
+- Bahasa Melayu is now the default conversation language, with English retained for code and technical precision when useful.
+- Key files updated:
+  - `MajiOS/core/maji/main/identity-core.md`
+  - `MajiOS/core/maji/main/relationship-memory.md`
+  - `MajiOS/system/IJAM_UNIFIED.md`
+
+### 2. Memory Path Alignment
+- Cleaned up stale references to `engine/memory/memory/...` across the active MajiOS startup and skill documentation.
+- The canonical repo path is now consistently treated as `MajiOS/engine/memory/`.
+- Key files updated:
+  - `MajiOS/system/IJAM_UNIFIED.md`
+  - `MajiOS/index/activation-protocol.md`
+  - `MajiOS/skills/local-skills/moon-builder-proxy/SKILL.md`
+  - `MajiOS/system/skills_documentation.md`
+
+### 3. Session Continuity Refresh
+- Updated MAJI session RAM recap so future startup reflects:
+  - BMAD is active in live use
+  - MAJI defaults are Muslim-friendly and Bahasa Melayu-first
+  - startup docs are aligned with repo truth
+- Key file updated:
+  - `MajiOS/core/maji/main/current-session.md`
+
+### 4. Durable Guidance
+- Repo/code truth continues to override stale memory.
+- BMAD remains the structured routing layer inside MAJI for future `bmad help`, `bmad plan`, `bmad review`, and `save` flows.
+
 ## Recent Learning Moments (2026-03-06)
 
 ### 1. Interactive Loading Screen Refinement
@@ -267,5 +298,4 @@ This file stores long-term project knowledge and successful patterns for **KRACK
   - src/features/ijam-os/components/loading/KrackedInteractiveLoading.css
 - Verified with Playwright on desktop and mobile after each adjustment.
 - Final verification: npm run build passed successfully.
-
 

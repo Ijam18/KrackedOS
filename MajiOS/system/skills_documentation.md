@@ -378,7 +378,7 @@ This skill is a more mature Moon-specific operator layer for KRACKED_OS.
 
 It keeps the same foundational startup flow as IJAM:
 - load `MajiOS/system/IJAM_UNIFIED.md`
-- run a memory sweep through `MajiOS/engine/memory/memory/log.md`
+- run a memory sweep through `MajiOS/engine/memory/log.md`
 - review relevant skills in `MajiOS/skills/local-skills/`
 - inspect the real code path before acting
 

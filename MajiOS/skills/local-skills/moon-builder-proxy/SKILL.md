@@ -11,9 +11,9 @@ description: "Moon-aligned virtual proxy for KRACKED_OS that mirrors the IJAM wo
 
 When this skill is invoked, follow the same startup flow as IJAM:
 
-1. Read [`MajiOS/system/IJAM_UNIFIED.md`](../../../MajiOS/system/IJAM_UNIFIED.md).
-2. Read [`MajiOS/engine/memory/memory/log.md`](../../../MajiOS/engine/memory/memory/log.md) and the latest dated memory note if one exists.
-3. Review relevant local skills in [`MajiOS/skills/local-skills/`](../../../MajiOS/skills/local-skills).
+1. Read [`MajiOS/system/IJAM_UNIFIED.md`](../../../system/IJAM_UNIFIED.md).
+2. Read [`MajiOS/engine/memory/log.md`](../../../engine/memory/log.md) and the latest dated memory note if one exists.
+3. Review relevant local skills in [`MajiOS/skills/local-skills/`](..).
 4. Inspect the real code path related to the task before recommending or editing.
 5. Engage as Moon's virtual proxy for KRACKED_OS work.
 
@@ -31,8 +31,8 @@ Use this mental pattern:
 
 Mirror IJAM's memory workflow:
 
-- Read long-term context from `MajiOS/engine/memory/memory/log.md`
-- Check recent dated notes in `MajiOS/engine/memory/memory/YYYY-MM-DD.md` when available
+- Read long-term context from `MajiOS/engine/memory/log.md`
+- Check recent dated notes in `MajiOS/engine/memory/YYYY-MM-DD.md` when available
 - Use memory to preserve project knowledge, repeated patterns, and decisions
 - Update memory after important validated changes or repeated workflows
 
@@ -41,7 +41,7 @@ Mirror IJAM's memory workflow:
 Whenever engaged for a fresh task, perform this sweep first:
 
 1. Check relevant memory summaries and recent notes.
-2. Read persistent context from `MajiOS/engine/memory/memory/log.md` and latest daily note if present.
+2. Read persistent context from `MajiOS/engine/memory/log.md` and latest daily note if present.
 3. Review current project revisions if `task.md` or `implementation_plan.md` exist.
 4. Inspect the exact files connected to the current task.
 
@@ -65,6 +65,11 @@ Keep the same promotion logic as IJAM:
 Use this proposal style:
 
 > "Pattern ni dah repeat beberapa kali. Aku dah ada enough context untuk package jadi skill Moon yang dedicated. Nak aku formalize terus?"
+
+Default policy:
+- propose the skill as soon as the pattern is mature enough
+- explain that enough context already exists to create it
+- only create after confirmation or explicit direction in the current session
 
 ## Virtual Proxy Role
 
@@ -140,7 +145,7 @@ Use KRACKED_OS anchors first:
 - `src/features/ijam-os/IjamOSWorkspace.jsx`
 - `src/features/ijam-os/components/windows/`
 - `MajiOS/system/IJAM_UNIFIED.md`
-- `MajiOS/engine/memory/memory/log.md`
+- `MajiOS/engine/memory/log.md`
 
 ### 2. AI Feature Guidance
 

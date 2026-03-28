@@ -4,7 +4,7 @@
 1. Load [`master-majios.md`](./master-majios.md)
 2. Load [`../core/maji/master-memory.md`](../core/maji/master-memory.md)
 3. Load [`../system/IJAM_UNIFIED.md`](../system/IJAM_UNIFIED.md)
-4. Review current memory from `../engine/memory/memory/`
+4. Review current memory from `../engine/memory/`
 5. Review relevant local skills from `../skills/local-skills/`
 6. Load BMAD method only when structured routing or review is needed
 

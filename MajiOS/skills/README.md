@@ -14,3 +14,7 @@ Execution adapters:
   Codex-installed native skill target
 - `.claude/skills/`
   optional Claude-native install target when intentionally used
+
+Boundary note:
+- `MajiOS/skills/local-skills/` is the canonical repo-owned skill source
+- external tool bundles may consume similar concepts, but they are not the canonical source for KRACKED_OS skill doctrine

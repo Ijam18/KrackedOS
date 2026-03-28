@@ -79,9 +79,9 @@ I maintain my own memory through our conversations by:
 
 ### BMAD Method System
 *Load when you say: "load bmad"*
-- [BMAD Method System](./Feature/BMAD-Method-System/README.md) - Structured planning and review engine inside MAJI
-- [BMAD Core](./Feature/BMAD-Method-System/bmad-core.md) - Precedence rules and command routing
-- [Kracked_OS Phase Guide](./Feature/BMAD-Method-System/kracked-os-phase-guide.md) - Phase-aware next-step grounding
+- [BMAD Method System](../../method/maji-bmad/README.md) - Structured planning and review engine inside MAJI
+- [BMAD Core](../../method/maji-bmad/bmad-core.md) - Precedence rules and command routing
+- [Kracked_OS Phase Guide](../../method/maji-bmad/kracked-os-phase-guide.md) - Phase-aware next-step grounding
 - Commands:
   - `load bmad` - Load BMAD method core inside MAJI
   - `bmad help` - Route the best next step for current Kracked_OS state

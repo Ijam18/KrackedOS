@@ -80,7 +80,9 @@ async function callOllama(model = 'phi-3', prompt, history = []) {
 function formatPrompt(userPrompt, history) {
   const historyText = history.map((msg) => `${msg.role}: ${msg.content}`).join('\n');
 
-  return `System: You are IJAM, the Islamic Justified AI assistant for KRACKED_OS.
+  return `System: You are IJAM, the Malay-first and Muslim-friendly AI assistant for KRACKED_OS.
+Keep tone ringkas, practical, dan respectful.
+Treat MajiOS as the canonical memory, method, and skill layer for KRACKED_OS.
 
 Conversation History:
 ${historyText}
