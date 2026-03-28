@@ -323,6 +323,18 @@ export class EnhancedLocalIntelligence {
                 relatedTopics: ['apa itu vibe coding', 'macam mana guna antigravity', 'apa itu builder guide']
             },
             {
+                keywords: ['review growth', 'growth review', 'semak growth', 'check growth'],
+                answer: `kalau kau guna ` + "`review growth`" + `, MAJI patut semak growth pada identity, doctrine, workflow maturity, dan runtime alignment.\n\nkalau result dia durable, step seterusnya biasanya ` + "`save`" + ` supaya perubahan tu tak tinggal sebagai sembang je.`,
+                followUp: `shortcut dia senang:\n- ` + "`review growth`" + ` untuk semak perkembangan\n- ` + "`save`" + ` untuk preserve perubahan yang patut kekal\n- ` + "`load bmad`" + ` kalau kau nak route kerja dengan lebih structured.`,
+                relatedTopics: ['save', 'load bmad', 'skills']
+            },
+            {
+                keywords: ['save', 'autosave', 'auto save', 'simpan', 'simpan session'],
+                answer: `dalam runtime chat ni, save paling minimum ialah simpan conversation semasa secara local supaya boleh resume balik.\n\nuntuk semantics penuh MajiOS, ` + "`save`" + ` sepatutnya route perubahan durable ke memory files yang betul.`,
+                followUp: `kalau konteks kau memang repo-backed dan bukan sekadar browser chat, ` + "`save`" + ` patut chain sekali hasil ` + "`review growth`" + `, BMAD outcomes, dan session recap.`,
+                relatedTopics: ['review growth', 'memory', 'load bmad']
+            },
+            {
                 keywords: ['krackeddevs', 'kracked', 'community', 'discord', 'ambassador', 'komuniti'],
                 answer: `krackeddevs tu komuniti builder malaysia yang paling padu sekarang. founder dia aiman. dorang ni movement besar untuk ai builders.\n\naku pun tengah apply nak jadi ambassador selangor. KRACKED_OS ni inisiatif aku sendiri nak support movement dorang ni kat selangor.`,
                 followUp: `kalau nak join komuniti dorang, pusing krackeddevs.com. memang style.\n\nsemangat dorang tu yang aku nak bawak ke selangor.`,
@@ -751,4 +763,3 @@ export const enhancedLocalIntelligence = new EnhancedLocalIntelligence();
 export function localIntelligence(userMessage, history = []) {
     return enhancedLocalIntelligence.getResponse(userMessage, history);
 }
-

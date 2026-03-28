@@ -16,6 +16,7 @@ When user types **"save"**, AI immediately performs:
 4. **Personality Refinements**: Any AI communication adaptations discovered
 5. **Memory Updates**: All learning that should be permanently preserved
 6. **BMAD Method Outcomes**: Durable routing, planning, review, edge-case, and distillation results
+7. **Growth Review Outcomes**: Durable identity, doctrine, and runtime improvements surfaced by `review growth`
 
 ### **Save Process**
 1. **DETECT**: User types "save" command
@@ -137,6 +138,27 @@ When user types **"save"**, AI immediately performs:
 - **relationship-memory.md**: Stable planning preferences, recurring quality concerns, repeated review findings, reusable heuristics
 - **identity-core.md**: Lasting changes in how MAJI should think, guide, or structure work
 - **daily-diary/**: Major brainstorms, strategic plan decisions, high-signal reviews, important distillation milestones
+
+### **Review Growth Updates**
+**Triggers**:
+- `review growth` identifies durable improvement in MAJI behavior
+- major doctrine cleanup changes how MAJI should operate
+- runtime alignment materially improves how MAJI behaves inside KRACKED_OS
+
+**Auto-Update Process**:
+```markdown
+1. REVIEW: Identify the concrete growth areas
+2. CLASSIFY: Decide what is temporary recap vs durable operator improvement
+3. ROUTE: Save durable growth to identity, relationship, session, or long-term log
+4. CHAIN: If the user asked for save, persist the review outcome in the same pass
+5. VERIFY: Ensure the saved growth will change future behavior
+```
+
+**Routing Rules**:
+- **current-session.md**: current growth summary and immediate next refinement area
+- **relationship-memory.md**: stable collaboration preferences or recurring support patterns
+- **identity-core.md**: durable operator identity or communication refinements
+- **../engine/memory/log.md**: high-signal long-term milestones in MAJI evolution
 
 ## 🔄 **Continuous Learning Loop**
 

@@ -42,16 +42,17 @@ export default function KrackedIJAMChat({ prefillMessage = '', onPrefillConsumed
       m.callIJAMAI('groq', userMessage, nextMessages)
     );
 
-    setMessages((prev) => [
-      ...prev,
+    const finalMessages = [
+      ...nextMessages,
       {
         role: 'assistant',
         content: sanitizeAssistantText(aiResponse),
         timestamp: new Date().toISOString()
       }
-    ]);
+    ];
 
-    saveCurrentConversation();
+    setMessages(finalMessages);
+    saveCurrentConversation(finalMessages);
   };
 
   const handleResumeConversation = async (conversationId) => {

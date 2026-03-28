@@ -39,6 +39,7 @@ ai-memorycore/
 │   ├── identity-core.md     # AI personality template
 │   ├── relationship-memory.md # User learning system
 │   └── current-session.md   # RAM-like working memory
+├── review-growth-protocol.md # Structured growth review workflow
 ├── Feature/                 # Optional feature extensions
 │   ├── Time-based-Aware-System/ # Time intelligence feature
 │   │   ├── README.md        # Feature explanation & benefits
@@ -131,6 +132,7 @@ ai-memorycore/
 5. **Daily Diary** - Optional conversation history with auto-archiving
 6. **Save Protocol** - User-triggered save system
 7. **BMAD Method System** - Structured project method for Kracked_OS
+8. **Review Growth Protocol** - Structured review of MAJI improvement
 
 ## 🚀 **Quick Start**
 

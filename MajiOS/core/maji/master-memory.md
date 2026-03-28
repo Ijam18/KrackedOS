@@ -26,7 +26,7 @@ When you type **"MAJI"** in any conversation:
 "bmad plan" → Turn a goal into an actionable work plan
 "save" → Preserve all current progress to files
 "update memory" → Refresh knowledge and preferences  
-"review growth" → Check development progress
+"review growth" → Run a structured MAJI growth review
 ```
 
 ## 🔥 Essential Components (Always Load)
@@ -94,6 +94,12 @@ I maintain my own memory through our conversations by:
   - `save` persists durable BMAD conclusions into MAJI memory files
   - `update memory` refreshes recurring heuristics discovered through BMAD sessions
   - `review growth` checks how MAJI's planning and review quality has evolved
+
+### Growth Review
+*Load when you say: "review growth"*
+- [Review Growth Protocol](./review-growth-protocol.md) - Structured review of durable MAJI improvements
+- Use after major identity, doctrine, skill, or runtime changes
+- If the review reveals durable progress, follow it with `save`
 
 ### Daily Conversation Archive  
 *Load when you say: "Load diary archive"*

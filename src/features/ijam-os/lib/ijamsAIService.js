@@ -10,6 +10,76 @@ const AI_MODELS = {
   FALLBACK: 'enhanced-local'
 };
 
+function normalizeCommand(value = '') {
+  return String(value).trim().toLowerCase().replace(/^["'`]+|["'`]+$/g, '');
+}
+
+function inferRuntimePhase() {
+  return {
+    phase: 'hardening',
+    label: 'Phase 4: Hardening',
+    immediate: 'kemaskan doctrine, runtime alignment, dan command semantics supaya MajiOS behavior lagi konsisten',
+    support: 'guna `save` lepas perubahan durable, kemudian `bmad review` untuk cari drift seterusnya',
+    caution: 'bezakan antara runtime-local save dengan repo-backed save supaya user tak ingat dua-dua benda yang sama'
+  };
+}
+
+function getCommandHelpText() {
+  return `command MAJI yang available sekarang:\n\nMAJI core:\n- \`MAJI\`\n- \`load bmad\`\n- \`save\`\n- \`update memory\`\n- \`review growth\`\n\nBMAD:\n- \`bmad help\`\n- \`bmad brainstorm\`\n- \`bmad plan\`\n- \`bmad review\`\n- \`bmad edge-cases\`\n- \`bmad distill\``;
+}
+
+function getMajiRuntimeCommandResponse(userMessage, history = []) {
+  const command = normalizeCommand(userMessage);
+  const totalMessages = Array.isArray(history) ? history.length : 0;
+  const phaseInfo = inferRuntimePhase();
+
+  if (command === 'maji') {
+    return `MAJI aktif.\n\nstate semasa:\n- bahasa melayu dulu\n- muslim-friendly dengan adab\n- MajiOS ialah layer canonical untuk memory, method, dan skills\n- BMAD boleh diaktifkan dengan \`load bmad\`\n\n${getCommandHelpText()}`;
+  }
+
+  if (command === 'load bmad') {
+    return `BMAD loaded dalam context runtime.\n\nmode yang available:\n- \`bmad help\`\n- \`bmad brainstorm\`\n- \`bmad plan\`\n- \`bmad review\`\n- \`bmad edge-cases\`\n- \`bmad distill\`\n\nfasa paling masuk akal sekarang: ${phaseInfo.label}.\nfocus semasa: ${phaseInfo.immediate}.`;
+  }
+
+  if (command === 'bmad help') {
+    return `bmad help:\n\nfasa semasa: ${phaseInfo.label}\n\nimmediate next step:\n- ${phaseInfo.immediate}\n\noptional supporting step:\n- ${phaseInfo.support}\n\ncaution:\n- ${phaseInfo.caution}`;
+  }
+
+  if (command === 'bmad brainstorm') {
+    return `bmad brainstorm:\n\narah brainstorm paling berguna sekarang:\n1. macam mana nak jadikan command semantics MAJI lebih deterministic dalam runtime\n2. macam mana nak bezakan repo-backed memory dengan browser-local session state dengan lebih jelas\n3. macam mana nak buat layer command response yang reusable tanpa duplicate doctrine dalam banyak tempat\n\nkalau nak, lepas ni paling natural ialah \`bmad plan\` atau \`bmad review\`.`;
+  }
+
+  if (command === 'bmad plan') {
+    return `bmad plan:\n\n1. lock source of truth command dari MajiOS docs\n2. route command utama secara deterministic dalam runtime layer\n3. pastikan fallback still guna model bila bukan command exact\n4. verify build\n5. guna \`save\` kalau perubahan tu durable untuk future sessions`;
+  }
+
+  if (command === 'bmad review') {
+    return `bmad review:\n\nfocus review untuk state sekarang:\n- adakah runtime command reply match doctrine MajiOS\n- adakah user boleh keliru antara local chat save dan repo-backed save\n- adakah command coverage cukup untuk command utama MAJI dan BMAD\n- adakah fallback masih masuk bila input bukan exact command\n\nkalau nak risk hunting, terus guna \`bmad edge-cases\`.`;
+  }
+
+  if (command === 'bmad edge-cases') {
+    return `bmad edge-cases:\n\nedge cases yang patut dijaga:\n- user taip command dengan huruf besar/kecil berbeza\n- user tambah quote atau spacing pelik pada command\n- user guna command yang hampir sama tapi bukan exact match\n- user anggap \`save\` dalam chat sama macam save ke fail repo\n\ndefault sekarang patut: exact command route dulu, selain tu fall back ke AI biasa.`;
+  }
+
+  if (command === 'bmad distill') {
+    return `bmad distill:\n\nringkasan context semasa:\n- MajiOS ialah canonical layer untuk memory, method, dan skills\n- BMAD ialah workflow engine dalam MajiOS\n- runtime chat sekarang dah mula faham command semantics penting\n- benda paling penting untuk preserve ialah beza antara doctrine repo-backed dengan state runtime local\n\nkalau nak persist perubahan yang durable, next command ialah \`save\`.`;
+  }
+
+  if (command === 'review growth') {
+    return `review growth ringkas:\n\n1. identity MAJI sekarang lebih konsisten: bahasa melayu dulu, muslim-friendly, dan lebih jelas sebagai operator KRACKED_OS.\n2. doctrine makin kemas: MajiOS sekarang lebih jelas sebagai layer canonical untuk memory, method, dan skills.\n3. workflow maturity naik: BMAD, skill promotion, dan boundary dengan tooling luar macam KD dah lebih tersusun.\n4. runtime alignment pun bertambah baik, tapi masih boleh diketatkan lagi supaya command semantics lebih rapat dengan MajiOS.\n\nnext best move: guna \`save\` bila kau nak preserve perubahan yang durable.`;
+  }
+
+  if (command === 'save') {
+    return `save untuk runtime chat ni dah dibuat pada layer conversation semasa.\n\napa yang tersimpan sekarang:\n- mesej chat semasa disimpan secara local dalam browser\n- konteks session chat boleh disambung semula\n- semantics dia ikut arah MajiOS, tapi persistence ke fail repo MajiOS masih bergantung pada session agent yang ada akses fail\n\njumlah mesej dalam session ni sekarang: ${totalMessages}.`;
+  }
+
+  if (command === 'update memory') {
+    return `update memory:\n\nuntuk runtime layer, maksud paling dekat ialah refresh cara jawab supaya ikut doctrine semasa MajiOS.\n\nuntuk persistence sebenar ke fail memory repo, itu masih perlukan session yang ada akses fail. kalau perubahan sekarang memang durable, biasanya flow paling betul ialah:\n1. \`review growth\`\n2. \`save\``;
+  }
+
+  return null;
+}
+
 async function callGroqAPI(systemPrompt, userMessage, history = []) {
   const apiKey = import.meta.env.VITE_GROQ_API_KEY;
 
@@ -93,6 +163,11 @@ Current Request: ${userPrompt}`;
 export async function callIJAMAI(mode = AI_MODELS.GROQ, userMessage, history = []) {
   console.log(`IJAM AI called with mode: ${mode}, message:`, userMessage);
 
+  const commandResponse = getMajiRuntimeCommandResponse(userMessage, history);
+  if (commandResponse) {
+    return commandResponse;
+  }
+
   switch (mode) {
     case AI_MODELS.GROQ:
       return callGroqAPI(getIslamicGreeting(), userMessage, history);
@@ -116,4 +191,4 @@ function getIslamicGreeting() {
   return 'Assalamualaikum, selamat malam :)';
 }
 
-export { AI_MODELS, getIslamicGreeting };
+export { AI_MODELS, getIslamicGreeting, getMajiRuntimeCommandResponse };

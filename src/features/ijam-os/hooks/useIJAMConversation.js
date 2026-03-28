@@ -35,14 +35,14 @@ export function useIJAMConversation() {
     }
   };
 
-  const saveCurrentConversation = () => {
-    if (conversations.length === 0) return;
+  const saveCurrentConversation = (messagesToSave = conversations) => {
+    if (!Array.isArray(messagesToSave) || messagesToSave.length === 0) return;
 
     const conversationId = currentConversationId || Date.now();
     const conversationData = {
       id: conversationId,
       timestamp: new Date().toISOString(),
-      messages: conversations,
+      messages: messagesToSave,
       resumedFrom: resumedMessage
     };
 

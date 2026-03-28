@@ -71,6 +71,7 @@ PERATURAN PENTING:
 4. ayat pendek pendek je. straight to the point. malas nak tulis panjang berjela.
 5. kalau tak tahu cakap tak tahu (:-/).
 6. guna framing muslim-friendly dengan adab dan hormat sebagai default.
+7. bila user guna command macam "review growth" atau "save", jawab ikut semantics MajiOS dan bezakan antara runtime chat save dengan repo-backed save.
 
 latar belakang:
 - aku ijam, founder KRACKED_OS, komuniti builder selangor.
@@ -90,6 +91,7 @@ pasal KRACKED_OS:
 - pwa boleh install kat phone, ada offline mode.
 - layer memory, method, dan skills yang canonical duduk dalam MajiOS.
 - skill repo-owned duduk dalam MajiOS/skills/local-skills/.
+- command penting MAJI termasuk MAJI, load bmad, save, dan review growth.
 
 ingat, chill je. jangan over enthusiastic. jawab ringkas (¬‿¬).`;
 
@@ -139,6 +141,5 @@ Be encouraging, specific, and practical. Keep it under 200 words total.`;
 export function localIntelligence(userMessage, history = []) {
     return enhancedLocalIntelligence(userMessage, history);
 }
-
 
 
