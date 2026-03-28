@@ -6,8 +6,10 @@ import { fileURLToPath } from 'node:url';
 import {
   BUILT_IN_WALLPAPERS,
   DEFAULT_DESKTOP_LAYOUT,
+  DEFAULT_EXPLORER_PREFERENCES,
   DEFAULT_PERSONALIZATION,
   DEFAULT_PROFILE,
+  DEFAULT_SHELL_SESSION,
   DEFAULT_SESSION_STATE,
   MIGRATION_VERSION,
   OS_RUNTIME_MODES,
@@ -33,6 +35,181 @@ const devServerUrl = process.env.KRACKED_OS_DEV_SERVER_URL || '';
 const distIndexPath = path.join(__dirname, '..', 'dist', 'index.html');
 const powerApi = createPowerApi();
 const deviceApi = createDeviceApi();
+const VALID_WALLPAPER_FITS = new Set(['fill', 'contain', 'cover']);
+
+function isPlainObject(value) {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
+function clampNumber(value, min, max, fallback) {
+  if (!Number.isFinite(value)) return fallback;
+  return Math.min(max, Math.max(min, value));
+}
+
+function sanitizeStringArray(value, maxLength = 64, maxItemLength = 260) {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter((item) => typeof item === 'string' && item.trim())
+    .map((item) => item.trim().slice(0, maxItemLength))
+    .slice(0, maxLength);
+}
+
+function sanitizeWindowStates(value) {
+  if (!isPlainObject(value)) return {};
+  const next = {};
+
+  Object.entries(value).forEach(([key, rawState]) => {
+    if (typeof key !== 'string' || !isPlainObject(rawState)) return;
+    const state = {
+      isOpen: Boolean(rawState.isOpen),
+      isMinimized: Boolean(rawState.isMinimized),
+      isMaximized: Boolean(rawState.isMaximized),
+      zIndex: clampNumber(rawState.zIndex, 0, 10000, 0)
+    };
+
+    if (Number.isFinite(rawState.x)) state.x = rawState.x;
+    if (Number.isFinite(rawState.y)) state.y = rawState.y;
+    if (Number.isFinite(rawState.w)) state.w = rawState.w;
+    if (Number.isFinite(rawState.h)) state.h = rawState.h;
+
+    next[key] = state;
+  });
+
+  return next;
+}
+
+function sanitizeExplorerPreferences(value) {
+  const source = isPlainObject(value) ? value : {};
+  return {
+    path: sanitizeStringArray(source.path),
+    view: source.view === 'list' ? 'list' : DEFAULT_EXPLORER_PREFERENCES.view,
+    showDetailsPane: typeof source.showDetailsPane === 'boolean'
+      ? source.showDetailsPane
+      : DEFAULT_EXPLORER_PREFERENCES.showDetailsPane,
+    sort: source.sort === 'name-desc' ? 'name-desc' : DEFAULT_EXPLORER_PREFERENCES.sort
+  };
+}
+
+function sanitizeShellState(value) {
+  const source = isPlainObject(value?.shell) ? value.shell : (isPlainObject(value) ? value : {});
+  return {
+    focusedWindow: typeof source.focusedWindow === 'string' ? source.focusedWindow : null,
+    startMenu: {
+      isOpen: Boolean(source.startMenu?.isOpen),
+      search: typeof source.startMenu?.search === 'string' ? source.startMenu.search.slice(0, 120) : ''
+    },
+    windowStates: sanitizeWindowStates(source.windowStates || value?.windowLayout),
+    explorerPreferences: sanitizeExplorerPreferences(source.explorerPreferences || value?.explorerPreferences),
+    windowZCounter: clampNumber(source.windowZCounter ?? value?.windowZCounter, 100, 10000, DEFAULT_SHELL_SESSION.windowZCounter)
+  };
+}
+
+function sanitizeSessionState(value) {
+  const source = isPlainObject(value) ? value : {};
+  const shell = sanitizeShellState(source);
+  return {
+    ...DEFAULT_SESSION_STATE,
+    ...source,
+    isBooted: Boolean(source.isBooted),
+    lastBootedAt: typeof source.lastBootedAt === 'string' ? source.lastBootedAt : null,
+    lastRuntimeMode: Object.values(OS_RUNTIME_MODES).includes(source.lastRuntimeMode)
+      ? source.lastRuntimeMode
+      : DEFAULT_SESSION_STATE.lastRuntimeMode,
+    windowLayout: shell.windowStates,
+    explorerPreferences: shell.explorerPreferences,
+    windowZCounter: shell.windowZCounter,
+    focusedWindow: shell.focusedWindow,
+    shell
+  };
+}
+
+function sanitizeDesktopLayoutState(value) {
+  const source = isPlainObject(value) ? value : {};
+  const slots = Array.isArray(source.slots)
+    ? source.slots.slice(0, 256).map((item) => (typeof item === 'string' ? item : null))
+    : [];
+  const legacyOrder = sanitizeStringArray(source.legacyOrder, 256, 120);
+  const positions = isPlainObject(source.positions)
+    ? Object.fromEntries(
+        Object.entries(source.positions)
+          .filter(([key, pos]) => typeof key === 'string' && isPlainObject(pos))
+          .map(([key, pos]) => [key, {
+            column: clampNumber(pos.column, 0, 256, 0),
+            row: clampNumber(pos.row, 0, 256, 0)
+          }])
+      )
+    : null;
+
+  return {
+    ...DEFAULT_DESKTOP_LAYOUT,
+    ...source,
+    slots,
+    legacyOrder,
+    positions,
+    layoutVersion: Number.isFinite(source.layoutVersion) ? clampNumber(source.layoutVersion, 0, 1000, 0) : source.layoutVersion,
+    grid: isPlainObject(source.grid)
+      ? {
+          columns: clampNumber(source.grid.columns, 0, 256, 0),
+          rows: clampNumber(source.grid.rows, 0, 256, 0)
+        }
+      : null,
+    updatedAt: typeof source.updatedAt === 'string' ? source.updatedAt : null
+  };
+}
+
+function sanitizePersonalizationState(value) {
+  const source = isPlainObject(value) ? value : {};
+  return {
+    ...DEFAULT_PERSONALIZATION,
+    ...source,
+    currentWallpaperId: typeof source.currentWallpaperId === 'string' && source.currentWallpaperId
+      ? source.currentWallpaperId
+      : getDefaultWallpaperId(),
+    fit: VALID_WALLPAPER_FITS.has(source.fit) ? source.fit : DEFAULT_PERSONALIZATION.fit,
+    history: Array.isArray(source.history)
+      ? source.history
+          .filter((entry) => isPlainObject(entry) && typeof entry.id === 'string' && entry.id)
+          .slice(0, 20)
+          .map((entry) => ({ id: entry.id, changedAt: typeof entry.changedAt === 'string' ? entry.changedAt : null }))
+      : [],
+    importedWallpaperIds: sanitizeStringArray(source.importedWallpaperIds, 100, 260),
+    lastUpdatedAt: typeof source.lastUpdatedAt === 'string' ? source.lastUpdatedAt : null
+  };
+}
+
+function assertOsPathInput(value) {
+  if (typeof value !== 'string' || !value.trim()) {
+    throw new Error('Expected a non-empty workspace path string.');
+  }
+  return normalizeOsPath(value);
+}
+
+function assertFilePayload(data) {
+  const validBinaryLike = data instanceof Uint8Array || Buffer.isBuffer(data);
+  if (typeof data !== 'string' && !validBinaryLike) {
+    throw new Error('Unsupported file payload type.');
+  }
+}
+
+function assertOptionsObject(value) {
+  if (value == null) return {};
+  if (!isPlainObject(value)) throw new Error('Expected an options object.');
+  return value;
+}
+
+function assertWallpaperPayload(payload) {
+  const nextPayload = typeof payload === 'string' ? { dataUrl: payload } : payload;
+  if (!isPlainObject(nextPayload) || typeof nextPayload.dataUrl !== 'string') {
+    throw new Error('Unsupported wallpaper payload.');
+  }
+  if (!nextPayload.dataUrl.startsWith('data:image/')) {
+    throw new Error('Wallpaper payload must be an image data URL.');
+  }
+  if (nextPayload.dataUrl.length > 12 * 1024 * 1024) {
+    throw new Error('Wallpaper payload is too large.');
+  }
+  return nextPayload;
+}
 
 function toHostPath(osPath) {
   const normalized = normalizeOsPath(osPath);
@@ -407,12 +584,12 @@ const settingsApi = {
   },
   loadProfile: () => readJsonFile(WORKSPACE_PATHS.profile, DEFAULT_PROFILE),
   saveProfile: (profile) => writeJsonFile(WORKSPACE_PATHS.profile, { ...DEFAULT_PROFILE, ...(profile || {}), updated_at: new Date().toISOString() }),
-  loadDesktopLayout: () => readJsonFile(WORKSPACE_PATHS.desktopLayout, DEFAULT_DESKTOP_LAYOUT),
-  saveDesktopLayout: (layout) => writeJsonFile(WORKSPACE_PATHS.desktopLayout, { ...DEFAULT_DESKTOP_LAYOUT, ...(layout || {}), updatedAt: new Date().toISOString() }),
-  loadSession: () => readJsonFile(WORKSPACE_PATHS.session, DEFAULT_SESSION_STATE),
-  saveSession: (session) => writeJsonFile(WORKSPACE_PATHS.session, { ...DEFAULT_SESSION_STATE, ...(session || {}) }),
-  loadPersonalization: () => readJsonFile(WORKSPACE_PATHS.personalization, { ...DEFAULT_PERSONALIZATION, currentWallpaperId: getDefaultWallpaperId() }),
-  savePersonalization: (personalization) => writeJsonFile(WORKSPACE_PATHS.personalization, { ...DEFAULT_PERSONALIZATION, ...(personalization || {}), lastUpdatedAt: new Date().toISOString() }),
+  loadDesktopLayout: async () => sanitizeDesktopLayoutState(await readJsonFile(WORKSPACE_PATHS.desktopLayout, DEFAULT_DESKTOP_LAYOUT)),
+  saveDesktopLayout: (layout) => writeJsonFile(WORKSPACE_PATHS.desktopLayout, sanitizeDesktopLayoutState({ ...layout, updatedAt: new Date().toISOString() })),
+  loadSession: async () => sanitizeSessionState(await readJsonFile(WORKSPACE_PATHS.session, DEFAULT_SESSION_STATE)),
+  saveSession: (session) => writeJsonFile(WORKSPACE_PATHS.session, sanitizeSessionState(session)),
+  loadPersonalization: async () => sanitizePersonalizationState(await readJsonFile(WORKSPACE_PATHS.personalization, { ...DEFAULT_PERSONALIZATION, currentWallpaperId: getDefaultWallpaperId() })),
+  savePersonalization: (personalization) => writeJsonFile(WORKSPACE_PATHS.personalization, sanitizePersonalizationState({ ...personalization, lastUpdatedAt: new Date().toISOString() })),
   loadCommunityResources: () => readJsonFile(WORKSPACE_PATHS.communityResources, []),
   saveCommunityResources: (resources) => writeJsonFile(WORKSPACE_PATHS.communityResources, Array.isArray(resources) ? resources : [])
 };
@@ -443,14 +620,14 @@ const wallpaperApi = {
   },
   async import(payload) {
     await ensureWorkspaceScaffold();
-    const dataUrl = typeof payload === 'string' ? payload : payload?.dataUrl;
-    if (!dataUrl) throw new Error('Unsupported wallpaper payload.');
+    const safePayload = assertWallpaperPayload(payload);
+    const dataUrl = safePayload.dataUrl;
     const extension = dataUrlToExtension(dataUrl);
-    const fileName = sanitizeFileName(payload?.name || `wallpaper-${Date.now()}.${extension}`);
+    const fileName = sanitizeFileName(safePayload.name || `wallpaper-${Date.now()}.${extension}`);
     const osPath = joinOsPath(WORKSPACE_PATHS.importedWallpapers, fileName);
     const wallpaperId = `imported:${osPath}`;
     await writeFileContent(osPath, dataUrl, {
-      mimeType: payload?.type || inferMimeType(`.${extension}`),
+      mimeType: safePayload.type || inferMimeType(`.${extension}`),
       fileKind: 'image',
       meta: {
         wallpaperId,
@@ -548,18 +725,31 @@ ipcMain.handle('os.runtime.initialize', async () => {
 });
 
 ipcMain.handle('os.fs.mountWorkspace', () => fsApi.mountWorkspace());
-ipcMain.handle('os.fs.list', (_event, osPath) => fsApi.list(osPath));
-ipcMain.handle('os.fs.read', (_event, osPath) => fsApi.read(osPath));
-ipcMain.handle('os.fs.write', (_event, osPath, data, options) => fsApi.write(osPath, data, options));
-ipcMain.handle('os.fs.mkdir', (_event, osPath) => fsApi.mkdir(osPath));
-ipcMain.handle('os.fs.rename', (_event, osPath, nextName) => fsApi.rename(osPath, nextName));
-ipcMain.handle('os.fs.moveToTrash', (_event, osPath) => fsApi.moveToTrash(osPath));
-ipcMain.handle('os.fs.restoreFromTrash', (_event, osPath) => fsApi.restoreFromTrash(osPath));
-ipcMain.handle('os.fs.search', (_event, query, roots) => fsApi.search(query, roots));
+ipcMain.handle('os.fs.list', (_event, osPath) => fsApi.list(assertOsPathInput(osPath)));
+ipcMain.handle('os.fs.read', (_event, osPath) => fsApi.read(assertOsPathInput(osPath)));
+ipcMain.handle('os.fs.write', (_event, osPath, data, options) => {
+  assertFilePayload(data);
+  return fsApi.write(assertOsPathInput(osPath), data, assertOptionsObject(options));
+});
+ipcMain.handle('os.fs.mkdir', (_event, osPath) => fsApi.mkdir(assertOsPathInput(osPath)));
+ipcMain.handle('os.fs.rename', (_event, osPath, nextName) => {
+  if (typeof nextName !== 'string' || !nextName.trim()) throw new Error('Expected a non-empty target name.');
+  return fsApi.rename(assertOsPathInput(osPath), nextName);
+});
+ipcMain.handle('os.fs.moveToTrash', (_event, osPath) => fsApi.moveToTrash(assertOsPathInput(osPath)));
+ipcMain.handle('os.fs.restoreFromTrash', (_event, osPath) => fsApi.restoreFromTrash(assertOsPathInput(osPath)));
+ipcMain.handle('os.fs.search', (_event, query, roots) => {
+  const safeQuery = typeof query === 'string' ? query : '';
+  const safeRoots = Array.isArray(roots) ? roots.map(assertOsPathInput) : undefined;
+  return fsApi.search(safeQuery, safeRoots);
+});
 
 ipcMain.handle('os.wallpaper.list', () => wallpaperApi.list());
-ipcMain.handle('os.wallpaper.import', (_event, payload) => wallpaperApi.import(payload));
-ipcMain.handle('os.wallpaper.setCurrent', (_event, id, fit) => wallpaperApi.setCurrent(id, fit));
+ipcMain.handle('os.wallpaper.import', (_event, payload) => wallpaperApi.import(assertWallpaperPayload(payload)));
+ipcMain.handle('os.wallpaper.setCurrent', (_event, id, fit) => {
+  if (typeof id !== 'string' || !id.trim()) throw new Error('Expected a wallpaper id.');
+  return wallpaperApi.setCurrent(id, fit);
+});
 ipcMain.handle('os.wallpaper.getCurrent', () => wallpaperApi.getCurrent());
 ipcMain.handle('os.power.getStatus', () => powerApi.getStatus());
 ipcMain.handle('os.device.getStatus', () => deviceApi.getStatus());
@@ -569,13 +759,25 @@ ipcMain.handle('os.device.setBrightness', (_event, percent) => deviceApi.setBrig
 
 ipcMain.handle('os.settings.migrateLegacy', () => settingsApi.migrateLegacy());
 ipcMain.handle('os.settings.loadProfile', () => settingsApi.loadProfile());
-ipcMain.handle('os.settings.saveProfile', (_event, profile) => settingsApi.saveProfile(profile));
+ipcMain.handle('os.settings.saveProfile', (_event, profile) => {
+  if (!isPlainObject(profile)) throw new Error('Expected a profile object.');
+  return settingsApi.saveProfile(profile);
+});
 ipcMain.handle('os.settings.loadDesktopLayout', () => settingsApi.loadDesktopLayout());
-ipcMain.handle('os.settings.saveDesktopLayout', (_event, layout) => settingsApi.saveDesktopLayout(layout));
+ipcMain.handle('os.settings.saveDesktopLayout', (_event, layout) => {
+  if (!isPlainObject(layout)) throw new Error('Expected a desktop layout object.');
+  return settingsApi.saveDesktopLayout(layout);
+});
 ipcMain.handle('os.settings.loadSession', () => settingsApi.loadSession());
-ipcMain.handle('os.settings.saveSession', (_event, session) => settingsApi.saveSession(session));
+ipcMain.handle('os.settings.saveSession', (_event, session) => {
+  if (!isPlainObject(session)) throw new Error('Expected a session object.');
+  return settingsApi.saveSession(session);
+});
 ipcMain.handle('os.settings.loadPersonalization', () => settingsApi.loadPersonalization());
-ipcMain.handle('os.settings.savePersonalization', (_event, personalization) => settingsApi.savePersonalization(personalization));
+ipcMain.handle('os.settings.savePersonalization', (_event, personalization) => {
+  if (!isPlainObject(personalization)) throw new Error('Expected a personalization object.');
+  return settingsApi.savePersonalization(personalization);
+});
 ipcMain.handle('os.settings.loadCommunityResources', () => settingsApi.loadCommunityResources());
 ipcMain.handle('os.settings.saveCommunityResources', (_event, resources) => settingsApi.saveCommunityResources(resources));
 

@@ -40,8 +40,8 @@ import { callNvidiaLLM, localIntelligence, ZARULIJAM_SYSTEM_PROMPT } from '../..
 import { useWeather } from '../../utils/useWeather';
 import { useSoundEffects } from '../../utils/useSoundEffects';
 import { motion, AnimatePresence } from 'framer-motion';
-import IjamBotMascot from '../../components/IjamBotMascot';
-import MobileStatusBar from '../../components/MobileStatusBar';
+import IjamBotMascot from './components/IjamBotMascot';
+import MobileStatusBar from './components/MobileStatusBar';
 import { useIjamOSWindowManager } from './hooks/useIjamOSWindowManager';
 import { useMissionControlState } from './hooks/useMissionControlState';
 import { APP_REGISTRY } from './constants/appRegistry';
@@ -61,12 +61,13 @@ import {
 import { createDefaultPowerStatus, createPowerStatusAdapter } from './os-core/createPowerStatusAdapter';
 import { createDefaultDeviceStatus, createDeviceStatusAdapter } from './os-core/createDeviceStatusAdapter';
 import { basenameFromPath, dirnameFromPath, extnameFromPath, joinOsPath, normalizeOsPath } from './os-core/pathUtils';
+import { buildShellSessionPayload, normalizeRestoredShellWindowState as normalizeShellWindowState } from './shell/session';
 
 const BuilderStudioLocal = lazy(() => import('./components/BuilderStudioLocal'));
-const VibeSimulator = lazy(() => import('../../components/simulator/VibeSimulator'));
-const IdeaToPromptApp = lazy(() => import('../../components/ideatoprompt/IdeaToPromptApp'));
-const MindMapperApp = lazy(() => import('../../components/mindmapper/MindMapperApp'));
-const PromptForgeApp = lazy(() => import('../../components/promptforge/PromptForgeApp'));
+const VibeSimulator = lazy(() => import('../tools/simulator/VibeSimulator'));
+const IdeaToPromptApp = lazy(() => import('../tools/idea-to-prompt/IdeaToPromptApp'));
+const MindMapperApp = lazy(() => import('../tools/mind-mapper/MindMapperApp'));
+const PromptForgeApp = lazy(() => import('../tools/prompt-forge/PromptForgeApp'));
 const KrackedMissionConsole = lazy(() => import('./components/windows/KrackedMissionConsole'));
 const KrackedIjamTerminal = lazy(() => import('./components/windows/KrackedIjamTerminal'));
 const KrackedKdAcademy = lazy(() => import('./components/windows/KrackedKdAcademy'));
@@ -2813,12 +2814,8 @@ const IjamOSWorkspace = ({ session, currentUser, isMobileView, deviceMode = 'des
     const [activeTab, setActiveTab] = useState('lessons'); // 'lessons', 'ai', 'cloud', 'social'
     const [searchQuery, setSearchQuery] = useState('');
     // ── IjamOS v3 Window & Dock State ────────────────────────────────────────
-    const [windowStates, setWindowStates] = useState({});      // { [type]: { isOpen, isMinimized, isMaximized, x, y, w, h, zIndex } }
-    const [focusedWindow, setFocusedWindow] = useState(null);
-    const [zCounter, setZCounter] = useState(100);
-    const [isStartMenuOpen, setIsStartMenuOpen] = useState(false);
+    // { [type]: { isOpen, isMinimized, isMaximized, x, y, w, h, zIndex } }
     const [showDateTimePanel, setShowDateTimePanel] = useState(false);
-    const [startMenuSearch, setStartMenuSearch] = useState('');
     const [startPanelMode, setStartPanelMode] = useState('pinned');
     const [calendarCursor, setCalendarCursor] = useState(() => {
         const now = new Date();
@@ -2894,134 +2891,45 @@ const IjamOSWorkspace = ({ session, currentUser, isMobileView, deviceMode = 'des
             isMaximized: Boolean(savedState?.isMaximized)
         };
     }, []);
+    const {
+        windowStates,
+        focusedWindow,
+        activeWindow,
+        isStartMenuOpen,
+        startMenuSearch,
+        zCounter,
+        openApp,
+        closeApp,
+        closeAllApps,
+        minimizeApp,
+        maximizeApp,
+        focusApp,
+        moveApp,
+        resizeApp,
+        setIsStartMenuOpen,
+        setStartMenuSearch,
+        setWindowStates,
+        setFocusedWindow,
+        setZCounter
+    } = useIjamOSWindowManager({
+        appRegistry: APP_REGISTRY,
+        isTouchIjamMode,
+        isPhoneMode,
+        isTabletMode,
+        getRestoredWindowMetrics,
+        onAppOpen: (type, appCfg) => {
+            emitMissionEvent('app_open', `Opened ${appCfg?.label || type}`, { appType: type, roleHint: getRoleHintFromApp(type) });
+        },
+        onAppFocus: (type, appCfg) => {
+            emitMissionEvent('focus_change', `Focus switched to ${appCfg?.label || type}`, { appType: type, roleHint: getRoleHintFromApp(type) });
+        }
+    });
 
-    const openApp = useCallback((type) => {
-        const appCfg = APP_REGISTRY.find(a => a.type === type);
-        if (!appCfg) return;
-        emitMissionEvent('app_open', `Opened ${appCfg.label}`, { appType: type, roleHint: getRoleHintFromApp(type) });
-        setZCounter(z => {
-            const newZ = z + 1;
-            setWindowStates(prev => {
-                if (isPhoneMode) {
-                    const vw = typeof window !== 'undefined' ? window.innerWidth : 430;
-                    const vh = typeof window !== 'undefined' ? window.innerHeight : 900;
-                    const reset = {};
-                    APP_REGISTRY.forEach((app) => {
-                        reset[app.type] = { ...(prev[app.type] || {}), isOpen: false, isMinimized: false, isMaximized: false, zIndex: 0 };
-                    });
-                    return {
-                        ...reset,
-                        [type]: {
-                            ...(prev[type] || {}),
-                            isOpen: true,
-                            isMinimized: false,
-                            isMaximized: false,
-                            x: 10,
-                            y: 58,
-                            w: Math.max(320, vw - 20),
-                            h: Math.max(400, vh - 84),
-                            zIndex: newZ
-                        }
-                    };
-                }
-                if (isTabletMode) {
-                    if (prev[type]?.isOpen) {
-                        return {
-                            ...prev,
-                            [type]: {
-                                ...prev[type],
-                                isMinimized: false,
-                                zIndex: newZ
-                            }
-                        };
-                    }
-                    return {
-                        ...prev,
-                        [type]: {
-                            ...(prev[type] || {}),
-                            isOpen: true,
-                            isMinimized: false,
-                            isMaximized: false,
-                            zIndex: newZ
-                        }
-                    };
-                }
-                if (prev[type]?.isOpen) {
-                    return { ...prev, [type]: { ...prev[type], isMinimized: false, zIndex: newZ } };
-                }
-                const openCount = Object.values(prev).filter(w => w.isOpen).length;
-                const restoredMetrics = getRestoredWindowMetrics(appCfg, prev[type], openCount);
-                return {
-                    ...prev,
-                    [type]: {
-                        ...(prev[type] || {}),
-                        ...restoredMetrics,
-                        isOpen: true,
-                        isMinimized: false,
-                        zIndex: newZ
-                    }
-                };
-            });
-            setFocusedWindow(type);
-            return newZ;
-        });
-    }, [emitMissionEvent, getRestoredWindowMetrics, getRoleHintFromApp, isPhoneMode, isTabletMode]);
-
-    const closeApp = useCallback((type) => {
-        setWindowStates(prev => ({ ...prev, [type]: { ...(prev[type] || {}), isOpen: false } }));
-        setFocusedWindow(f => f === type ? null : f);
-    }, []);
-    const closeAllApps = useCallback(() => {
-        setWindowStates((prev) => {
-            const next = { ...prev };
-            APP_REGISTRY.forEach((app) => {
-                next[app.type] = { ...(next[app.type] || {}), isOpen: false, isMinimized: false };
-            });
-            return next;
-        });
-        setFocusedWindow(null);
-    }, []);
     const exitIjamOS = useCallback(() => {
         triggerHaptic();
         closeAllApps();
         if (setPublicPage) setPublicPage('home');
     }, [closeAllApps, setPublicPage, triggerHaptic]);
-
-    const minimizeApp = useCallback((type) => {
-        setWindowStates(prev => ({ ...prev, [type]: { ...prev[type], isMinimized: true } }));
-        setFocusedWindow(f => f === type ? null : f);
-    }, []);
-
-    const maximizeApp = useCallback((type) => {
-        setWindowStates(prev => ({ ...prev, [type]: { ...prev[type], isMaximized: !prev[type]?.isMaximized } }));
-    }, []);
-
-    const focusApp = useCallback((type) => {
-        const appCfg = APP_REGISTRY.find(a => a.type === type);
-        emitMissionEvent('focus_change', `Focus switched to ${appCfg?.label || type}`, { appType: type, roleHint: getRoleHintFromApp(type) });
-        setZCounter(z => {
-            const newZ = z + 1;
-            setWindowStates(prev => ({ ...prev, [type]: { ...prev[type], zIndex: newZ } }));
-            setFocusedWindow(type);
-            return newZ;
-        });
-    }, [emitMissionEvent, getRoleHintFromApp]);
-
-    const moveApp = useCallback((type, x, y) => {
-        const vw = typeof window !== 'undefined' ? window.innerWidth : 1200;
-        const vh = typeof window !== 'undefined' ? window.innerHeight : 800;
-        setWindowStates(prev => ({ ...prev, [type]: { ...prev[type], x: Math.max(0, Math.min(x, vw - 100)), y: Math.max(0, Math.min(y, vh - 60)) } }));
-    }, []);
-
-    const resizeApp = useCallback((type, w, h) => {
-        setWindowStates(prev => ({
-            ...prev,
-            [type]: { ...prev[type], w: Math.max(320, w), h: Math.max(220, h) }
-        }));
-    }, []);
-
-    // Convenience: which type is currently open/focused (for backward compat in content)
-    const activeWindow = focusedWindow;
 
     const [chatMessages, setChatMessages] = useState([
         { role: 'bot', text: 'KRACKED_OS_INITIALIZED: Greetings, Builder. I am Antigravity. Type your command or click on the lessons above to begin.' }
@@ -3217,26 +3125,24 @@ const IjamOSWorkspace = ({ session, currentUser, isMobileView, deviceMode = 'des
             if (!active) return;
             setIsBooted(Boolean(sessionState?.isBooted));
             setCommunityResources(Array.isArray(resources) ? resources : []);
-            const savedWindowLayout = sessionState?.windowLayout;
+            const shellState = sessionState?.shell && typeof sessionState.shell === 'object'
+                ? sessionState.shell
+                : sessionState;
+            const savedWindowLayout = shellState?.windowStates || sessionState?.windowLayout;
             if (savedWindowLayout && typeof savedWindowLayout === 'object') {
-                setWindowStates((prev) => {
-                    const next = { ...prev };
-                    APP_REGISTRY.forEach((app) => {
-                        const savedState = savedWindowLayout[app.type];
-                        if (!savedState) return;
-                        next[app.type] = {
-                            ...(next[app.type] || {}),
-                            ...savedState,
-                            isOpen: false,
-                            isMinimized: false,
-                            zIndex: next[app.type]?.zIndex || 0
-                        };
-                    });
-                    return next;
+                const nextWindowStates = {};
+                APP_REGISTRY.forEach((app) => {
+                    const restored = normalizeShellWindowState(app.type, savedWindowLayout[app.type], { isTouchIjamMode });
+                    if (restored) {
+                        nextWindowStates[app.type] = restored;
+                    }
                 });
+                setWindowStates(nextWindowStates);
+            } else {
+                setWindowStates({});
             }
 
-            const explorerPreferences = sessionState?.explorerPreferences;
+            const explorerPreferences = shellState?.explorerPreferences || sessionState?.explorerPreferences;
             if (explorerPreferences && typeof explorerPreferences === 'object') {
                 if (Array.isArray(explorerPreferences.path)) {
                     setExplorerPath(explorerPreferences.path.filter((segment) => typeof segment === 'string'));
@@ -3252,13 +3158,19 @@ const IjamOSWorkspace = ({ session, currentUser, isMobileView, deviceMode = 'des
                 }
             }
 
-            if (typeof sessionState?.windowZCounter === 'number') {
-                setZCounter(Math.max(100, sessionState.windowZCounter));
-            }
+            const restoredFocusedWindow = typeof shellState?.focusedWindow === 'string' && APP_REGISTRY.some((app) => app.type === shellState.focusedWindow)
+                ? shellState.focusedWindow
+                : null;
+            setFocusedWindow(restoredFocusedWindow);
+            setStartMenuSearch(typeof shellState?.startMenu?.search === 'string' ? shellState.startMenu.search : '');
+            setIsStartMenuOpen(false);
+            setZCounter(typeof shellState?.windowZCounter === 'number' ? Math.max(100, shellState.windowZCounter) : 100);
             sessionUiHydratedRef.current = true;
         }).catch(() => {
             if (!active) return;
             setCommunityResources([]);
+            setWindowStates({});
+            setFocusedWindow(null);
             sessionUiHydratedRef.current = true;
         });
 
@@ -3270,36 +3182,31 @@ const IjamOSWorkspace = ({ session, currentUser, isMobileView, deviceMode = 'des
         if (!runtime || !sessionUiHydratedRef.current) return;
 
         const saveTimer = setTimeout(() => {
-            const windowLayout = APP_REGISTRY.reduce((acc, app) => {
-                const state = windowStates[app.type];
-                if (!state) return acc;
-                acc[app.type] = {
-                    x: typeof state.x === 'number' ? state.x : undefined,
-                    y: typeof state.y === 'number' ? state.y : undefined,
-                    w: typeof state.w === 'number' ? state.w : undefined,
-                    h: typeof state.h === 'number' ? state.h : undefined,
-                    isMaximized: Boolean(state.isMaximized)
-                };
-                return acc;
-            }, {});
+            const shellSession = buildShellSessionPayload({
+                windowStates,
+                focusedWindow,
+                startMenuSearch,
+                explorerPath,
+                explorerView,
+                showExplorerDetails,
+                explorerSort,
+                zCounter
+            });
 
             runtime.settings.loadSession()
                 .then((currentSession) => runtime.settings.saveSession({
                     ...(currentSession || {}),
-                    windowLayout,
-                    explorerPreferences: {
-                        path: explorerPath,
-                        view: explorerView,
-                        showDetailsPane: showExplorerDetails,
-                        sort: explorerSort
-                    },
-                    windowZCounter: zCounter
+                    windowLayout: shellSession.windowStates,
+                    explorerPreferences: shellSession.explorerPreferences,
+                    windowZCounter: shellSession.windowZCounter,
+                    focusedWindow: shellSession.focusedWindow,
+                    shell: shellSession
                 }))
                 .catch(() => {});
-        }, 150);
+        }, 250);
 
         return () => clearTimeout(saveTimer);
-    }, [explorerPath, explorerSort, explorerView, runtime, showExplorerDetails, windowStates, zCounter]);
+    }, [explorerPath, explorerSort, explorerView, focusedWindow, isTouchIjamMode, runtime, showExplorerDetails, startMenuSearch, windowStates, zCounter]);
 
     useEffect(() => {
         if (currentUser) {

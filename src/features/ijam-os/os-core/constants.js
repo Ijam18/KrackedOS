@@ -87,18 +87,37 @@ export const DEFAULT_DESKTOP_LAYOUT = {
   updatedAt: null
 };
 
+export const DEFAULT_EXPLORER_PREFERENCES = {
+  path: [],
+  view: 'icons',
+  showDetailsPane: true,
+  sort: 'name-asc'
+};
+
+export const DEFAULT_SHELL_SESSION = {
+  focusedWindow: null,
+  startMenu: {
+    isOpen: false,
+    search: ''
+  },
+  windowStates: {},
+  explorerPreferences: { ...DEFAULT_EXPLORER_PREFERENCES },
+  windowZCounter: 100
+};
+
 export const DEFAULT_SESSION_STATE = {
   isBooted: false,
   lastBootedAt: null,
   lastRuntimeMode: OS_RUNTIME_MODES.WEB_DEMO,
   windowLayout: {},
-  explorerPreferences: {
-    path: [],
-    view: 'icons',
-    showDetailsPane: true,
-    sort: 'name-asc'
-  },
-  windowZCounter: 100
+  explorerPreferences: { ...DEFAULT_EXPLORER_PREFERENCES },
+  windowZCounter: 100,
+  focusedWindow: null,
+  shell: {
+    ...DEFAULT_SHELL_SESSION,
+    startMenu: { ...DEFAULT_SHELL_SESSION.startMenu },
+    explorerPreferences: { ...DEFAULT_EXPLORER_PREFERENCES }
+  }
 };
 
 export const BUILT_IN_WALLPAPERS = [

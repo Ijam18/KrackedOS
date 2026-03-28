@@ -1,5 +1,6 @@
 {
   "name": "kracked-os-standalone",
+  "description": "AI-powered builder workspace for planning, creating, and shipping apps.",
   "private": true,
   "version": "1.0.0",
   "type": "module",

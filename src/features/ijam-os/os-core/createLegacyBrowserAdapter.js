@@ -1,8 +1,10 @@
 import {
   BUILT_IN_WALLPAPERS,
   DEFAULT_DESKTOP_LAYOUT,
+  DEFAULT_EXPLORER_PREFERENCES,
   DEFAULT_PERSONALIZATION,
   DEFAULT_PROFILE,
+  DEFAULT_SHELL_SESSION,
   DEFAULT_SESSION_STATE,
   LEGACY_STORAGE_KEYS,
   MIGRATION_VERSION,
@@ -43,6 +45,161 @@ function safeJsonParse(rawValue, fallbackValue) {
 
 function cloneJsonValue(value) {
   return JSON.parse(JSON.stringify(value));
+}
+
+function isPlainObject(value) {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
+function clampNumber(value, min, max, fallback) {
+  if (!Number.isFinite(value)) return fallback;
+  return Math.min(max, Math.max(min, value));
+}
+
+function sanitizeStringArray(value, maxLength = 64, maxItemLength = 260) {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter((item) => typeof item === 'string' && item.trim())
+    .map((item) => item.trim().slice(0, maxItemLength))
+    .slice(0, maxLength);
+}
+
+function sanitizeWindowStates(value) {
+  if (!isPlainObject(value)) return {};
+  const next = {};
+
+  Object.entries(value).forEach(([key, rawState]) => {
+    if (typeof key !== 'string' || !isPlainObject(rawState)) return;
+    const state = {
+      isOpen: Boolean(rawState.isOpen),
+      isMinimized: Boolean(rawState.isMinimized),
+      isMaximized: Boolean(rawState.isMaximized),
+      zIndex: clampNumber(rawState.zIndex, 0, 10000, 0)
+    };
+
+    if (Number.isFinite(rawState.x)) state.x = rawState.x;
+    if (Number.isFinite(rawState.y)) state.y = rawState.y;
+    if (Number.isFinite(rawState.w)) state.w = rawState.w;
+    if (Number.isFinite(rawState.h)) state.h = rawState.h;
+
+    next[key] = state;
+  });
+
+  return next;
+}
+
+function sanitizeExplorerPreferences(value) {
+  const source = isPlainObject(value) ? value : {};
+  return {
+    path: sanitizeStringArray(source.path),
+    view: source.view === 'list' ? 'list' : DEFAULT_EXPLORER_PREFERENCES.view,
+    showDetailsPane: typeof source.showDetailsPane === 'boolean'
+      ? source.showDetailsPane
+      : DEFAULT_EXPLORER_PREFERENCES.showDetailsPane,
+    sort: source.sort === 'name-desc' ? 'name-desc' : DEFAULT_EXPLORER_PREFERENCES.sort
+  };
+}
+
+function sanitizeShellState(value) {
+  const source = isPlainObject(value?.shell) ? value.shell : (isPlainObject(value) ? value : {});
+  return {
+    focusedWindow: typeof source.focusedWindow === 'string' ? source.focusedWindow : null,
+    startMenu: {
+      isOpen: Boolean(source.startMenu?.isOpen),
+      search: typeof source.startMenu?.search === 'string' ? source.startMenu.search.slice(0, 120) : ''
+    },
+    windowStates: sanitizeWindowStates(source.windowStates || value?.windowLayout),
+    explorerPreferences: sanitizeExplorerPreferences(source.explorerPreferences || value?.explorerPreferences),
+    windowZCounter: clampNumber(source.windowZCounter ?? value?.windowZCounter, 100, 10000, DEFAULT_SHELL_SESSION.windowZCounter)
+  };
+}
+
+function sanitizeSessionState(value) {
+  const source = isPlainObject(value) ? value : {};
+  const shell = sanitizeShellState(source);
+  const runtimeModes = Object.values(OS_RUNTIME_MODES);
+
+  return {
+    ...DEFAULT_SESSION_STATE,
+    ...source,
+    isBooted: Boolean(source.isBooted),
+    lastBootedAt: typeof source.lastBootedAt === 'string' ? source.lastBootedAt : null,
+    lastRuntimeMode: runtimeModes.includes(source.lastRuntimeMode) ? source.lastRuntimeMode : DEFAULT_SESSION_STATE.lastRuntimeMode,
+    windowLayout: shell.windowStates,
+    explorerPreferences: shell.explorerPreferences,
+    windowZCounter: shell.windowZCounter,
+    focusedWindow: shell.focusedWindow,
+    shell
+  };
+}
+
+function sanitizeDesktopLayoutState(value) {
+  const source = isPlainObject(value) ? value : {};
+  const slots = Array.isArray(source.slots)
+    ? source.slots.slice(0, 256).map((item) => (typeof item === 'string' ? item : null))
+    : [];
+  const legacyOrder = sanitizeStringArray(source.legacyOrder, 256, 120);
+  const positions = isPlainObject(source.positions)
+    ? Object.fromEntries(
+        Object.entries(source.positions)
+          .filter(([key, pos]) => typeof key === 'string' && isPlainObject(pos))
+          .map(([key, pos]) => [key, {
+            column: clampNumber(pos.column, 0, 256, 0),
+            row: clampNumber(pos.row, 0, 256, 0)
+          }])
+      )
+    : null;
+
+  return {
+    ...DEFAULT_DESKTOP_LAYOUT,
+    ...source,
+    slots,
+    legacyOrder,
+    positions,
+    layoutVersion: Number.isFinite(source.layoutVersion) ? clampNumber(source.layoutVersion, 0, 1000, 0) : source.layoutVersion,
+    grid: isPlainObject(source.grid)
+      ? {
+          columns: clampNumber(source.grid.columns, 0, 256, 0),
+          rows: clampNumber(source.grid.rows, 0, 256, 0)
+        }
+      : null,
+    updatedAt: typeof source.updatedAt === 'string' ? source.updatedAt : null
+  };
+}
+
+function sanitizePersonalizationState(value) {
+  const source = isPlainObject(value) ? value : {};
+  const validFits = new Set(['fill', 'contain', 'cover']);
+  return {
+    ...DEFAULT_PERSONALIZATION,
+    ...source,
+    currentWallpaperId: typeof source.currentWallpaperId === 'string' && source.currentWallpaperId
+      ? source.currentWallpaperId
+      : getDefaultWallpaperId(),
+    fit: validFits.has(source.fit) ? source.fit : DEFAULT_PERSONALIZATION.fit,
+    history: Array.isArray(source.history)
+      ? source.history
+          .filter((entry) => isPlainObject(entry) && typeof entry.id === 'string' && entry.id)
+          .slice(0, 20)
+          .map((entry) => ({ id: entry.id, changedAt: typeof entry.changedAt === 'string' ? entry.changedAt : null }))
+      : [],
+    importedWallpaperIds: sanitizeStringArray(source.importedWallpaperIds, 100, 260),
+    lastUpdatedAt: typeof source.lastUpdatedAt === 'string' ? source.lastUpdatedAt : null
+  };
+}
+
+function toTimestamp(value) {
+  const parsed = Date.parse(typeof value === 'string' ? value : '');
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function choosePreferredState(fileValue, localValue, sanitize) {
+  const sanitizedFile = sanitize(fileValue);
+  if (!isPlainObject(localValue)) return sanitizedFile;
+  const sanitizedLocal = sanitize(localValue);
+  const fileTimestamp = Math.max(toTimestamp(sanitizedFile.updatedAt), toTimestamp(sanitizedFile.lastUpdatedAt));
+  const localTimestamp = Math.max(toTimestamp(sanitizedLocal.updatedAt), toTimestamp(sanitizedLocal.lastUpdatedAt));
+  return fileTimestamp >= localTimestamp ? sanitizedFile : sanitizedLocal;
 }
 
 async function ensureDirectory(path, source = 'workspace') {
@@ -485,7 +642,8 @@ export function createLegacyBrowserAdapter() {
       await writeJsonFile(WORKSPACE_PATHS.profile, nextProfile);
       migratedItems.push('profile');
 
-      const layoutPayload = {
+      const currentLayout = await readJsonFile(WORKSPACE_PATHS.desktopLayout, DEFAULT_DESKTOP_LAYOUT);
+      const layoutPayload = sanitizeDesktopLayoutState({
         slots: safeJsonParse(
           typeof window !== 'undefined' ? window.localStorage.getItem(LEGACY_STORAGE_KEYS.desktopIconSlots) : '',
           []
@@ -495,9 +653,11 @@ export function createLegacyBrowserAdapter() {
           []
         ),
         updatedAt: now
-      };
-      await writeJsonFile(WORKSPACE_PATHS.desktopLayout, layoutPayload);
-      migratedItems.push('desktop-layout');
+      });
+      if (!Array.isArray(currentLayout?.slots) || currentLayout.slots.length === 0) {
+        await writeJsonFile(WORKSPACE_PATHS.desktopLayout, layoutPayload);
+        migratedItems.push('desktop-layout');
+      }
 
       const communityResources = safeJsonParse(
         typeof window !== 'undefined' ? window.localStorage.getItem(LEGACY_STORAGE_KEYS.communityResources) : '',
@@ -518,17 +678,21 @@ export function createLegacyBrowserAdapter() {
       }
       migratedItems.push('community-resources');
 
-      const personalization = {
+      const currentPersonalization = await readJsonFile(WORKSPACE_PATHS.personalization, DEFAULT_PERSONALIZATION);
+      const personalization = sanitizePersonalizationState({
         ...DEFAULT_PERSONALIZATION,
         currentWallpaperId: normalizeLegacyWallpaperId(
           typeof window !== 'undefined' ? window.localStorage.getItem(LEGACY_STORAGE_KEYS.wallpaper) : ''
         ),
         lastUpdatedAt: now
-      };
-      await writeJsonFile(WORKSPACE_PATHS.personalization, personalization);
-      migratedItems.push('personalization');
+      });
+      if ((currentPersonalization?.currentWallpaperId || getDefaultWallpaperId()) === getDefaultWallpaperId()) {
+        await writeJsonFile(WORKSPACE_PATHS.personalization, personalization);
+        migratedItems.push('personalization');
+      }
 
-      const session = {
+      const currentSessionState = await readJsonFile(WORKSPACE_PATHS.session, DEFAULT_SESSION_STATE);
+      const session = sanitizeSessionState({
         ...DEFAULT_SESSION_STATE,
         isBooted: typeof window !== 'undefined'
           ? window.localStorage.getItem(LEGACY_STORAGE_KEYS.booted) === 'true'
@@ -537,9 +701,11 @@ export function createLegacyBrowserAdapter() {
           ? now
           : null,
         lastRuntimeMode: OS_RUNTIME_MODES.WEB_DEMO
-      };
-      await writeJsonFile(WORKSPACE_PATHS.session, session);
-      migratedItems.push('session');
+      });
+      if (!currentSessionState?.isBooted && Object.keys(currentSessionState?.shell?.windowStates || {}).length === 0) {
+        await writeJsonFile(WORKSPACE_PATHS.session, session);
+        migratedItems.push('session');
+      }
 
       await setMeta(MIGRATION_META_KEY, MIGRATION_VERSION);
 
@@ -565,29 +731,19 @@ export function createLegacyBrowserAdapter() {
 
     async loadDesktopLayout() {
       await seedWorkspaceScaffold();
-      const fileLayout = await readJsonFile(WORKSPACE_PATHS.desktopLayout, DEFAULT_DESKTOP_LAYOUT);
+      const fileLayout = sanitizeDesktopLayoutState(await readJsonFile(WORKSPACE_PATHS.desktopLayout, DEFAULT_DESKTOP_LAYOUT));
       const localLayout = safeJsonParse(
         typeof window !== 'undefined' ? window.localStorage.getItem(LEGACY_STORAGE_KEYS.desktopLayout) : '',
         null
       );
-
-      if (localLayout && typeof localLayout === 'object') {
-        return {
-          ...DEFAULT_DESKTOP_LAYOUT,
-          ...fileLayout,
-          ...localLayout
-        };
-      }
-
-      return fileLayout;
+      return choosePreferredState(fileLayout, localLayout, sanitizeDesktopLayoutState);
     },
 
     async saveDesktopLayout(layout) {
-      const nextLayout = {
-        ...DEFAULT_DESKTOP_LAYOUT,
-        ...(layout || {}),
+      const nextLayout = sanitizeDesktopLayoutState({
+        ...layout,
         updatedAt: new Date().toISOString()
-      };
+      });
       await writeJsonFile(WORKSPACE_PATHS.desktopLayout, nextLayout);
 
       if (typeof window !== 'undefined') {
@@ -599,30 +755,26 @@ export function createLegacyBrowserAdapter() {
 
     async loadSession() {
       await seedWorkspaceScaffold();
-      return readJsonFile(WORKSPACE_PATHS.session, DEFAULT_SESSION_STATE);
+      return sanitizeSessionState(await readJsonFile(WORKSPACE_PATHS.session, DEFAULT_SESSION_STATE));
     },
 
     async saveSession(session) {
-      await writeJsonFile(WORKSPACE_PATHS.session, {
-        ...DEFAULT_SESSION_STATE,
-        ...(session || {})
-      });
+      await writeJsonFile(WORKSPACE_PATHS.session, sanitizeSessionState(session));
     },
 
     async loadPersonalization() {
       await seedWorkspaceScaffold();
-      return readJsonFile(WORKSPACE_PATHS.personalization, {
+      return sanitizePersonalizationState(await readJsonFile(WORKSPACE_PATHS.personalization, {
         ...DEFAULT_PERSONALIZATION,
         currentWallpaperId: getDefaultWallpaperId()
-      });
+      }));
     },
 
     async savePersonalization(personalization) {
-      await writeJsonFile(WORKSPACE_PATHS.personalization, {
-        ...DEFAULT_PERSONALIZATION,
-        ...(personalization || {}),
+      await writeJsonFile(WORKSPACE_PATHS.personalization, sanitizePersonalizationState({
+        ...personalization,
         lastUpdatedAt: new Date().toISOString()
-      });
+      }));
     },
 
     async loadCommunityResources() {

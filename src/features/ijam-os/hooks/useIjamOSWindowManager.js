@@ -1,6 +1,14 @@
 import { useCallback, useMemo, useState } from 'react';
 
-export const useIjamOSWindowManager = ({ appRegistry, isTouchIjamMode }) => {
+export const useIjamOSWindowManager = ({
+  appRegistry,
+  isTouchIjamMode,
+  isPhoneMode = false,
+  isTabletMode = false,
+  getRestoredWindowMetrics = null,
+  onAppOpen = null,
+  onAppFocus = null
+}) => {
   const [windowStates, setWindowStates] = useState({});
   const [focusedWindow, setFocusedWindow] = useState(null);
   const [zCounter, setZCounter] = useState(100);
@@ -11,11 +19,12 @@ export const useIjamOSWindowManager = ({ appRegistry, isTouchIjamMode }) => {
     (type) => {
       const appCfg = appRegistry.find((a) => a.type === type);
       if (!appCfg) return;
+      onAppOpen?.(type, appCfg);
 
       setZCounter((z) => {
         const newZ = z + 1;
         setWindowStates((prev) => {
-          if (isTouchIjamMode) {
+          if (isPhoneMode || isTouchIjamMode) {
             const vw = typeof window !== 'undefined' ? window.innerWidth : 430;
             const vh = typeof window !== 'undefined' ? window.innerHeight : 900;
             const reset = {};
@@ -45,26 +54,57 @@ export const useIjamOSWindowManager = ({ appRegistry, isTouchIjamMode }) => {
             };
           }
 
+          if (isTabletMode) {
+            if (prev[type]?.isOpen) {
+              return {
+                ...prev,
+                [type]: {
+                  ...prev[type],
+                  isMinimized: false,
+                  zIndex: newZ
+                }
+              };
+            }
+            return {
+              ...prev,
+              [type]: {
+                ...(prev[type] || {}),
+                isOpen: true,
+                isMinimized: false,
+                isMaximized: false,
+                zIndex: newZ
+              }
+            };
+          }
+
           if (prev[type]?.isOpen) {
             return { ...prev, [type]: { ...prev[type], isMinimized: false, zIndex: newZ } };
           }
 
-          const vw = typeof window !== 'undefined' ? window.innerWidth : 1200;
-          const vh = typeof window !== 'undefined' ? window.innerHeight : 800;
           const openCount = Object.values(prev).filter((w) => w.isOpen).length;
-          const w = Math.min(appCfg.defaultW, vw - 60);
-          const h = Math.min(appCfg.defaultH, vh - 140);
+          const restoredMetrics = getRestoredWindowMetrics
+            ? getRestoredWindowMetrics(appCfg, prev[type], openCount)
+            : (() => {
+                const vw = typeof window !== 'undefined' ? window.innerWidth : 1200;
+                const vh = typeof window !== 'undefined' ? window.innerHeight : 800;
+                const w = Math.min(appCfg.defaultW, vw - 60);
+                const h = Math.min(appCfg.defaultH, vh - 140);
+                return {
+                  x: Math.max(16, (vw - w) / 2 + openCount * 22 - 44),
+                  y: Math.max(10, 30 + openCount * 22),
+                  w,
+                  h,
+                  isMaximized: false
+                };
+              })();
 
           return {
             ...prev,
             [type]: {
+              ...(prev[type] || {}),
+              ...restoredMetrics,
               isOpen: true,
               isMinimized: false,
-              isMaximized: false,
-              x: Math.max(16, (vw - w) / 2 + openCount * 22 - 44),
-              y: Math.max(10, 30 + openCount * 22),
-              w,
-              h,
               zIndex: newZ
             }
           };
@@ -74,7 +114,7 @@ export const useIjamOSWindowManager = ({ appRegistry, isTouchIjamMode }) => {
         return newZ;
       });
     },
-    [appRegistry, isTouchIjamMode]
+    [appRegistry, getRestoredWindowMetrics, isPhoneMode, isTabletMode, isTouchIjamMode, onAppOpen]
   );
 
   const closeApp = useCallback((type) => {
@@ -103,13 +143,15 @@ export const useIjamOSWindowManager = ({ appRegistry, isTouchIjamMode }) => {
   }, []);
 
   const focusApp = useCallback((type) => {
+    const appCfg = appRegistry.find((a) => a.type === type);
+    onAppFocus?.(type, appCfg);
     setZCounter((z) => {
       const newZ = z + 1;
       setWindowStates((prev) => ({ ...prev, [type]: { ...prev[type], zIndex: newZ } }));
       setFocusedWindow(type);
       return newZ;
     });
-  }, []);
+  }, [appRegistry, onAppFocus]);
 
   const moveApp = useCallback((type, x, y) => {
     const vw = typeof window !== 'undefined' ? window.innerWidth : 1200;
@@ -137,9 +179,12 @@ export const useIjamOSWindowManager = ({ appRegistry, isTouchIjamMode }) => {
     return open?.type || null;
   }, [appRegistry, focusedWindow, windowStates]);
 
+  const activeWindow = focusedWindow;
+
   return {
     windowStates,
     focusedWindow,
+    activeWindow,
     mobileActiveWindow,
     isStartMenuOpen,
     startMenuSearch,

@@ -1,36 +1,24 @@
 # KRACKED_OS 🚀
 
-**KRACKED_OS** is a modular, AI-first ecosystem designed for the next generation of builders. Built on the philosophy of **NECB (Now Everyone Can Build)**, it combines high-performance web architecture with integrated AI agents and persistent memory systems.
+**AI-powered builder workspace for planning, creating, and shipping apps.**
 
-## 🌟 What's New?
-- **PWA & Offline Capability**: Install KRACKED_OS natively on mobile devices and desktop. Contains offline service workers.
-- **Mobile First Design**: Deeply fluid responsive layouts, intelligent mobile toolbars, and dynamic background scaling.
-- **Optimized Loading**: New `KrackedInteractiveLoading` with neo-brutalist panel systems.
+## What KRACKED_OS Is
 
-## 📁 Repository Structure
+**KRACKED_OS** is a Builder OS for founders, makers, and AI-assisted builders who want one environment to move from idea to plan to execution.
 
-We've organized this workspace into specialized domains to maximize AI efficiency and developer clarity:
+It combines a desktop-style workspace, AI guidance, builder tools, and persistent context into a single system built around **NECB: Now Everyone Can Build**.
 
-### 🧠 AI Ecosystem
-- **`system/`**: The core AI identity. Contains the **IJAM Unified Documentation**, Skill Creator guides, and agent architecture specifications.
-- **`skills/`**: A library of modular knowledge packages (e.g., educational mentorship, ethical tech guidance) that extend the AI's capabilities.
-- **`memory/`**: The experience layer. Includes the **memory-extract** engine and persistent logs (`log.md`) that allow AI agents to recall previous session context.
+It is designed to support both browser and desktop-like workflows while staying practical for real product work.
 
-### 🛠️ Core Project
-- **`src/`**: The main React source code for the KRACKED_OS workspace.
-- **`public/`**: Static assets, including the custom transparency-optimized KDA favicon and PWA manifests.
-- **`tools/`**: Advanced scripting agents and automation utilities.
-- **`references/`**: Project-specific knowledge bases and syllabi.
+## Core Capabilities
 
-## 🚀 Key Features
+- **Builder workspace**: A desktop-style shell for opening tools, navigating work, and keeping momentum in one place.
+- **AI assistance**: KRACKED_OS includes an AI-guided operating layer for context, planning, and builder support.
+- **Builder tools**: The workspace is designed to help move from raw idea to structured execution.
+- **Persistence**: Session continuity, memory, and system context support longer-lived work.
+- **Installability**: The app supports PWA-style install flows and desktop-like usage patterns.
 
-- **Interactive Loading Screen**: A visually stunning, 8-bit workstation interface with real-time clock and dynamic "Vibe Coding" animations.
-- **Progressive Web App**: The application is fully installable with custom icons and splash screens.
-- **Persistent AI Proxy (IJAM)**: An AI persona with a chill, Malaysian-casual vibe that remembers your project preferences and coding style.
-- **Skill Promotion System**: The AI proactively identifies repeating patterns and offers to formalize them into reusable "Skills".
-- **Vite-Powered Performance**: Near-instant HMR and optimized build cycles.
-
-## 🛠️ Quick Start
+## Quick Start
 
 ### 1. Installation
 ```bash
@@ -42,8 +30,42 @@ npm install
 npm run dev
 ```
 
-### 3. Engagement
-Load the `system/IJAM_UNIFIED.md` file into your AI's context to activate the **IJAM Proxy** and begin building with full project awareness.
+### 3. Activate The Internal AI Layer
+Load `MajiOS/index/master-majios.md` first, then `MajiOS/system/IJAM_UNIFIED.md` to activate the unified memory-and-method layer with full project context.
+
+## High-Level Architecture
+
+- **Frontend runtime**: React + Vite power the main KRACKED_OS workspace.
+- **Desktop-style shell**: The product is structured like an operating environment rather than a single static app.
+- **AI-aware operating model**: The system includes internal AI, memory, and skill layers that support longer-running builder workflows.
+- **Progressive installability**: The app keeps web delivery while supporting installable and desktop-like usage patterns.
+
+## Internal Systems
+
+- **`MajiOS/`**: The canonical memory-and-method architecture behind KRACKED_OS.
+- **`MajiOS/system/`**: IJAM doctrine, skill creation guidance, and architecture references.
+- **`MajiOS/engine/memory/`**: Persistent memory engine and logs.
+- **`MajiOS/skills/local-skills/`**: The canonical repo-owned local skill library.
+- **`MajiOS/method/bmad-source/`**: Vendored BMAD source inside the unified method layer.
+- **`.agents/skills/`**: Codex-native installed skill surface.
+- **`.claude/`**: Claude Code config and optional Claude-native skill target.
+
+## Repository Structure
+
+- **`src/`**: Main React source code for the KRACKED_OS workspace.
+- **`public/`**: Static assets, icons, and PWA manifests.
+- **`tools/`**: Automation utilities and advanced support tooling.
+- **`references/`**: Project-specific knowledge bases and supporting material.
+- **`MajiOS/`**: Internal AI, memory, skills, and method architecture.
+
+## Suggested GitHub Description
+
+Primary:
+`AI-powered builder workspace for planning, creating, and shipping apps.`
+
+Backups:
+`AI-powered builder OS for turning ideas into working apps.`
+`A builder workspace for planning, building, and shipping with AI.`
 
 ---
 
