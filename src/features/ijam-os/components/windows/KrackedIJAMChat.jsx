@@ -17,8 +17,17 @@ export default function KrackedIJAMChat({ prefillMessage = '', onPrefillConsumed
     startNewConversation,
     resumeConversation,
     saveCurrentConversation,
-    conversations
+    conversations,
+    diaryMeta,
+    diaryEntries,
+    saveDiaryEntry,
+    reviewDiaryEntries,
+    loadDiaryArchive,
+    loadSaveDiary,
+    normalizeCommand
   } = useIJAMConversation();
+
+  const recentDiaryEntries = [...(Array.isArray(diaryEntries) ? diaryEntries : [])].slice(-3).reverse();
 
   useEffect(() => {
     if (!prefillMessage) return;
@@ -26,10 +35,10 @@ export default function KrackedIJAMChat({ prefillMessage = '', onPrefillConsumed
     onPrefillConsumed?.();
   }, [onPrefillConsumed, prefillMessage]);
 
-  const handleSendMessage = async () => {
-    if (!inputValue.trim() || isResuming) return;
+  const dispatchMessage = async (rawMessage) => {
+    const userMessage = rawMessage.trim();
+    if (!userMessage || isResuming) return;
 
-    const userMessage = inputValue.trim();
     const nextMessages = [
       ...messages,
       { role: 'user', content: userMessage, timestamp: new Date().toISOString() }
@@ -38,9 +47,22 @@ export default function KrackedIJAMChat({ prefillMessage = '', onPrefillConsumed
     setMessages(nextMessages);
     setInputValue('');
 
-    const aiResponse = await import('../../lib/ijamsAIService').then((m) =>
-      m.callIJAMAI('groq', userMessage, nextMessages)
-    );
+    const normalizedCommand = normalizeCommand(userMessage);
+    let aiResponse;
+
+    if (normalizedCommand === 'save diary') {
+      aiResponse = saveDiaryEntry(nextMessages);
+    } else if (normalizedCommand === 'review diary') {
+      aiResponse = reviewDiaryEntries();
+    } else if (normalizedCommand === 'load diary archive') {
+      aiResponse = loadDiaryArchive();
+    } else if (normalizedCommand === 'load save-diary') {
+      aiResponse = loadSaveDiary();
+    } else {
+      aiResponse = await import('../../lib/ijamsAIService').then((m) =>
+        m.callIJAMAI('groq', userMessage, nextMessages)
+      );
+    }
 
     const finalMessages = [
       ...nextMessages,
@@ -55,10 +77,22 @@ export default function KrackedIJAMChat({ prefillMessage = '', onPrefillConsumed
     saveCurrentConversation(finalMessages);
   };
 
+  const handleSendMessage = async () => {
+    if (!inputValue.trim() || isResuming) return;
+    await dispatchMessage(inputValue);
+    setInputValue('');
+  };
+
   const handleResumeConversation = async (conversationId) => {
     setIsResuming(true);
-    await resumeConversation(conversationId);
+    const resumedMessages = await resumeConversation(conversationId);
+    setMessages(Array.isArray(resumedMessages) ? resumedMessages : []);
     setTimeout(() => setIsResuming(false), 1000);
+  };
+
+  const handleQuickCommand = async (command) => {
+    setInputValue('');
+    await dispatchMessage(command);
   };
 
   return (
@@ -82,6 +116,46 @@ export default function KrackedIJAMChat({ prefillMessage = '', onPrefillConsumed
           <button className="secondary-button" onClick={startNewConversation}>
             New Chat
           </button>
+        )}
+      </div>
+
+      <div className="diary-panel">
+        <div className="diary-panel-header">
+          <div>
+            <p className="diary-kicker">Diary Layer</p>
+            <h3>{diaryMeta?.name || 'Session Diary'}</h3>
+          </div>
+          <div className="diary-count-pill">{diaryEntries.length} entry</div>
+        </div>
+
+        <div className="diary-actions">
+          <button type="button" className="secondary-button" onClick={() => handleQuickCommand('save diary')}>
+            Save Diary
+          </button>
+          <button type="button" className="secondary-button" onClick={() => handleQuickCommand('review diary')}>
+            Review Diary
+          </button>
+          <button type="button" className="secondary-button" onClick={() => handleQuickCommand('load diary archive')}>
+            Load Archive
+          </button>
+        </div>
+
+        {recentDiaryEntries.length > 0 ? (
+          <div className="diary-entry-list">
+            {recentDiaryEntries.map((entry) => (
+              <div key={entry.id} className="diary-entry-card">
+                <div className="diary-entry-meta">
+                  <strong>{entry.dateKey}</strong>
+                  <span>{entry.sessionType}</span>
+                </div>
+                <p>{entry.summary}</p>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="diary-empty-state">
+            Belum ada entry browser-layer lagi. Guna <code>save diary</code> untuk mula simpan milestone sesi.
+          </div>
         )}
       </div>
 
@@ -172,6 +246,86 @@ export default function KrackedIJAMChat({ prefillMessage = '', onPrefillConsumed
           display: flex;
           flex-direction: column;
           gap: 12px;
+        }
+
+        .diary-panel {
+          padding: 16px 20px;
+          border-bottom: 1px solid #dbe4ef;
+          background:
+            radial-gradient(circle at top left, rgba(34, 197, 94, 0.16), transparent 42%),
+            linear-gradient(135deg, #f0fdf4 0%, #eff6ff 100%);
+        }
+
+        .diary-panel-header {
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: 12px;
+          margin-bottom: 12px;
+        }
+
+        .diary-kicker {
+          margin: 0 0 4px;
+          font-size: 11px;
+          font-weight: 700;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+          color: #166534;
+        }
+
+        .diary-panel h3 {
+          margin: 0;
+          font-size: 18px;
+          color: #14532d;
+        }
+
+        .diary-count-pill {
+          padding: 8px 12px;
+          border-radius: 999px;
+          background: rgba(255, 255, 255, 0.86);
+          border: 1px solid rgba(34, 197, 94, 0.18);
+          color: #166534;
+          font-size: 12px;
+          font-weight: 700;
+          white-space: nowrap;
+        }
+
+        .diary-actions {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 10px;
+          margin-bottom: 12px;
+        }
+
+        .diary-entry-list {
+          display: grid;
+          gap: 10px;
+        }
+
+        .diary-entry-card {
+          padding: 12px 14px;
+          border-radius: 12px;
+          background: rgba(255, 255, 255, 0.82);
+          border: 1px solid rgba(148, 163, 184, 0.24);
+          box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
+        }
+
+        .diary-entry-meta {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+          margin-bottom: 6px;
+          font-size: 12px;
+          color: #475569;
+        }
+
+        .diary-entry-card p,
+        .diary-empty-state {
+          margin: 0;
+          line-height: 1.5;
+          color: #0f172a;
+          font-size: 13px;
         }
 
         .message {
@@ -267,6 +421,26 @@ export default function KrackedIJAMChat({ prefillMessage = '', onPrefillConsumed
         .secondary-button:disabled {
           opacity: 0.5;
           cursor: not-allowed;
+        }
+
+        @media (max-width: 720px) {
+          .diary-panel,
+          .chat-header,
+          .chat-input {
+            padding-left: 16px;
+            padding-right: 16px;
+          }
+
+          .diary-panel-header,
+          .diary-entry-meta,
+          .chat-header {
+            flex-direction: column;
+            align-items: flex-start;
+          }
+
+          .message {
+            max-width: 88%;
+          }
         }
       `}</style>
     </div>

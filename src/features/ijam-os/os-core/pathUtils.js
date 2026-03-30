@@ -1,4 +1,4 @@
-import { FILE_KIND_BY_EXTENSION, WORKSPACE_PATHS } from './constants';
+import { FILE_KIND_BY_EXTENSION, WORKSPACE_PATHS } from './constants.js';
 
 export function normalizeOsPath(value) {
   const raw = String(value || '').trim().replace(/\//g, '\\');

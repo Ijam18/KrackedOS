@@ -120,6 +120,20 @@ h4 {
   background: rgba(100, 116, 139, 0.72);
 }
 
+.idea-to-prompt-flow .react-flow__node {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+}
+
+.idea-to-prompt-flow .react-flow__node.selectable.selected,
+.idea-to-prompt-flow .react-flow__node.selectable:focus,
+.idea-to-prompt-flow .react-flow__node.selectable:focus-visible {
+  box-shadow: none !important;
+  outline: none !important;
+}
+
 section {
   padding: 56px 0;
 }

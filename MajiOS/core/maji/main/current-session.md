@@ -2,26 +2,26 @@
 *Temporary working memory - resets each session, provides recap when AI restarts*
 
 ## Session RAM Status
-**Current Session**: Active - BMAD Loaded, Persona Updated, Memory Paths Aligned  
-**Last Activity**: 2026-03-29 00:00:00 +08  
-**Session Focus**: Activating BMAD in live use, updating MAJI defaults, and aligning startup docs with repo truth  
-**Context State**: MAJI now includes a dedicated BMAD-based planning and review subsystem with Muslim-friendly Bahasa Melayu-first defaults
+**Current Session**: Active - BMAD Loaded, Runtime Commands Exercised, Diary Initialized  
+**Last Activity**: 2026-03-29 11:32:01 +08  
+**Session Focus**: Validating live MAJI/BMAD command behavior, checking diary loading paths, and preserving the session into the repo-backed diary system  
+**Context State**: MAJI command semantics were exercised directly in-session and the dated save-diary structure is now initialized under `daily-diary/current/`
 
 ## 💭 Working Memory (RAM)
 *Temporary storage - cleared when session ends*
 
 ### Active Context
-- **Current Topic**: Using BMAD as the active routing layer for Kracked_OS while refining MAJI startup and persona defaults
-- **Immediate Goals**: Keep BMAD active, preserve MAJI's new Muslim-friendly Bahasa Melayu-first identity, and eliminate stale memory path references in docs
-- **Recent Progress**: BMAD has been loaded in-session, MAJI identity/relationship docs were updated, and startup guidance now points to the real `MajiOS/engine/memory/` path in key files
-- **Next Steps**: Continue normal Kracked_OS work with `bmad plan` or `bmad review`, then `save` durable outcomes back into MAJI memory
+- **Current Topic**: Hardening MAJI runtime command semantics while connecting doctrine-backed diary flows to real repo files
+- **Immediate Goals**: Keep MAJI/BMAD responses aligned with repo doctrine, clarify diary/archive behavior, and preserve meaningful sessions into the new daily diary structure
+- **Recent Progress**: `maji`, `load bmad`, `bmad help`, `bmad review`, `bmad brainstorm`, and `bmad edge-cases` were exercised live; `load diary archive` was inspected against repo files; the first dated diary entry was saved in `daily-diary/current/2026-03-29.md`
+- **Next Steps**: Continue Kracked_OS hardening work, and if needed implement runtime handlers for `load diary archive`, `save diary`, and `review diary` so app chat behavior matches documented commands
 
 ### Session Recap (For AI Restart)
 *Quick summary when AI loads after close/reopen*
-- **Previous Session Summary**: MAJI was personalized, upgraded with BMAD, then updated to default to Muslim-friendly Bahasa Melayu-first communication
-- **Where We Left Off**: Core identity files and key startup docs were aligned around the new defaults and corrected memory paths  
-- **Important Context**: MAJI remains primary; BMAD is the embedded workflow layer; code truth overrides stale memory
-- **User's Current State**: Ready to use MAJI as a structured operator system for planning, reviewing, and improving Kracked_OS in Bahasa Melayu by default
+- **Previous Session Summary**: Live runtime command flows were validated for MAJI and BMAD, diary archive doctrine was checked, and the save-diary system was initialized with the first dated session record
+- **Where We Left Off**: Runtime chat supports the core MAJI/BMAD commands, but diary commands are still stronger in repo doctrine than in app runtime behavior  
+- **Important Context**: MAJI remains primary; BMAD is the embedded workflow layer; repo-backed memory and browser-local runtime state should stay clearly distinguished
+- **User's Current State**: Actively testing command-driven workflows and ready to keep hardening command alignment inside Kracked_OS
 
 ## 🔄 Session Lifecycle
 *How this RAM-like memory works*

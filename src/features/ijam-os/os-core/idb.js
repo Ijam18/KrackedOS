@@ -1,4 +1,4 @@
-import { STORAGE_DB_NAME, STORAGE_DB_VERSION, STORAGE_STORES } from './constants';
+import { STORAGE_DB_NAME, STORAGE_DB_VERSION, STORAGE_STORES } from './constants.js';
 
 function requestToPromise(request) {
   return new Promise((resolve, reject) => {

@@ -1,6 +1,6 @@
-import { OS_RUNTIME_MODES } from './constants';
-import { createElectronBridgeAdapter } from './createElectronBridgeAdapter';
-import { createLegacyBrowserAdapter } from './createLegacyBrowserAdapter';
+import { OS_RUNTIME_MODES } from './constants.js';
+import { createElectronBridgeAdapter } from './createElectronBridgeAdapter.js';
+import { createLegacyBrowserAdapter } from './createLegacyBrowserAdapter.js';
 
 export function detectRuntimeMode() {
   if (typeof window !== 'undefined' && window.krackedOS) {

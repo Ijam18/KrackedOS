@@ -1,3 +1,3 @@
-export * from './constants';
-export * from './createOsRuntimeAdapter';
-export * from './useOsRuntime';
+export * from './constants.js';
+export * from './createOsRuntimeAdapter.js';
+export * from './useOsRuntime.js';

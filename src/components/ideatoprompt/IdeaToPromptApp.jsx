@@ -16,8 +16,10 @@ import {
     Bot,
     Check,
     ChevronDown,
-    ChevronUp,
+    ChevronRight,
     Copy,
+    Download,
+    Eye,
     FileText,
     FolderOpen,
     GitBranch,
@@ -31,8 +33,10 @@ import {
     ShieldCheck,
     Sparkles,
     StickyNote,
+    Package,
     Target,
     Trash2,
+    Upload,
     Users,
     Wand2
 } from 'lucide-react';
@@ -156,6 +160,135 @@ const DOCK_GROUPS = [
 const REVIEW_SECTION_ORDER = ['role', 'objective', 'features', 'constraints', 'output'];
 const EDGE_TYPE = 'orthogonal';
 const FIT_VIEW_PADDING = 0.28;
+const DEFAULT_LANE_KEY = 'saas';
+
+const IDEA_LANES = [
+    {
+        key: 'creative',
+        label: 'Creative / Brand Site',
+        icon: Sparkles,
+        accent: '#db2777',
+        summary: 'Best for storytelling, visual identity, launches, and campaigns.',
+        helper: 'Use this when the site is mostly about narrative, mood, sections, and CTA flow.'
+    },
+    {
+        key: 'saas',
+        label: 'SaaS / Dashboard',
+        icon: Bot,
+        accent: '#2563eb',
+        summary: 'Best for apps with workflows, accounts, dashboards, and repeated tasks.',
+        helper: 'Use this when the product solves an operational problem and likely needs structured app screens.'
+    },
+    {
+        key: 'tools',
+        label: 'Tool / Utility',
+        icon: Wand2,
+        accent: '#16a34a',
+        summary: 'Best for focused utilities with clear inputs, outputs, and edge cases.',
+        helper: 'Use this when the product is a calculator, generator, checker, converter, or workflow helper.'
+    },
+    {
+        key: 'marketplace',
+        label: 'Marketplace / Directory',
+        icon: Users,
+        accent: '#ea580c',
+        summary: 'Best for discovery, listings, search, profiles, and matching.',
+        helper: 'Use this when people need to browse, compare, or connect around items, services, or people.'
+    },
+    {
+        key: 'portfolio',
+        label: 'Portfolio / Personal Brand',
+        icon: Lightbulb,
+        accent: '#7c3aed',
+        summary: 'Best for personal proof, case studies, social links, and inbound trust.',
+        helper: 'Use this when the goal is showcasing work, credibility, and a clear call-to-action.'
+    },
+    {
+        key: 'community',
+        label: 'Community / Membership',
+        icon: Users,
+        accent: '#0891b2',
+        summary: 'Best for groups, resources, gated spaces, and recurring engagement.',
+        helper: 'Use this when the product grows around participation, discussion, or member-only value.'
+    },
+    {
+        key: 'ai_app',
+        label: 'AI App / Agent Workflow',
+        icon: Bot,
+        accent: '#0f766e',
+        summary: 'Best for prompt flows, agent actions, approvals, and AI-assisted tasks.',
+        helper: 'Use this when model behavior, output quality, and user review loops are core to the app.'
+    }
+];
+
+const PRODUCT_GOAL_OPTIONS = [
+    { value: 'storytelling', label: 'Storytelling / launch' },
+    { value: 'workflow', label: 'Workflow / dashboard' },
+    { value: 'utility', label: 'Simple tool / utility' },
+    { value: 'discovery', label: 'Discovery / listings' },
+    { value: 'credibility', label: 'Portfolio / credibility' },
+    { value: 'community', label: 'Community / members' },
+    { value: 'ai', label: 'AI-assisted flow' }
+];
+
+const ONBOARDING_STARTER_EXAMPLES = [
+    {
+        key: 'creator-hub',
+        label: 'Creator Hub',
+        metadata: {
+            projectName: 'Creator Hub',
+            audience: 'independent creators selling digital offers',
+            problemStatement: 'Creators struggle to present offers, capture leads, and manage lightweight customer requests in one focused flow.',
+            desiredOutcome: 'help creators launch faster and convert visitors into paying clients or subscribers',
+            productGoal: 'workflow',
+            laneKey: 'saas',
+            shipTarget: 'Web app',
+            status: 'Scoping'
+        }
+    },
+    {
+        key: 'brand-launch',
+        label: 'Brand Launch Site',
+        metadata: {
+            projectName: 'Studio Vale Launch',
+            audience: 'design-conscious customers discovering a new lifestyle brand',
+            problemStatement: 'The brand needs a memorable online launch that explains the story and makes people care quickly.',
+            desiredOutcome: 'turn first-time visitors into interested subscribers or buyers',
+            productGoal: 'storytelling',
+            laneKey: 'creative',
+            shipTarget: 'Web app',
+            status: 'Draft'
+        }
+    },
+    {
+        key: 'lead-tool',
+        label: 'Lead Qualifier Tool',
+        metadata: {
+            projectName: 'Lead Qualifier',
+            audience: 'small agencies evaluating inbound leads',
+            problemStatement: 'Teams waste time manually checking if leads are a fit before discovery calls.',
+            desiredOutcome: 'score leads quickly and show a clear next action',
+            productGoal: 'utility',
+            laneKey: 'tools',
+            shipTarget: 'Internal tool',
+            status: 'Ready to build'
+        }
+    },
+    {
+        key: 'ai-research',
+        label: 'AI Research Assistant',
+        metadata: {
+            projectName: 'Research Copilot',
+            audience: 'operators and founders collecting market insights',
+            problemStatement: 'People gather messy research from many sources and struggle to turn it into structured decisions.',
+            desiredOutcome: 'guide users from raw research input to usable summaries and next steps',
+            productGoal: 'ai',
+            laneKey: 'ai_app',
+            shipTarget: 'Web app',
+            status: 'Scoping'
+        }
+    }
+];
 
 const OMNI_LAYOUT = {
     source: [
@@ -176,17 +309,15 @@ const HANDLE_LAYOUTS = Object.fromEntries(
     Object.keys(NODE_CATALOG).map((type) => [type, OMNI_LAYOUT])
 );
 
-const CONNECTION_RULES = {
-    role: [{ target: 'objective', family: 'main' }],
-    target_user: [{ target: 'objective', family: 'main' }],
-    objective: [{ target: 'feature', family: 'main' }],
-    feature: [{ target: 'output', family: 'main' }],
-    constraint: [{ target: 'output', family: 'support' }],
-    unique_value: [{ target: 'output', family: 'support' }],
-    flow: [{ target: 'output', family: 'support' }],
-    custom: [{ target: 'output', family: 'support' }],
-    reference: [{ target: 'objective', family: 'support' }]
-};
+const CONNECTION_RULES = Object.fromEntries(
+    Object.keys(NODE_CATALOG).map((sourceType) => [
+        sourceType,
+        Object.keys(NODE_CATALOG).map((targetType) => ({
+                target: targetType,
+                family: 'main'
+            }))
+    ])
+);
 
 const EDGE_FAMILY_STYLES = {
     main: { strokeWidth: 3, strokeDasharray: '10 8' },
@@ -472,12 +603,517 @@ const nodeTypes = Object.fromEntries(
 );
 const edgeTypes = { [EDGE_TYPE]: OrthogonalEdge };
 
+const getLaneConfig = (laneKey) => IDEA_LANES.find((lane) => lane.key === laneKey) || IDEA_LANES.find((lane) => lane.key === DEFAULT_LANE_KEY);
+
+const recommendLaneKey = (metadata = {}) => {
+    if (metadata?.laneKey) return metadata.laneKey;
+
+    switch (metadata?.productGoal) {
+        case 'storytelling':
+            return 'creative';
+        case 'workflow':
+            return 'saas';
+        case 'utility':
+            return 'tools';
+        case 'discovery':
+            return 'marketplace';
+        case 'credibility':
+            return 'portfolio';
+        case 'community':
+            return 'community';
+        case 'ai':
+            return 'ai_app';
+        default:
+            return DEFAULT_LANE_KEY;
+    }
+};
+
+const buildLaneRecommendationReasons = (metadata = {}) => {
+    const reasons = [];
+    const goalOption = PRODUCT_GOAL_OPTIONS.find((option) => option.value === metadata?.productGoal);
+
+    if (goalOption) {
+        reasons.push(`Primary goal points to ${goalOption.label.toLowerCase()}.`);
+    }
+
+    if (metadata?.shipTarget) {
+        reasons.push(`Ship target is ${metadata.shipTarget.toLowerCase()}.`);
+    }
+
+    if (metadata?.problemStatement) {
+        if (/dashboard|workflow|manage|track|admin|system/i.test(metadata.problemStatement)) {
+            reasons.push('Problem description sounds workflow-heavy.');
+        }
+        if (/story|brand|launch|visual|campaign/i.test(metadata.problemStatement)) {
+            reasons.push('Problem description sounds narrative or brand-led.');
+        }
+        if (/tool|generator|checker|calculator|convert/i.test(metadata.problemStatement)) {
+            reasons.push('Problem description sounds like a focused utility.');
+        }
+        if (/community|member|group/i.test(metadata.problemStatement)) {
+            reasons.push('Problem description points to recurring engagement or membership.');
+        }
+        if (/ai|assistant|prompt|agent|automation/i.test(metadata.problemStatement)) {
+            reasons.push('Problem description suggests an AI-assisted flow.');
+        }
+    }
+
+    if (metadata?.desiredOutcome) {
+        if (/convert|signup|buy|launch/i.test(metadata.desiredOutcome)) {
+            reasons.push('Desired outcome sounds conversion-oriented.');
+        }
+        if (/review|summar|recommend|generate|score/i.test(metadata.desiredOutcome)) {
+            reasons.push('Desired outcome depends on structured outputs or decisions.');
+        }
+    }
+
+    return reasons.length ? reasons.slice(0, 3) : ['This lane best matches the current onboarding inputs.'];
+};
+
+const EMPTY_SCRAPE_STATE = {
+    scrapeStatus: 'idle',
+    scrapeError: '',
+    scrapedAt: '',
+    designTheme: '',
+    fontDirection: '',
+    colorPalette: '',
+    flowStructure: '',
+    referenceSummary: ''
+};
+
+const DEFAULT_IDEA_METADATA = {
+    projectName: '',
+    audience: '',
+    problemStatement: '',
+    desiredOutcome: '',
+    productGoal: 'workflow',
+    laneKey: DEFAULT_LANE_KEY,
+    status: 'Draft',
+    shipTarget: 'Web app',
+    referenceUrl: '',
+    ...EMPTY_SCRAPE_STATE
+};
+
+const buildReferenceSummary = (result) => {
+    if (!result) return '';
+    const lines = [
+        `${result.title || 'Reference'}`,
+        `Theme: ${result.designTheme || 'Not detected'}`,
+        `Fonts: ${result.fontDirection || 'Not detected'}`,
+        `Palette: ${result.colorPalette || 'Not detected'}`,
+        `Flow: ${result.flowStructure || 'Not detected'}`
+    ];
+    return lines.join('\n');
+};
+
+const runLocalReferenceScrape = async ({ referenceUrl }) => {
+    if (typeof window === 'undefined') {
+        throw new Error('Reference scraping is only available in a browser or desktop runtime.');
+    }
+
+    if (window.krackedOS?.reference?.scrape) {
+        return window.krackedOS.reference.scrape({
+            referenceUrl
+        });
+    }
+
+    const response = await fetch('/__idea-to-prompt/scrape-reference', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            referenceUrl
+        })
+    });
+
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) {
+        throw new Error(payload?.error || 'Failed to scrape reference URL.');
+    }
+
+    return payload;
+};
+
+const canUseBrowserDevScrape = typeof window !== 'undefined' && Boolean(window.location?.port === '5173');
+
+const canRunReferenceScrape = () => {
+    if (typeof window === 'undefined') return false;
+    if (window.krackedOS?.reference?.scrape) return true;
+    return canUseBrowserDevScrape;
+};
+
+const buildReferenceScrapeUnavailableError = () => {
+    throw new Error('Reference scraping is available in Electron desktop or the local Vite dev server.');
+};
+
+const runReferenceScrape = async ({ referenceUrl }) => {
+    if (!canRunReferenceScrape()) {
+        buildReferenceScrapeUnavailableError();
+    }
+
+    return runLocalReferenceScrape({
+        referenceUrl
+    });
+};
+
+const inferRoleProfile = (metadata = {}) => {
+    const laneKey = recommendLaneKey(metadata);
+    const shipTarget = metadata?.shipTarget || 'Web app';
+    const productGoal = metadata?.productGoal || 'workflow';
+    const isPrototype = /prototype/i.test(shipTarget);
+    const isDesktop = /desktop/i.test(shipTarget);
+    const isMobileWeb = /mobile web/i.test(shipTarget);
+    const isInternal = /internal tool/i.test(shipTarget);
+
+    const laneProfiles = {
+        creative: {
+            title: isDesktop ? 'Senior Creative Product Designer' : 'Senior Frontend Brand Designer',
+            stack: isPrototype
+                ? 'Use React + Vite with lightweight mock data. Prioritize visual polish, fast iteration, and expressive section design.'
+                : 'Use React + Vite + Tailwind CSS. Prioritize visual storytelling, polished sections, and reusable content blocks.',
+            stance: isMobileWeb
+                ? 'Think mobile-first, keep section rhythm tight, and make the CTA obvious on smaller screens.'
+                : 'Focus on narrative pacing, visual identity, and a memorable launch-ready experience.'
+        },
+        saas: {
+            title: isInternal ? 'Senior Internal Tools Engineer' : 'Senior Fullstack SaaS Engineer',
+            stack: isPrototype
+                ? 'Use React + Vite with mock state first, but structure screens like a real product workflow.'
+                : isDesktop
+                    ? 'Use React + Vite + Tauri + Supabase. Prioritize dependable CRUD flows, auth, and operational clarity.'
+                    : 'Use React + Vite + Supabase. Add auth, relational data, and clear dashboard workflows.',
+            stance: 'Ship boring reliable product flows, keep MVP scope tight, and make core actions obvious.'
+        },
+        tools: {
+            title: isInternal ? 'Senior Workflow Tools Engineer' : 'Senior Product Engineer for Utilities',
+            stack: isPrototype
+                ? 'Use React + Vite with local state and sample data so the input-output flow can be tested fast.'
+                : isDesktop
+                    ? 'Use React + Vite + Tauri for a focused desktop utility with quick local interactions.'
+                    : 'Use React + Vite. Keep dependencies light, validate inputs clearly, and optimize for one fast job.',
+            stance: 'Prefer low-friction UX, immediate results, and minimal setup before the user gets value.'
+        },
+        marketplace: {
+            title: 'Senior Marketplace Product Engineer',
+            stack: isPrototype
+                ? 'Use React + Vite with mocked listings and filters to validate discovery flow before backend depth.'
+                : 'Use React + Vite + Supabase. Support listings, profiles, filtering, and trust-building metadata.',
+            stance: 'Design for fast discovery, credible comparisons, and simple trust signals in the first release.'
+        },
+        portfolio: {
+            title: 'Senior Portfolio Experience Designer',
+            stack: isPrototype
+                ? 'Use React + Vite with static content and lightweight animation to validate the story fast.'
+                : 'Use React + Vite + Tailwind CSS with MDX or a simple CMS-ready content model for case studies.',
+            stance: 'Make proof, positioning, and the next CTA clearer than the competition.'
+        },
+        community: {
+            title: 'Senior Community Product Designer',
+            stack: isPrototype
+                ? 'Use React + Vite with mocked member flows to validate onboarding and engagement loops first.'
+                : 'Use React + Vite + Supabase. Support auth, gated resources, profiles, and recurring participation loops.',
+            stance: 'Keep member value concrete, onboarding simple, and repeat engagement easy to understand.'
+        },
+        ai_app: {
+            title: 'Senior AI Product Engineer',
+            stack: isPrototype
+                ? 'Use React + Vite with mocked AI responses first, but preserve the real prompt and review flow.'
+                : 'Use React + Vite + Supabase + OpenAI API. Support prompt orchestration, stored runs, and human review steps.',
+            stance: 'Make model behavior inspectable, keep outputs editable, and preserve human-in-the-loop quality control.'
+        }
+    };
+
+    const selectedProfile = laneProfiles[laneKey] || laneProfiles[DEFAULT_LANE_KEY];
+    const goalNote = productGoal === 'ai'
+        ? 'Treat the AI workflow as a product feature, not just a hidden helper.'
+        : productGoal === 'storytelling'
+            ? 'Bias the implementation toward clarity of story and presentation.'
+            : productGoal === 'utility'
+                ? 'Bias the implementation toward speed, clarity, and fast task completion.'
+                : 'Bias the implementation toward the main repeatable workflow.';
+
+    return {
+        title: selectedProfile.title,
+        details: `${selectedProfile.stack} ${selectedProfile.stance} ${goalNote}`
+    };
+};
+
+const getLaneStarterPack = (metadata = {}) => {
+    const lane = getLaneConfig(recommendLaneKey(metadata));
+    const projectName = metadata?.projectName || 'New Product';
+    const audience = metadata?.audience || 'people with the problem';
+    const problem = metadata?.problemStatement || 'help users solve an important problem';
+    const desiredOutcome = metadata?.desiredOutcome || 'give the user a clear, useful outcome fast';
+    const roleProfile = inferRoleProfile(metadata);
+
+    const lanePacks = {
+        creative: {
+            objective: `Launch a memorable website for ${projectName}`,
+            objectiveDetails: `Translate the brand story into a polished web experience so visitors quickly understand why ${projectName} matters.`,
+            features: [
+                {
+                    title: 'Narrative landing flow',
+                    details: `Guide visitors from the core tension around ${problem} into the promise, proof, and CTA without filler.`,
+                    priority: 1
+                },
+                {
+                    title: 'Distinctive visual direction',
+                    details: `Use layout, typography, and imagery choices that make ${projectName} feel specific instead of generic.`,
+                    priority: 2
+                }
+            ],
+            constraint: 'Keep the experience sharp, visually intentional, and conversion-aware',
+            constraintDetails: 'Avoid bloated sections, generic stock layouts, or copy that weakens the story.',
+            output: 'Produce a polished brand or launch website prompt',
+            outputDetails: 'Return a build brief that specifies section flow, design direction, content hierarchy, and CTA behavior.',
+            optionalNodes: [
+                {
+                    type: 'reference',
+                    title: 'Inspiration references',
+                    details: `Collect 1-2 sites whose mood or pacing feels adjacent to ${projectName}.`,
+                    position: { x: 720, y: 40 }
+                },
+                {
+                    type: 'unique_value',
+                    title: 'Emotional hook',
+                    details: `Name the one feeling or takeaway visitors should remember after seeing ${projectName}.`,
+                    position: { x: 1780, y: 40 }
+                }
+            ],
+            helper: 'Starter pack generated from onboarding: brand-led flow, strong visual direction, and conversion-aware storytelling.'
+        },
+        saas: {
+            objective: `Help ${audience} solve ${problem}`,
+            objectiveDetails: `Turn the current messy workflow into a clearer product system so users can ${desiredOutcome}.`,
+            features: [
+                {
+                    title: 'Core workflow dashboard',
+                    details: 'Give users one place to see status, next actions, and progress across the main repeated job.',
+                    priority: 1
+                },
+                {
+                    title: 'Action-oriented task flow',
+                    details: `Let the user complete the core workflow without confusion, dead ends, or unnecessary navigation.`,
+                    priority: 2
+                }
+            ],
+            constraint: 'Keep MVP scope tight and operationally clear',
+            constraintDetails: 'Prefer dependable CRUD flows, practical state handling, and a small number of key screens first.',
+            output: 'Produce a build-ready SaaS app prompt',
+            outputDetails: 'Return a build brief that defines core screens, auth/data assumptions, and the main product workflow.',
+            optionalNodes: [
+                {
+                    type: 'flow',
+                    title: 'Primary user flow',
+                    details: 'Map the shortest path from first entry to repeated daily use.',
+                    position: { x: 1050, y: 470 }
+                }
+            ],
+            helper: 'Starter pack generated from onboarding: operational workflow, structured screens, and dependable app defaults.'
+        },
+        tools: {
+            objective: `Build a focused tool for ${audience}`,
+            objectiveDetails: `Help them ${problem} and quickly ${desiredOutcome} with minimal setup or cognitive load.`,
+            features: [
+                {
+                    title: 'Clear input setup',
+                    details: 'Make it obvious what the user needs to provide before the tool can run.',
+                    priority: 1
+                },
+                {
+                    title: 'Useful result output',
+                    details: 'Return a result that is immediately actionable, copyable, or reusable.',
+                    priority: 2
+                }
+            ],
+            constraint: 'Avoid feature bloat outside the main utility',
+            constraintDetails: 'Optimize for one strong job first, with clean validation and quick completion.',
+            output: 'Produce a concise utility app prompt',
+            outputDetails: 'Return a build brief with tight scope, edge-case handling, and clear input-output expectations.',
+            optionalNodes: [
+                {
+                    type: 'flow',
+                    title: 'Result path',
+                    details: 'Describe how the user moves from input to result in the fewest necessary steps.',
+                    position: { x: 1050, y: 470 }
+                }
+            ],
+            helper: 'Starter pack generated from onboarding: one-job utility, clean validation, and fast result delivery.'
+        },
+        marketplace: {
+            objective: `Help ${audience} discover the right option faster`,
+            objectiveDetails: `Organize choices around ${problem} so users can compare, evaluate, and ${desiredOutcome}.`,
+            features: [
+                {
+                    title: 'Search and browse listings',
+                    details: 'Let users filter and compare options quickly without getting lost.',
+                    priority: 1
+                },
+                {
+                    title: 'Listing detail and trust signals',
+                    details: 'Show enough profile detail, proof, and context for confident decision-making.',
+                    priority: 2
+                }
+            ],
+            constraint: 'Keep ranking, trust, and listing logic simple in MVP',
+            constraintDetails: 'Start with clear taxonomy, strong filtering, and lightweight profile quality signals.',
+            output: 'Produce a marketplace or directory app prompt',
+            outputDetails: 'Return a build brief that covers discovery flow, listing structure, profile details, and trust cues.',
+            optionalNodes: [
+                {
+                    type: 'reference',
+                    title: 'Discovery benchmark',
+                    details: 'Reference one marketplace or directory with especially clear browse and filter behavior.',
+                    position: { x: 720, y: 40 }
+                }
+            ],
+            helper: 'Starter pack generated from onboarding: listings, discovery, and trust-building purchase or selection flow.'
+        },
+        portfolio: {
+            objective: `Show why ${projectName} matters`,
+            objectiveDetails: `Build trust with ${audience} by turning the work, proof, and positioning into a focused narrative.`,
+            features: [
+                {
+                    title: 'Proof-driven case studies',
+                    details: 'Highlight outcomes, process, and credibility in a way that feels specific and earned.',
+                    priority: 1
+                },
+                {
+                    title: 'Clear next-action path',
+                    details: 'Make inquiry, contact, or booking actions feel direct instead of buried.',
+                    priority: 2
+                }
+            ],
+            constraint: 'Keep the story credible and remove filler sections',
+            constraintDetails: 'Prioritize proof over fluff, and keep the CTA path obvious for the right audience.',
+            output: 'Produce a portfolio or personal brand site prompt',
+            outputDetails: 'Return a build brief that emphasizes proof structure, case studies, and CTA conversion.',
+            optionalNodes: [
+                {
+                    type: 'unique_value',
+                    title: 'Signature point of view',
+                    details: `State what makes ${projectName} or its creator feel distinct from lookalike portfolios.`,
+                    position: { x: 1780, y: 40 }
+                }
+            ],
+            helper: 'Starter pack generated from onboarding: credibility, proof, and a sharp call-to-action path.'
+        },
+        community: {
+            objective: `Create a community experience for ${audience}`,
+            objectiveDetails: `Help members around ${problem} in a way that drives repeat visits and lets them ${desiredOutcome}.`,
+            features: [
+                {
+                    title: 'Member entry and orientation',
+                    details: 'Make it easy to understand the value, first actions, and what members should do next.',
+                    priority: 1
+                },
+                {
+                    title: 'Resources or participation hub',
+                    details: 'Give members a clear home for useful assets, updates, or recurring participation.',
+                    priority: 2
+                }
+            ],
+            constraint: 'Do not overload MVP with too many community mechanics',
+            constraintDetails: 'Start with a simple loop for member value before adding deep engagement systems.',
+            output: 'Produce a community or membership platform prompt',
+            outputDetails: 'Return a build brief that defines member onboarding, recurring value, and the minimal engagement loop.',
+            optionalNodes: [
+                {
+                    type: 'flow',
+                    title: 'Member loop',
+                    details: 'Describe the loop that brings members back after the first visit.',
+                    position: { x: 1050, y: 470 }
+                }
+            ],
+            helper: 'Starter pack generated from onboarding: member onboarding, repeat value, and a simple engagement loop.'
+        },
+        ai_app: {
+            objective: `Help ${audience} use AI to ${problem}`,
+            objectiveDetails: `Guide them through an AI-assisted workflow so they can ${desiredOutcome} without losing trust or control.`,
+            features: [
+                {
+                    title: 'Prompt or task setup flow',
+                    details: 'Collect the right context before the model runs so the output has enough grounding.',
+                    priority: 1
+                },
+                {
+                    title: 'Review and refine output',
+                    details: 'Let users inspect, edit, approve, and reuse results confidently before anything final happens.',
+                    priority: 2
+                }
+            ],
+            constraint: 'Keep model behavior transparent and outputs editable',
+            constraintDetails: 'Avoid black-box magic. Show inputs, preserve revisions, and support human review.',
+            output: 'Produce an AI app or agent workflow prompt',
+            outputDetails: 'Return a build brief that defines prompt flow, run states, review steps, and AI-assisted delivery rules.',
+            optionalNodes: [
+                {
+                    type: 'flow',
+                    title: 'AI run loop',
+                    details: 'Describe setup, generation, review, and approval as a visible product flow.',
+                    position: { x: 1050, y: 470 }
+                },
+                {
+                    type: 'custom',
+                    title: 'AI workflow target',
+                    details: desiredOutcome,
+                    position: { x: 1770, y: 470 }
+                }
+            ],
+            helper: 'Starter pack generated from onboarding: prompt flow, review loop, and human-in-the-loop output quality.'
+        }
+    };
+
+    return {
+        lane,
+        roleProfile,
+        ...lanePacks[lane.key]
+    };
+};
+
+const buildScrapedReferenceNodes = (metadata = {}) => {
+    const nodes = [];
+
+    if (metadata?.referenceSummary) {
+        nodes.push({
+            type: 'reference',
+            title: 'Reference insight',
+            details: metadata.referenceSummary,
+            position: { x: 740, y: 40 }
+        });
+    }
+
+    if (metadata?.designTheme || metadata?.fontDirection || metadata?.colorPalette || metadata?.flowStructure) {
+        nodes.push({
+            type: 'custom',
+            title: 'Scraped inspiration digest',
+            details: [
+                metadata?.designTheme ? `Theme: ${metadata.designTheme}` : '',
+                metadata?.fontDirection ? `Fonts: ${metadata.fontDirection}` : '',
+                metadata?.colorPalette ? `Palette: ${metadata.colorPalette}` : '',
+                metadata?.flowStructure ? `Flow: ${metadata.flowStructure}` : ''
+            ].filter(Boolean).join('\n'),
+            position: { x: 1770, y: 470 }
+        });
+    }
+
+    return nodes;
+};
+
 const createIdeaNode = (type, position, overrides = {}) => {
     const definition = NODE_CATALOG[type];
     return {
         id: overrides.id || `${type}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
         type,
         position,
+        style: {
+            background: 'transparent',
+            border: 'none',
+            boxShadow: 'none',
+            padding: 0,
+            width: 'auto'
+        },
         data: {
             title: overrides.title || definition.label,
             details: overrides.details || '',
@@ -488,32 +1124,99 @@ const createIdeaNode = (type, position, overrides = {}) => {
     };
 };
 
-const buildStarterDocument = () => {
-    const nodes = [
-        createIdeaNode('target_user', { x: 20, y: 190 }, { id: 'starter-user', title: 'Solo builders and beginner founders', details: 'People who know the problem they want to solve but struggle to structure the build brief clearly.' }),
-        createIdeaNode('role', { x: 380, y: 10 }, { id: 'starter-role', title: 'Senior Fullstack Engineer', details: 'Use React + Vite + Supabase. Think mobile-first, ship complete code, and prefer boring reliable solutions.' }),
-        createIdeaNode('objective', { x: 380, y: 230 }, { id: 'starter-objective', title: 'Help solo founders turn ideas into build-ready specs', details: 'The app should convert messy thoughts into a clean prompt that an AI coding assistant can execute.' }),
-        createIdeaNode('feature', { x: 820, y: 130 }, { id: 'starter-feature-1', title: 'Structured idea graph', details: 'Let users map problem, user, features, constraints, and output requirements visually.', priority: 1 }),
-        createIdeaNode('feature', { x: 820, y: 430 }, { id: 'starter-feature-2', title: 'Editable master prompt', details: 'Generate a ROFCO prompt automatically, but allow manual edits before copying.', priority: 2 }),
-        createIdeaNode('constraint', { x: 360, y: 520 }, { id: 'starter-constraint', title: 'Keep the shell unchanged', details: 'Do not redesign the macOS-like shell. Scope is app behavior and workflow only.' }),
-        createIdeaNode('unique_value', { x: 1290, y: 40 }, { id: 'starter-uv', title: 'Graph becomes source of truth', details: 'The prompt should stay aligned with what was captured visually, not a disconnected form.' }),
-        createIdeaNode('output', { x: 1280, y: 250 }, { id: 'starter-output', title: 'Produce a ROFCO master prompt', details: 'Return a clear build brief with Role, Objective, Features, Constraints, and Output instructions.' }),
-        createIdeaNode('custom', { x: 1290, y: 490 }, { id: 'starter-custom', title: 'Custom Note', details: 'Any extra context that should be attached to the final prompt.' })
+const buildStarterDocument = (metadata = {}) => {
+    const projectName = metadata?.projectName || 'New Product';
+    const audience = metadata?.audience || 'people with the problem';
+    const problem = metadata?.problemStatement || 'help users solve an important problem';
+    const starterPack = getLaneStarterPack(metadata);
+
+    const backboneNodes = [
+        createIdeaNode('role', { x: 60, y: 250 }, {
+            id: 'starter-role',
+            title: starterPack.roleProfile.title,
+            details: starterPack.roleProfile.details
+        }),
+        createIdeaNode('objective', { x: 400, y: 250 }, {
+            id: 'starter-objective',
+            title: starterPack.objective,
+            details: starterPack.objectiveDetails
+        }),
+        ...starterPack.features.map((feature, index) => createIdeaNode('feature', { x: 740 + (index * 340), y: 250 }, {
+            id: `starter-feature-${index + 1}`,
+            title: feature.title,
+            details: feature.details,
+            priority: feature.priority || index + 1
+        })),
+        createIdeaNode('constraint', { x: 1420, y: 250 }, {
+            id: 'starter-constraint',
+            title: starterPack.constraint,
+            details: starterPack.constraintDetails
+        }),
+        createIdeaNode('output', { x: 1760, y: 250 }, {
+            id: 'starter-output',
+            title: starterPack.output,
+            details: starterPack.outputDetails
+        })
     ];
 
-    const byId = Object.fromEntries(nodes.map((node) => [node.id, node]));
-    const edges = [
-        buildEdgePayload(byId['starter-user'], byId['starter-objective'], { id: 'e-user-objective' }),
-        buildEdgePayload(byId['starter-role'], byId['starter-objective'], { id: 'e-role-objective' }),
-        buildEdgePayload(byId['starter-objective'], byId['starter-feature-1'], { id: 'e-objective-feature-1' }),
-        buildEdgePayload(byId['starter-objective'], byId['starter-feature-2'], { id: 'e-objective-feature-2' }),
-        buildEdgePayload(byId['starter-feature-1'], byId['starter-output'], { id: 'e-feature-output' }),
-        buildEdgePayload(byId['starter-constraint'], byId['starter-output'], { id: 'e-constraint-output' }),
-        buildEdgePayload(byId['starter-uv'], byId['starter-output'], { id: 'e-uv-output' }),
-        buildEdgePayload(byId['starter-custom'], byId['starter-output'], { id: 'e-custom-output' })
-    ].filter(Boolean);
+    const scrapedReferenceNodes = buildScrapedReferenceNodes(metadata);
 
-    return { nodes, edges };
+    const sideNodes = [
+        createIdeaNode('target_user', { x: 400, y: 40 }, {
+            id: 'starter-user',
+            title: audience,
+            details: `Primary audience for ${projectName}. They need help with ${problem}.`
+        }),
+        ...(starterPack.optionalNodes || []).map((node, index) => createIdeaNode(node.type, node.position, {
+            id: `starter-optional-${node.type}-${index + 1}`,
+            title: node.title,
+            details: node.details
+        })),
+        ...scrapedReferenceNodes.map((node, index) => createIdeaNode(node.type, node.position, {
+            id: `starter-scrape-${node.type}-${index + 1}`,
+            title: node.title,
+            details: node.details
+        }))
+    ];
+
+    const nodes = [...backboneNodes, ...sideNodes];
+    const byId = Object.fromEntries(nodes.map((node) => [node.id, node]));
+    const featureIds = starterPack.features.map((_, index) => `starter-feature-${index + 1}`);
+    const linearEdgeIds = [
+        ['starter-role', 'starter-objective', 'e-role-objective'],
+        ['starter-objective', featureIds[0], 'e-objective-feature-1'],
+        ...featureIds.slice(0, -1).map((featureId, index) => [featureId, featureIds[index + 1], `e-feature-${index + 1}-${index + 2}`]),
+        [featureIds[featureIds.length - 1], 'starter-constraint', 'e-feature-constraint'],
+        ['starter-constraint', 'starter-output', 'e-constraint-output']
+    ];
+
+    const sideEdgeIds = [
+        ['starter-user', 'starter-objective', 'e-user-objective'],
+        ...((starterPack.optionalNodes || []).map((node, index) => {
+            const starterId = `starter-optional-${node.type}-${index + 1}`;
+            const targetId = node.type === 'reference' ? 'starter-objective' : 'starter-output';
+            return [starterId, targetId, `e-${node.type}-${index + 1}`];
+        })),
+        ...scrapedReferenceNodes.map((node, index) => {
+            const starterId = `starter-scrape-${node.type}-${index + 1}`;
+            const targetId = node.type === 'reference' ? 'starter-objective' : 'starter-output';
+            return [starterId, targetId, `e-scrape-${node.type}-${index + 1}`];
+        })
+    ];
+
+    const edges = [...linearEdgeIds, ...sideEdgeIds]
+        .map(([sourceId, targetId, edgeId]) => buildEdgePayload(byId[sourceId], byId[targetId], { id: edgeId }))
+        .filter(Boolean);
+
+    return {
+        nodes,
+        edges,
+        meta: {
+            laneKey: starterPack.lane.key,
+            laneLabel: starterPack.lane.label,
+            helper: starterPack.helper
+        }
+    };
 };
 
 const createIdeaRecord = ({
@@ -522,6 +1225,7 @@ const createIdeaRecord = ({
     draftPrompt = '',
     promptDirty = false,
     syncedGeneratedPrompt = '',
+    metadata = {},
     importedLegacy = false
 } = {}) => ({
     id: `idea-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
@@ -530,9 +1234,64 @@ const createIdeaRecord = ({
     draftPrompt,
     promptDirty,
     syncedGeneratedPrompt: syncedGeneratedPrompt || buildRoFcoPrompt(graph.nodes),
+    metadata: {
+        ...DEFAULT_IDEA_METADATA,
+        projectName: name,
+        ...metadata
+    },
     importedLegacy,
     updatedAt: Date.now()
 });
+
+const sanitizeFilenamePart = (value, fallback = 'idea') => {
+    const normalized = String(value || fallback)
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '');
+    return normalized || fallback;
+};
+
+const downloadTextFile = (filename, content, mimeType = 'text/plain;charset=utf-8') => {
+    if (typeof window === 'undefined' || typeof document === 'undefined') return;
+    const blob = new Blob([content], { type: mimeType });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+};
+
+const serializeIdeaExport = (idea) => ({
+    version: IDEAS_STORAGE_VERSION,
+    exportedAt: new Date().toISOString(),
+    app: 'kracked-idea-to-prompt',
+    idea
+});
+
+const normalizeImportedIdeaPayload = (payload) => {
+    const rawIdea = payload?.idea || payload;
+    if (!rawIdea || !Array.isArray(rawIdea.graph?.nodes) || !rawIdea.graph.nodes.length) {
+        throw new Error('Imported file does not contain a valid idea graph.');
+    }
+
+    const graph = {
+        nodes: rawIdea.graph.nodes,
+        edges: normalizeStoredEdges(rawIdea.graph.edges, rawIdea.graph.nodes)
+    };
+
+    return createIdeaRecord({
+        name: rawIdea.name || 'Imported Idea',
+        graph,
+        draftPrompt: rawIdea.draftPrompt || '',
+        promptDirty: Boolean(rawIdea.promptDirty),
+        syncedGeneratedPrompt: rawIdea.syncedGeneratedPrompt || buildRoFcoPrompt(graph.nodes),
+        metadata: rawIdea.metadata || {},
+        importedLegacy: Boolean(rawIdea.importedLegacy)
+    });
+};
 
 const mapLegacyNodeType = (legacyType) => {
     switch (legacyType) {
@@ -596,6 +1355,26 @@ const loadStoredDocument = () => {
                     draftPrompt: idea.draftPrompt || '',
                     promptDirty: Boolean(idea.promptDirty),
                     syncedGeneratedPrompt: idea.syncedGeneratedPrompt || buildRoFcoPrompt(graph.nodes),
+                    metadata: {
+                        ...DEFAULT_IDEA_METADATA,
+                        projectName: idea.metadata?.projectName || idea.name || `Idea ${index + 1}`,
+                        audience: idea.metadata?.audience || '',
+                        problemStatement: idea.metadata?.problemStatement || '',
+                        desiredOutcome: idea.metadata?.desiredOutcome || '',
+                        productGoal: idea.metadata?.productGoal || 'workflow',
+                        laneKey: idea.metadata?.laneKey || DEFAULT_LANE_KEY,
+                        status: idea.metadata?.status || 'Draft',
+                        shipTarget: idea.metadata?.shipTarget || 'Web app',
+                        referenceUrl: idea.metadata?.referenceUrl || idea.metadata?.websiteReferenceUrl || idea.metadata?.designReferenceUrl || '',
+                        scrapeStatus: idea.metadata?.scrapeStatus || 'idle',
+                        scrapeError: idea.metadata?.scrapeError || '',
+                        scrapedAt: idea.metadata?.scrapedAt || '',
+                        designTheme: idea.metadata?.designTheme || '',
+                        fontDirection: idea.metadata?.fontDirection || '',
+                        colorPalette: idea.metadata?.colorPalette || '',
+                        flowStructure: idea.metadata?.flowStructure || '',
+                        referenceSummary: idea.metadata?.referenceSummary || idea.metadata?.websiteReferenceSummary || idea.metadata?.designReferenceSummary || ''
+                    },
                     importedLegacy: Boolean(idea.importedLegacy),
                     updatedAt: idea.updatedAt || Date.now()
                 };
@@ -803,6 +1582,66 @@ ${sections.output.body}
 End goal: produce a master prompt that another AI coding assistant can execute with minimal follow-up.`;
 };
 
+const buildIdeaSummary = ({ name, metadata, completenessSummary, warnings, nodes }) => {
+    const featureNodes = nodes.filter((node) => node.type === 'feature');
+    return [
+        `Project: ${metadata?.projectName || name}`,
+        `Audience: ${metadata?.audience || 'Not set yet'}`,
+        `Problem: ${metadata?.problemStatement || 'Not set yet'}`,
+        `Desired outcome: ${metadata?.desiredOutcome || 'Not set yet'}`,
+        `Lane: ${getLaneConfig(metadata?.laneKey || recommendLaneKey(metadata)).label}`,
+        `Status: ${metadata?.status || 'Draft'}`,
+        `Ship target: ${metadata?.shipTarget || 'Web app'}`,
+        `Required sections ready: ${completenessSummary.filter((item) => item.complete).length}/${completenessSummary.length}`,
+        `Feature count: ${featureNodes.length}`,
+        warnings.length ? `Warnings: ${warnings.join(' ')}` : 'Warnings: None'
+    ].join('\n');
+};
+
+const buildHandoffPackMarkdown = ({ idea, prompt, reviewSections, completenessSummary, warnings, generatedAt }) => {
+    const sectionMarkdown = REVIEW_SECTION_ORDER.map((sectionKey) => {
+        const section = reviewSections[sectionKey];
+        return `## ${section.heading.replace(/[\[\]]/g, '')}\n\n${section.body}`;
+    }).join('\n\n');
+
+    return `# ${idea.metadata?.projectName || idea.name} Handoff Pack
+
+Generated from KRACKED_OS Idea to Prompt on ${generatedAt}.
+
+## Project Metadata
+
+- Project: ${idea.metadata?.projectName || idea.name}
+- Audience: ${idea.metadata?.audience || 'Not set yet'}
+- Problem: ${idea.metadata?.problemStatement || 'Not set yet'}
+- Desired outcome: ${idea.metadata?.desiredOutcome || 'Not set yet'}
+- Product lane: ${getLaneConfig(idea.metadata?.laneKey || recommendLaneKey(idea.metadata)).label}
+- Status: ${idea.metadata?.status || 'Draft'}
+- Ship target: ${idea.metadata?.shipTarget || 'Web app'}
+
+## Builder Summary
+
+\`\`\`text
+${buildIdeaSummary({
+    name: idea.name,
+    metadata: idea.metadata,
+    completenessSummary,
+    warnings,
+    nodes: idea.graph?.nodes || []
+})}
+\`\`\`
+
+## Derived Review
+
+${sectionMarkdown}
+
+## Master Prompt
+
+\`\`\`text
+${prompt}
+\`\`\`
+`;
+};
+
 function IdeaCanvas({
     compact,
     panelOpen,
@@ -830,6 +1669,11 @@ function IdeaCanvas({
     promptCopied,
     onCopyPrompt,
     importedLegacy,
+    ideaMetadata,
+    onIdeaMetadataChange,
+    onScrapeReferenceUrls,
+    onApplyOnboardingTemplate,
+    onLoadOnboardingExample,
     reviewSections,
     isReadyForReview,
     promptNeedsRegenerate,
@@ -842,14 +1686,35 @@ function IdeaCanvas({
     onRenameIdea,
     onDeleteIdea,
     onSaveIdea,
+    onExportIdea,
+    onExportPrompt,
+    onExportHandoffPack,
+    onImportIdea,
+    onClearCanvas,
     activeDockGroup,
     onDockGroupChange,
     nodesTrayOpen,
-    onToggleNodesTray
+    onSetNodesTrayOpen
 }) {
     const { screenToFlowPosition, fitView } = useReactFlow();
     const wrapperRef = useRef(null);
     const selectedNode = nodes.find((node) => node.id === selectedNodeId) || null;
+    const [reviewTab, setReviewTab] = useState('summary');
+    const canScrapeReferences = canRunReferenceScrape();
+    const recommendedLane = getLaneConfig(recommendLaneKey(ideaMetadata));
+    const RecommendedLaneIcon = recommendedLane.icon;
+    const recommendationReasons = buildLaneRecommendationReasons(ideaMetadata);
+    const inferredRoleProfile = inferRoleProfile({
+        ...ideaMetadata,
+        laneKey: recommendLaneKey(ideaMetadata)
+    });
+    const starterPackPreview = getLaneStarterPack({
+        ...ideaMetadata,
+        laneKey: recommendLaneKey(ideaMetadata)
+    });
+    const scrapeStatus = ideaMetadata?.scrapeStatus || 'idle';
+    const scrapeReady = scrapeStatus === 'ready';
+    const scrapeRunning = scrapeStatus === 'loading';
 
     const addNodeOfType = useCallback((type, preferredPosition = null) => {
         const position = preferredPosition || (
@@ -903,6 +1768,12 @@ function IdeaCanvas({
     }, [addNodeOfType, onQuickAddConsumed, quickAddType]);
 
     useEffect(() => {
+        if (activeStep !== 'review') {
+            setReviewTab('summary');
+        }
+    }, [activeStep]);
+
+    useEffect(() => {
         if (!nodes.length) return;
         window.setTimeout(() => fitView({ padding: FIT_VIEW_PADDING, duration: 280 }), 0);
     }, [fitView, nodes.length]);
@@ -924,12 +1795,15 @@ function IdeaCanvas({
     }, [selectedNodeId, setEdges, setNodes, setSelectedNodeId]);
 
     const handleResetToStarter = useCallback(() => {
-        const starter = buildStarterDocument();
+        const starter = buildStarterDocument({
+            ...ideaMetadata,
+            laneKey: recommendLaneKey(ideaMetadata)
+        });
         setNodes(starter.nodes);
         setEdges(starter.edges);
         setSelectedNodeId(starter.nodes[0]?.id || null);
         window.setTimeout(() => fitView({ padding: FIT_VIEW_PADDING, duration: 320 }), 0);
-    }, [fitView, setEdges, setNodes, setSelectedNodeId]);
+    }, [fitView, ideaMetadata, setEdges, setNodes, setSelectedNodeId]);
 
     const handleSelectedFieldChange = useCallback((field, value) => {
         setNodes((currentNodes) => currentNodes.map((node) => {
@@ -954,7 +1828,7 @@ function IdeaCanvas({
     const missingRequired = completenessSummary.filter((item) => !item.complete).map((item) => item.type);
     const activeDock = DOCK_GROUPS.find((group) => group.key === activeDockGroup) || DOCK_GROUPS[0];
     const dockTypes = activeDock.types;
-    const recommendedTypes = dockTypes.filter((type) => missingRequired.includes(type));
+    const contentInsetTop = compact ? 58 : activeStep === 'review' ? 96 : 78;
 
     return (
         <div style={{ width: '100%', height: '100%', display: 'flex', position: 'relative', background: 'linear-gradient(180deg, #f2f6fc 0%, #e8eef8 100%)' }}>
@@ -1008,6 +1882,7 @@ function IdeaCanvas({
 
                     <div style={{ display: 'inline-flex', padding: 4, borderRadius: 16, background: 'rgba(255,255,255,0.92)', border: '1px solid rgba(148,163,184,0.22)', boxShadow: '0 12px 26px rgba(148,163,184,0.14)', gap: 4 }}>
                         {[
+                            { key: 'onboarding', label: 'Step 0: Find Idea' },
                             { key: 'map', label: 'Step 1: Build Map' },
                             { key: 'review', label: 'Step 2: Review Prompt' }
                         ].map((step) => {
@@ -1039,48 +1914,338 @@ function IdeaCanvas({
                 </div>
 
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                    <div style={{ padding: '10px 12px', borderRadius: 12, background: 'rgba(255,255,255,0.94)', border: '1px solid rgba(148,163,184,0.24)', boxShadow: '0 12px 24px rgba(148,163,184,0.12)', fontSize: 11, fontWeight: 700, color: '#475569' }}>
-                        {activeIdeaName} saved in cache
-                    </div>
-                    <button
-                        type="button"
-                        onClick={onSaveIdea}
-                        style={{ border: '1px solid rgba(148,163,184,0.24)', borderRadius: 12, background: 'rgba(255,255,255,0.94)', color: '#334155', width: 38, height: 38, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 12px 24px rgba(148,163,184,0.16)' }}
-                        title="Save idea"
-                    >
-                        <Save size={16} />
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => fitView({ padding: FIT_VIEW_PADDING, duration: 320 })}
-                        style={{ border: '1px solid rgba(148,163,184,0.24)', borderRadius: 12, background: 'rgba(255,255,255,0.94)', color: '#334155', width: 38, height: 38, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 12px 24px rgba(148,163,184,0.16)' }}
-                        title="Fit map"
-                    >
-                        <Scan size={16} />
-                    </button>
-                    <button
-                        type="button"
-                        onClick={handleResetToStarter}
-                        style={{ border: '1px solid rgba(148,163,184,0.24)', borderRadius: 12, background: 'rgba(255,255,255,0.94)', color: '#334155', padding: '0 12px', height: 38, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8, boxShadow: '0 12px 24px rgba(148,163,184,0.16)', fontWeight: 700, fontSize: 12 }}
-                    >
-                        <RotateCcw size={15} />
-                        Load Starter
-                    </button>
-                    {activeStep === 'review' && (
-                        <button
-                            type="button"
-                            onClick={onCopyPrompt}
-                            style={{ border: '1px solid rgba(37,99,235,0.32)', borderRadius: 12, background: promptCopied ? 'linear-gradient(135deg, #16a34a, #15803d)' : 'linear-gradient(135deg, #2563eb, #1d4ed8)', color: '#ffffff', padding: '0 14px', height: 38, display: 'inline-flex', alignItems: 'center', gap: 8, fontWeight: 800, fontSize: 12, boxShadow: '0 14px 28px rgba(37,99,235,0.24)' }}
-                        >
-                            {promptCopied ? <Check size={15} /> : <Copy size={15} />}
-                            {promptCopied ? 'Copied' : 'Copy Prompt'}
-                        </button>
+                    {activeStep === 'map' && (
+                        <>
+                            <button
+                                type="button"
+                                onClick={onSaveIdea}
+                                style={{ border: '1px solid rgba(148,163,184,0.24)', borderRadius: 12, background: 'rgba(255,255,255,0.94)', color: '#334155', width: 38, height: 38, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 12px 24px rgba(148,163,184,0.16)' }}
+                                title="Save idea"
+                            >
+                                <Save size={16} />
+                            </button>
+                            <button
+                                type="button"
+                                onClick={onImportIdea}
+                                style={{ border: '1px solid rgba(148,163,184,0.24)', borderRadius: 12, background: 'rgba(255,255,255,0.94)', color: '#334155', width: 38, height: 38, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 12px 24px rgba(148,163,184,0.16)' }}
+                                title="Import idea JSON"
+                            >
+                                <Upload size={16} />
+                            </button>
+                            <button
+                                type="button"
+                                onClick={onExportIdea}
+                                style={{ border: '1px solid rgba(148,163,184,0.24)', borderRadius: 12, background: 'rgba(255,255,255,0.94)', color: '#334155', width: 38, height: 38, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 12px 24px rgba(148,163,184,0.16)' }}
+                                title="Export idea JSON"
+                            >
+                                <Download size={16} />
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => fitView({ padding: FIT_VIEW_PADDING, duration: 320 })}
+                                style={{ border: '1px solid rgba(148,163,184,0.24)', borderRadius: 12, background: 'rgba(255,255,255,0.94)', color: '#334155', width: 38, height: 38, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 12px 24px rgba(148,163,184,0.16)' }}
+                                title="Fit map"
+                            >
+                                <Scan size={16} />
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleResetToStarter}
+                                style={{ border: '1px solid rgba(148,163,184,0.24)', borderRadius: 12, background: 'rgba(255,255,255,0.94)', color: '#334155', padding: '0 12px', height: 38, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8, boxShadow: '0 12px 24px rgba(148,163,184,0.16)', fontWeight: 700, fontSize: 12 }}
+                            >
+                                <RotateCcw size={15} />
+                                Load Starter
+                            </button>
+                            <button
+                                type="button"
+                                onClick={onClearCanvas}
+                                style={{ border: '1px solid rgba(239,68,68,0.24)', borderRadius: 12, background: 'rgba(254,242,242,0.95)', color: '#b91c1c', padding: '0 12px', height: 38, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8, boxShadow: '0 12px 24px rgba(148,163,184,0.16)', fontWeight: 700, fontSize: 12 }}
+                            >
+                                <Trash2 size={15} />
+                                Blank Canvas
+                            </button>
+                        </>
                     )}
                 </div>
             </div>
 
-            <div style={{ position: 'absolute', inset: compact ? '58px 10px 10px' : '78px 18px 18px', minHeight: 0, display: 'flex' }}>
-                {activeStep === 'map' ? (
+            <div style={{ position: 'absolute', top: contentInsetTop, left: compact ? 10 : 18, right: compact ? 10 : 18, bottom: compact ? 10 : 18, minHeight: 0, display: 'flex' }}>
+                {activeStep === 'onboarding' ? (
+                    <div style={{ flex: 1, minWidth: 0, minHeight: 0, borderRadius: 24, overflow: 'hidden', border: '1px solid rgba(148,163,184,0.24)', boxShadow: '0 22px 50px rgba(148,163,184,0.16)', background: 'rgba(255,255,255,0.84)', display: 'grid', gridTemplateColumns: compact ? '1fr' : 'minmax(0, 1.1fr) minmax(320px, 0.9fr)', gap: 0 }}>
+                        <div className="os-thin-scroll" style={{ padding: compact ? 16 : 22, overflowY: 'auto', borderRight: compact ? 'none' : '1px solid rgba(148,163,184,0.16)' }}>
+                            <div style={{ maxWidth: 760 }}>
+                                <div style={{ fontSize: 11, fontWeight: 900, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#64748b' }}>Step 0</div>
+                                <div style={{ marginTop: 8, fontSize: 28, fontWeight: 900, color: '#0f172a', lineHeight: 1.1 }}>Find the right product direction first</div>
+                                <div style={{ marginTop: 10, fontSize: 14, color: '#475569', lineHeight: 1.6 }}>
+                                    Before building the ROFCO map, define the problem, the audience, and what kind of product this should become. Then we can generate a stronger starter graph instead of dropping you onto a blank canvas.
+                                </div>
+                            </div>
+
+                            <div style={{ marginTop: 18, display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: 12 }}>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                    <label style={{ fontSize: 11, fontWeight: 800, color: '#475569' }}>Project name</label>
+                                    <input
+                                        value={ideaMetadata?.projectName || ''}
+                                        onChange={(event) => onIdeaMetadataChange('projectName', event.target.value)}
+                                        placeholder="Example: Creator Hub"
+                                        style={{ width: '100%', border: '1px solid rgba(148,163,184,0.24)', borderRadius: 14, padding: '12px 14px', fontSize: 13, color: '#0f172a', background: '#fff' }}
+                                    />
+                                </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                    <label style={{ fontSize: 11, fontWeight: 800, color: '#475569' }}>Who is this for?</label>
+                                    <input
+                                        value={ideaMetadata?.audience || ''}
+                                        onChange={(event) => onIdeaMetadataChange('audience', event.target.value)}
+                                        placeholder="Example: solo founders, local businesses, creators"
+                                        style={{ width: '100%', border: '1px solid rgba(148,163,184,0.24)', borderRadius: 14, padding: '12px 14px', fontSize: 13, color: '#0f172a', background: '#fff' }}
+                                    />
+                                </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                    <label style={{ fontSize: 11, fontWeight: 800, color: '#475569' }}>What problem matters most?</label>
+                                    <textarea
+                                        value={ideaMetadata?.problemStatement || ''}
+                                        onChange={(event) => onIdeaMetadataChange('problemStatement', event.target.value)}
+                                        rows={4}
+                                        placeholder="Describe the pain or friction clearly."
+                                        style={{ width: '100%', resize: 'vertical', border: '1px solid rgba(148,163,184,0.24)', borderRadius: 14, padding: '12px 14px', fontSize: 13, color: '#0f172a', background: '#fff' }}
+                                    />
+                                </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                    <label style={{ fontSize: 11, fontWeight: 800, color: '#475569' }}>What should the user get at the end?</label>
+                                    <textarea
+                                        value={ideaMetadata?.desiredOutcome || ''}
+                                        onChange={(event) => onIdeaMetadataChange('desiredOutcome', event.target.value)}
+                                        rows={4}
+                                        placeholder="Describe the useful outcome or transformation."
+                                        style={{ width: '100%', resize: 'vertical', border: '1px solid rgba(148,163,184,0.24)', borderRadius: 14, padding: '12px 14px', fontSize: 13, color: '#0f172a', background: '#fff' }}
+                                    />
+                                </div>
+                            </div>
+
+                            <div style={{ marginTop: 18, display: 'grid', gridTemplateColumns: compact ? '1fr' : 'repeat(2, minmax(0, 1fr))', gap: 12 }}>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                    <label style={{ fontSize: 11, fontWeight: 800, color: '#475569' }}>What kind of product is this?</label>
+                                    <select
+                                        value={ideaMetadata?.productGoal || 'workflow'}
+                                        onChange={(event) => onIdeaMetadataChange('productGoal', event.target.value)}
+                                        style={{ width: '100%', border: '1px solid rgba(148,163,184,0.24)', borderRadius: 14, padding: '12px 14px', fontSize: 13, color: '#0f172a', background: '#fff' }}
+                                    >
+                                        {PRODUCT_GOAL_OPTIONS.map((option) => (
+                                            <option key={option.value} value={option.value}>{option.label}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                    <label style={{ fontSize: 11, fontWeight: 800, color: '#475569' }}>Ship target</label>
+                                    <select
+                                        value={ideaMetadata?.shipTarget || 'Web app'}
+                                        onChange={(event) => onIdeaMetadataChange('shipTarget', event.target.value)}
+                                        style={{ width: '100%', border: '1px solid rgba(148,163,184,0.24)', borderRadius: 14, padding: '12px 14px', fontSize: 13, color: '#0f172a', background: '#fff' }}
+                                    >
+                                        {['Web app', 'Mobile web', 'Desktop app', 'Internal tool', 'Prototype'].map((option) => (
+                                            <option key={option} value={option}>{option}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div style={{ marginTop: 18, display: 'grid', gridTemplateColumns: compact ? '1fr' : 'repeat(2, minmax(0, 1fr))', gap: 12 }}>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                    <label style={{ fontSize: 11, fontWeight: 800, color: '#475569' }}>Reference URL</label>
+                                    <input
+                                        value={ideaMetadata?.referenceUrl || ''}
+                                        onChange={(event) => onIdeaMetadataChange('referenceUrl', event.target.value)}
+                                        placeholder="https://example.com"
+                                        style={{ width: '100%', border: '1px solid rgba(148,163,184,0.24)', borderRadius: 14, padding: '12px 14px', fontSize: 13, color: '#0f172a', background: '#fff' }}
+                                    />
+                                </div>
+                            </div>
+
+                            <div style={{ marginTop: 14, display: 'flex', justifyContent: 'flex-start', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+                                <button
+                                    type="button"
+                                    onClick={onScrapeReferenceUrls}
+                                    disabled={scrapeRunning || !canScrapeReferences}
+                                    style={{ border: '1px solid rgba(15,118,110,0.28)', borderRadius: 14, background: (scrapeRunning || !canScrapeReferences) ? 'rgba(226,232,240,0.96)' : 'linear-gradient(135deg, #0f766e, #115e59)', color: (scrapeRunning || !canScrapeReferences) ? '#64748b' : '#fff', padding: '12px 16px', fontWeight: 800, fontSize: 13, opacity: (scrapeRunning || !canScrapeReferences) ? 0.82 : 1 }}
+                                >
+                                    {!canScrapeReferences ? 'Scrape Unavailable' : (scrapeRunning ? 'Scraping Reference...' : 'Fetch Design Inspiration')}
+                                </button>
+                            </div>
+
+                            {scrapeRunning && (
+                                <div style={{ marginTop: 12, display: 'inline-flex', alignItems: 'center', gap: 8, padding: '9px 12px', borderRadius: 12, border: '1px solid rgba(15,118,110,0.16)', background: 'rgba(240,253,250,0.92)', color: '#115e59', fontSize: 12, fontWeight: 700 }}>
+                                    Scraping theme, fonts, palette, and flow...
+                                </div>
+                            )}
+
+                            {!scrapeRunning && ideaMetadata?.scrapeError && (
+                                <div style={{ marginTop: 12, padding: '10px 12px', borderRadius: 14, border: '1px solid rgba(239,68,68,0.18)', background: 'rgba(254,242,242,0.95)', color: '#991b1b', fontSize: 12, lineHeight: 1.55 }}>
+                                    {ideaMetadata.scrapeError}
+                                </div>
+                            )}
+
+                            {!scrapeRunning && scrapeReady && (
+                                <div style={{ marginTop: 12, display: 'grid', gridTemplateColumns: compact ? '1fr' : 'repeat(2, minmax(0, 1fr))', gap: 10 }}>
+                                    {[
+                                        { key: 'theme', label: 'Theme', value: ideaMetadata?.designTheme || 'Not detected', accent: '#0f766e' },
+                                        { key: 'fonts', label: 'Fonts', value: ideaMetadata?.fontDirection || 'Not detected', accent: '#7c3aed' },
+                                        { key: 'palette', label: 'Palette', value: ideaMetadata?.colorPalette || 'Not detected', accent: '#ea580c' },
+                                        { key: 'flow', label: 'Flow', value: ideaMetadata?.flowStructure || 'Not detected', accent: '#2563eb' }
+                                    ].map((item) => (
+                                        <div
+                                            key={item.key}
+                                            style={{
+                                                borderRadius: 16,
+                                                border: `1px solid ${item.accent}22`,
+                                                background: '#fff',
+                                                padding: 12,
+                                                boxShadow: '0 12px 24px rgba(148,163,184,0.08)'
+                                            }}
+                                        >
+                                            <div style={{ fontSize: 10, fontWeight: 900, letterSpacing: '0.1em', textTransform: 'uppercase', color: item.accent }}>
+                                                {item.label}
+                                            </div>
+                                            <div style={{ marginTop: 8, fontSize: 12, color: '#334155', lineHeight: 1.6 }}>
+                                                {item.value}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+
+                            <div style={{ marginTop: 18 }}>
+                                <div style={{ fontSize: 11, fontWeight: 800, color: '#475569', marginBottom: 10 }}>Quick start examples</div>
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+                                    {ONBOARDING_STARTER_EXAMPLES.map((example) => (
+                                        <button
+                                            key={example.key}
+                                            type="button"
+                                            onClick={() => onLoadOnboardingExample(example.metadata)}
+                                            style={{ border: '1px solid rgba(148,163,184,0.22)', borderRadius: 999, background: 'rgba(255,255,255,0.95)', color: '#334155', padding: '9px 12px', fontSize: 12, fontWeight: 800 }}
+                                        >
+                                            {example.label}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div style={{ marginTop: 18, display: 'flex', justifyContent: 'flex-start', gap: 10, flexWrap: 'wrap' }}>
+                                <button
+                                    type="button"
+                                    onClick={onApplyOnboardingTemplate}
+                                    style={{ border: '1px solid rgba(37,99,235,0.28)', borderRadius: 14, background: 'linear-gradient(135deg, #2563eb, #1d4ed8)', color: '#fff', padding: '12px 16px', fontWeight: 800, fontSize: 13 }}
+                                >
+                                    Use Recommended Setup
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => onStepChange('map')}
+                                    style={{ border: '1px solid rgba(148,163,184,0.24)', borderRadius: 14, background: 'rgba(255,255,255,0.96)', color: '#334155', padding: '12px 16px', fontWeight: 800, fontSize: 13 }}
+                                >
+                                    Skip to Map
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="os-thin-scroll" style={{ padding: compact ? 16 : 22, overflowY: 'auto', background: 'linear-gradient(180deg, rgba(248,250,252,0.9) 0%, rgba(241,245,249,0.92) 100%)' }}>
+                            <div style={{ borderRadius: 20, border: `1px solid ${recommendedLane.accent}33`, background: '#fff', padding: 18, boxShadow: '0 16px 36px rgba(148,163,184,0.12)' }}>
+                                <div style={{ fontSize: 11, fontWeight: 900, letterSpacing: '0.1em', textTransform: 'uppercase', color: recommendedLane.accent }}>Recommended Lane</div>
+                                <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 12 }}>
+                                    <div style={{ width: 42, height: 42, borderRadius: 14, background: `${recommendedLane.accent}15`, border: `1px solid ${recommendedLane.accent}30`, display: 'grid', placeItems: 'center' }}>
+                                        <RecommendedLaneIcon size={20} color={recommendedLane.accent} />
+                                    </div>
+                                    <div>
+                                        <div style={{ fontSize: 19, fontWeight: 900, color: '#0f172a' }}>{recommendedLane.label}</div>
+                                        <div style={{ marginTop: 4, fontSize: 12, color: '#475569', lineHeight: 1.5 }}>{recommendedLane.summary}</div>
+                                    </div>
+                                </div>
+                                <div style={{ marginTop: 14, fontSize: 12, color: '#475569', lineHeight: 1.6 }}>
+                                    {recommendedLane.helper}
+                                </div>
+                                <div style={{ marginTop: 14, borderRadius: 16, border: '1px solid rgba(148,163,184,0.18)', background: 'rgba(248,250,252,0.82)', padding: 12 }}>
+                                    <div style={{ fontSize: 10, fontWeight: 900, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#64748b', marginBottom: 8 }}>
+                                        Auto Role + Stack
+                                    </div>
+                                    <div style={{ fontSize: 13, fontWeight: 800, color: '#0f172a' }}>
+                                        {inferredRoleProfile.title}
+                                    </div>
+                                    <div style={{ marginTop: 6, fontSize: 12, color: '#475569', lineHeight: 1.6 }}>
+                                        {inferredRoleProfile.details}
+                                    </div>
+                                </div>
+                                <div style={{ marginTop: 14, borderRadius: 16, border: '1px solid rgba(148,163,184,0.18)', background: 'rgba(248,250,252,0.82)', padding: 12 }}>
+                                    <div style={{ fontSize: 10, fontWeight: 900, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#64748b', marginBottom: 8 }}>
+                                        Why this lane
+                                    </div>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                                        {recommendationReasons.map((reason) => (
+                                            <div key={reason} style={{ fontSize: 12, color: '#475569', lineHeight: 1.5 }}>
+                                                - {reason}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                                <div style={{ marginTop: 14, borderRadius: 16, border: scrapeReady ? '1px solid rgba(15,118,110,0.2)' : '1px solid rgba(148,163,184,0.18)', background: 'rgba(248,250,252,0.82)', padding: 12 }}>
+                                    <div style={{ fontSize: 10, fontWeight: 900, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#64748b', marginBottom: 8 }}>
+                                        Scraped Inspiration
+                                    </div>
+                                    {scrapeReady ? (
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                            <div style={{ fontSize: 12, color: '#475569', lineHeight: 1.6 }}>
+                                                <strong>Theme:</strong> {ideaMetadata?.designTheme || 'Not detected'}
+                                            </div>
+                                            <div style={{ fontSize: 12, color: '#475569', lineHeight: 1.6 }}>
+                                                <strong>Fonts:</strong> {ideaMetadata?.fontDirection || 'Not detected'}
+                                            </div>
+                                            <div style={{ fontSize: 12, color: '#475569', lineHeight: 1.6 }}>
+                                                <strong>Palette:</strong> {ideaMetadata?.colorPalette || 'Not detected'}
+                                            </div>
+                                            <div style={{ fontSize: 12, color: '#475569', lineHeight: 1.6 }}>
+                                                <strong>Flow:</strong> {ideaMetadata?.flowStructure || 'Not detected'}
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div style={{ fontSize: 12, color: '#64748b', lineHeight: 1.6 }}>
+                                            Add one reference URL, then run scrape to extract theme, typography direction, colour palette, and page flow structure.
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div style={{ marginTop: 16, display: 'grid', gap: 10 }}>
+                                {IDEA_LANES.map((lane) => {
+                                    const Icon = lane.icon;
+                                    const isActive = lane.key === recommendedLane.key;
+                                    return (
+                                        <button
+                                            key={lane.key}
+                                            type="button"
+                                            onClick={() => onIdeaMetadataChange('laneKey', lane.key)}
+                                            style={{
+                                                textAlign: 'left',
+                                                border: isActive ? `1px solid ${lane.accent}40` : '1px solid rgba(148,163,184,0.18)',
+                                                borderRadius: 18,
+                                                background: isActive ? `linear-gradient(135deg, ${lane.accent}14, rgba(255,255,255,0.96))` : 'rgba(255,255,255,0.94)',
+                                                padding: 14,
+                                                display: 'flex',
+                                                gap: 12,
+                                                alignItems: 'flex-start'
+                                            }}
+                                        >
+                                            <div style={{ width: 38, height: 38, borderRadius: 14, background: `${lane.accent}15`, border: `1px solid ${lane.accent}28`, display: 'grid', placeItems: 'center', flexShrink: 0 }}>
+                                                <Icon size={18} color={lane.accent} />
+                                            </div>
+                                            <div>
+                                                <div style={{ fontSize: 14, fontWeight: 900, color: '#0f172a' }}>{lane.label}</div>
+                                                <div style={{ marginTop: 4, fontSize: 11, color: '#64748b', lineHeight: 1.5 }}>{lane.summary}</div>
+                                            </div>
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    </div>
+                ) : activeStep === 'map' ? (
                     <div style={{ flex: 1, minWidth: 0, minHeight: 0, display: 'grid', gridTemplateColumns: compact ? '1fr' : '320px minmax(0, 1fr)', gap: compact ? 0 : 14 }}>
                         {(!compact || panelOpen) && (
                             <aside className="os-thin-scroll" style={{
@@ -1101,20 +2266,13 @@ function IdeaCanvas({
                                 gap: 12,
                                 overflowY: 'auto'
                             }}>
-                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
-                                    <div>
-                                        <div style={{ fontSize: 10, fontWeight: 900, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#64748b' }}>Workspace Utility</div>
-                                        <div style={{ marginTop: 6, fontSize: 18, fontWeight: 900, color: '#0f172a' }}>Idea to Prompt</div>
-                                        <div style={{ marginTop: 6, fontSize: 12, color: '#64748b', lineHeight: 1.5 }}>
-                                            Build the map first. Prompt review only cleans up wording after the graph is complete.
-                                        </div>
-                                    </div>
-                                    {compact && (
+                                {compact && (
+                                    <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
                                         <button type="button" onClick={onClosePanel} style={{ border: '1px solid rgba(148,163,184,0.24)', borderRadius: 10, background: '#fff', color: '#334155', width: 30, height: 30 }}>
                                             <PanelLeft size={12} />
                                         </button>
-                                    )}
-                                </div>
+                                    </div>
+                                )}
 
                                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 8 }}>
                                     {completenessSummary.map((item) => (
@@ -1145,6 +2303,44 @@ function IdeaCanvas({
                                         </div>
                                     </div>
                                 )}
+
+                                <div style={{ borderRadius: 18, border: '1px solid rgba(148,163,184,0.2)', background: 'rgba(255,255,255,0.96)', padding: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                                    <div style={{ fontSize: 11, fontWeight: 900, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#475569' }}>
+                                        Project Metadata
+                                    </div>
+                                    <input
+                                        value={ideaMetadata?.projectName || ''}
+                                        onChange={(event) => onIdeaMetadataChange('projectName', event.target.value)}
+                                        placeholder="Project name"
+                                        style={{ width: '100%', border: '1px solid rgba(148,163,184,0.24)', borderRadius: 12, padding: '10px 12px', fontSize: 12, color: '#0f172a', background: '#fff', boxSizing: 'border-box' }}
+                                    />
+                                    <input
+                                        value={ideaMetadata?.audience || ''}
+                                        onChange={(event) => onIdeaMetadataChange('audience', event.target.value)}
+                                        placeholder="Audience or market"
+                                        style={{ width: '100%', border: '1px solid rgba(148,163,184,0.24)', borderRadius: 12, padding: '10px 12px', fontSize: 12, color: '#0f172a', background: '#fff', boxSizing: 'border-box' }}
+                                    />
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 8 }}>
+                                        <select
+                                            value={ideaMetadata?.status || 'Draft'}
+                                            onChange={(event) => onIdeaMetadataChange('status', event.target.value)}
+                                            style={{ width: '100%', border: '1px solid rgba(148,163,184,0.24)', borderRadius: 12, padding: '10px 12px', fontSize: 12, color: '#0f172a', background: '#fff', boxSizing: 'border-box' }}
+                                        >
+                                            {['Draft', 'Scoping', 'Ready to build', 'In progress'].map((option) => (
+                                                <option key={option} value={option}>{option}</option>
+                                            ))}
+                                        </select>
+                                        <select
+                                            value={ideaMetadata?.shipTarget || 'Web app'}
+                                            onChange={(event) => onIdeaMetadataChange('shipTarget', event.target.value)}
+                                            style={{ width: '100%', border: '1px solid rgba(148,163,184,0.24)', borderRadius: 12, padding: '10px 12px', fontSize: 12, color: '#0f172a', background: '#fff', boxSizing: 'border-box' }}
+                                        >
+                                            {['Web app', 'Mobile web', 'Desktop app', 'Internal tool', 'Prototype'].map((option) => (
+                                                <option key={option} value={option}>{option}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                </div>
 
                                 <div style={{ borderRadius: 18, border: '1px solid rgba(148,163,184,0.2)', background: 'rgba(255,255,255,0.96)', padding: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
                                     <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'baseline' }}>
@@ -1204,13 +2400,22 @@ function IdeaCanvas({
                             </aside>
                         )}
 
-                        <div style={{ minWidth: 0, minHeight: 0, display: 'grid', gridTemplateRows: 'minmax(0, 1fr) auto', gap: 12 }}>
+                        <div style={{ minWidth: 0, minHeight: 0, display: 'grid', gridTemplateRows: 'minmax(0, 1fr)' }}>
                             <div ref={wrapperRef} style={{ minHeight: 0, minWidth: 0, display: 'flex' }}>
                                 <div style={{ flex: 1, minWidth: 0, minHeight: 0, position: 'relative', borderRadius: 24, overflow: 'hidden', border: '1px solid rgba(148,163,184,0.24)', background: 'linear-gradient(180deg, rgba(255,255,255,0.92) 0%, rgba(241,245,249,0.92) 100%)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.7), 0 16px 36px rgba(148,163,184,0.16)' }}>
                                     <div style={{ position: 'absolute', top: 0, left: 0, right: 0, zIndex: 9, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: compact ? '12px 14px' : '14px 16px', background: 'linear-gradient(180deg, rgba(248,250,252,0.94) 0%, rgba(248,250,252,0.72) 100%)', borderBottom: '1px solid rgba(148,163,184,0.18)' }}>
                                         <div>
                                             <div style={{ fontSize: 10, fontWeight: 900, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#64748b' }}>Logical Workspace</div>
                                             <div style={{ marginTop: 4, fontSize: 14, fontWeight: 800, color: '#0f172a' }}>Map the ROFCO graph</div>
+                                            <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                                                <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, borderRadius: 999, padding: '4px 9px', background: `${recommendedLane.accent}14`, border: `1px solid ${recommendedLane.accent}24`, color: recommendedLane.accent, fontSize: 10, fontWeight: 900, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                                                    <RecommendedLaneIcon size={12} />
+                                                    {recommendedLane.label}
+                                                </div>
+                                                <div style={{ fontSize: 11, color: '#64748b', lineHeight: 1.45 }}>
+                                                    {starterPackPreview.helper}
+                                                </div>
+                                            </div>
                                         </div>
                                         {!isReadyForReview && (
                                             <div style={{ maxWidth: compact ? 180 : 260, fontSize: 11, color: '#475569', lineHeight: 1.45, textAlign: 'right' }}>
@@ -1220,6 +2425,7 @@ function IdeaCanvas({
                                     </div>
 
                                     <ReactFlow
+                                        className="idea-to-prompt-flow"
                                         nodes={nodes}
                                         edges={edges}
                                         onNodesChange={onNodesChange}
@@ -1249,6 +2455,117 @@ function IdeaCanvas({
                                         </div>
                                     )}
 
+                                    {activeStep === 'map' && nodesTrayOpen && (
+                                        <div style={{ position: 'absolute', left: compact ? 12 : 16, right: compact ? 12 : 16, bottom: compact ? 74 : 86, zIndex: 11, borderRadius: 22, border: '1px solid rgba(148,163,184,0.22)', background: 'rgba(255,255,255,0.94)', boxShadow: '0 18px 42px rgba(148,163,184,0.2)', overflow: 'hidden' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '12px 14px', borderBottom: '1px solid rgba(148,163,184,0.16)', background: 'rgba(248,250,252,0.9)' }}>
+                                                <div>
+                                                    <div style={{ fontSize: 10, fontWeight: 900, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#64748b' }}>Device-Type Selection</div>
+                                                    <div style={{ marginTop: 4, fontSize: 15, fontWeight: 800, color: '#0f172a' }}>{activeDock.label}</div>
+                                                    <div style={{ marginTop: 4, fontSize: 11, color: '#64748b', lineHeight: 1.45 }}>{activeDock.helper}</div>
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => onSetNodesTrayOpen(false)}
+                                                    style={{ border: '1px solid rgba(148,163,184,0.24)', borderRadius: 10, background: '#fff', color: '#334155', width: 32, height: 32, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+                                                    title="Hide node picker details"
+                                                >
+                                                    <ChevronDown size={15} />
+                                                </button>
+                                            </div>
+
+                                            <div style={{ padding: 14 }}>
+                                                <div className="os-thin-scroll" style={{ maxHeight: compact ? 240 : 196, overflowY: 'auto' }}>
+                                                    <div style={{ display: 'grid', gridTemplateColumns: compact ? '1fr' : 'repeat(2, minmax(0, 1fr))', gap: 8 }}>
+                                                        {dockTypes.map((type) => {
+                                                            const definition = NODE_CATALOG[type];
+                                                            const Icon = definition.icon;
+                                                            const isRecommended = missingRequired.includes(type);
+                                                            return (
+                                                                <button
+                                                                    key={type}
+                                                                    type="button"
+                                                                    draggable
+                                                                    onDragStart={(event) => {
+                                                                        event.dataTransfer.setData('application/reactflow', type);
+                                                                        event.dataTransfer.effectAllowed = 'move';
+                                                                    }}
+                                                                    onClick={() => onQuickAddRequest(type)}
+                                                                    style={{
+                                                                        display: 'flex',
+                                                                        alignItems: 'center',
+                                                                        gap: 10,
+                                                                        padding: '12px',
+                                                                        borderRadius: 16,
+                                                                        border: isRecommended ? `1px solid ${definition.accent}55` : '1px solid rgba(148,163,184,0.2)',
+                                                                        background: isRecommended ? `linear-gradient(135deg, ${definition.accent}18, rgba(255,255,255,0.96))` : 'rgba(255,255,255,0.96)',
+                                                                        color: '#0f172a',
+                                                                        boxShadow: isRecommended ? `0 12px 26px ${definition.accent}18` : '0 10px 20px rgba(148,163,184,0.1)',
+                                                                        cursor: 'grab',
+                                                                        textAlign: 'left'
+                                                                    }}
+                                                                >
+                                                                    <div style={{ width: 34, height: 34, borderRadius: 12, background: `${definition.accent}18`, border: `1px solid ${definition.accent}30`, display: 'grid', placeItems: 'center', flexShrink: 0 }}>
+                                                                        <Icon size={16} color={definition.accent} />
+                                                                    </div>
+                                                                    <div style={{ minWidth: 0 }}>
+                                                                        <div style={{ fontSize: 12, fontWeight: 900 }}>
+                                                                            {definition.label}{isRecommended ? ' (Next)' : ''}
+                                                                        </div>
+                                                                        <div style={{ marginTop: 3, fontSize: 10, color: '#64748b', lineHeight: 1.45 }}>
+                                                                            {definition.description}
+                                                                        </div>
+                                                                    </div>
+                                                                </button>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {activeStep === 'map' && (
+                                        <div style={{ position: 'absolute', left: '50%', bottom: compact ? 12 : 16, transform: 'translateX(-50%)', zIndex: 11, display: 'inline-flex', alignItems: 'center', gap: 8, padding: '8px 10px', borderRadius: 999, background: 'rgba(255,255,255,0.94)', border: '1px solid rgba(148,163,184,0.24)', boxShadow: '0 16px 36px rgba(148,163,184,0.18)' }}>
+                                        {DOCK_GROUPS.map((group) => {
+                                            const Icon = NODE_CATALOG[group.types[0]].icon;
+                                            const isActive = group.key === activeDock.key;
+                                            const pendingCount = group.types.filter((type) => missingRequired.includes(type)).length;
+                                            return (
+                                                <button
+                                                    key={group.key}
+                                                    type="button"
+                                                    onClick={() => {
+                                                        const isSameGroup = group.key === activeDock.key;
+                                                        onDockGroupChange(group.key);
+                                                        onSetNodesTrayOpen(isSameGroup ? !nodesTrayOpen : true);
+                                                    }}
+                                                    style={{
+                                                        width: 40,
+                                                        height: 40,
+                                                        borderRadius: 14,
+                                                        border: isActive && nodesTrayOpen ? '1px solid rgba(37,99,235,0.28)' : '1px solid rgba(148,163,184,0.18)',
+                                                        background: isActive && nodesTrayOpen ? 'linear-gradient(135deg, rgba(37,99,235,0.14), rgba(59,130,246,0.08))' : 'rgba(255,255,255,0.96)',
+                                                        color: isActive && nodesTrayOpen ? '#1d4ed8' : '#334155',
+                                                        display: 'inline-flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center',
+                                                        position: 'relative',
+                                                        boxShadow: isActive && nodesTrayOpen ? '0 10px 24px rgba(37,99,235,0.14)' : 'none'
+                                                    }}
+                                                    title={`${group.label}${pendingCount ? ` - ${pendingCount} required missing` : ''}`}
+                                                >
+                                                    <Icon size={18} />
+                                                    {pendingCount > 0 && (
+                                                        <span style={{ position: 'absolute', top: -4, right: -4, minWidth: 18, height: 18, padding: '0 4px', borderRadius: 999, background: '#dc2626', color: '#fff', fontSize: 10, fontWeight: 800, display: 'grid', placeItems: 'center' }}>
+                                                            {pendingCount}
+                                                        </span>
+                                                    )}
+                                                </button>
+                                            );
+                                        })}
+                                        </div>
+                                    )}
+
                                     <div style={{ position: 'absolute', right: compact ? 12 : 16, bottom: compact ? 12 : 16, zIndex: 10, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8 }}>
                                         <button
                                             type="button"
@@ -1269,123 +2586,15 @@ function IdeaCanvas({
                                     </div>
                                 </div>
                             </div>
-
-                            <div style={{ borderRadius: 22, border: '1px solid rgba(148,163,184,0.24)', background: 'linear-gradient(180deg, rgba(243,247,252,0.98) 0%, rgba(232,239,248,0.98) 100%)', boxShadow: '0 16px 34px rgba(148,163,184,0.14)', overflow: 'hidden' }}>
-                                <button
-                                    type="button"
-                                    onClick={onToggleNodesTray}
-                                    style={{ width: '100%', border: 'none', borderBottom: nodesTrayOpen ? '1px solid rgba(148,163,184,0.18)' : 'none', background: 'rgba(233,240,248,0.92)', padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', color: '#0f172a', fontWeight: 900, fontSize: 12, letterSpacing: '0.04em', textTransform: 'uppercase' }}
-                                >
-                                    <span>Device-Type Selection</span>
-                                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, color: '#475569', fontWeight: 800 }}>
-                                        {activeDock.label}
-                                        {nodesTrayOpen ? <ChevronDown size={15} /> : <ChevronUp size={15} />}
-                                    </span>
-                                </button>
-
-                                {nodesTrayOpen && (
-                                    <div style={{ display: 'grid', gridTemplateColumns: compact ? '1fr' : '220px minmax(0, 1fr)' }}>
-                                        <div style={{ borderRight: compact ? 'none' : '1px solid rgba(148,163,184,0.18)', borderBottom: compact ? '1px solid rgba(148,163,184,0.18)' : 'none', background: 'rgba(239,244,250,0.96)', padding: 12, display: 'flex', flexDirection: compact ? 'row' : 'column', gap: 8, overflowX: compact ? 'auto' : 'visible' }}>
-                                            {DOCK_GROUPS.map((group) => {
-                                                const isActive = group.key === activeDock.key;
-                                                const pendingCount = group.types.filter((type) => missingRequired.includes(type)).length;
-                                                return (
-                                                    <button
-                                                        key={group.key}
-                                                        type="button"
-                                                        onClick={() => onDockGroupChange(group.key)}
-                                                        style={{
-                                                            border: isActive ? '1px solid rgba(37,99,235,0.28)' : '1px solid rgba(148,163,184,0.2)',
-                                                            borderRadius: 16,
-                                                            background: isActive ? 'linear-gradient(135deg, rgba(37,99,235,0.14), rgba(59,130,246,0.08))' : 'rgba(255,255,255,0.9)',
-                                                            color: '#0f172a',
-                                                            padding: '11px 12px',
-                                                            minWidth: compact ? 180 : 'auto',
-                                                            textAlign: 'left',
-                                                            boxShadow: isActive ? '0 10px 24px rgba(37,99,235,0.12)' : 'none'
-                                                        }}
-                                                    >
-                                                        <div style={{ fontSize: 11, fontWeight: 900 }}>{group.label}</div>
-                                                        <div style={{ marginTop: 4, fontSize: 10, color: '#64748b', lineHeight: 1.45 }}>{group.helper}</div>
-                                                        <div style={{ marginTop: 8, fontSize: 10, fontWeight: 800, color: pendingCount ? '#b91c1c' : '#166534' }}>
-                                                            {pendingCount ? `${pendingCount} required missing` : 'Ready'}
-                                                        </div>
-                                                    </button>
-                                                );
-                                            })}
-                                        </div>
-
-                                        <div style={{ padding: 12 }}>
-                                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 12, flexWrap: 'wrap' }}>
-                                                <div>
-                                                    <div style={{ fontSize: 10, fontWeight: 900, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#64748b' }}>Device-Specific Selection</div>
-                                                    <div style={{ marginTop: 4, fontSize: 15, fontWeight: 800, color: '#0f172a' }}>{activeDock.label}</div>
-                                                    <div style={{ marginTop: 4, fontSize: 11, color: '#64748b', lineHeight: 1.5 }}>{activeDock.helper}</div>
-                                                </div>
-                                                <div style={{ fontSize: 11, fontWeight: 800, color: recommendedTypes.length ? '#b91c1c' : '#166534' }}>
-                                                    {recommendedTypes.length ? `${recommendedTypes.length} recommended next` : `${dockTypes.length} node types available`}
-                                                </div>
-                                            </div>
-
-                                            <div className="os-thin-scroll" style={{ maxHeight: compact ? 224 : 176, overflowY: 'auto' }}>
-                                                <div style={{ display: 'grid', gridTemplateColumns: compact ? '1fr' : 'repeat(2, minmax(0, 1fr))', gap: 8 }}>
-                                                    {dockTypes.map((type) => {
-                                                        const definition = NODE_CATALOG[type];
-                                                        const Icon = definition.icon;
-                                                        const isRecommended = missingRequired.includes(type);
-                                                        return (
-                                                            <button
-                                                                key={type}
-                                                                type="button"
-                                                                draggable
-                                                                onDragStart={(event) => {
-                                                                    event.dataTransfer.setData('application/reactflow', type);
-                                                                    event.dataTransfer.effectAllowed = 'move';
-                                                                }}
-                                                                onClick={() => onQuickAddRequest(type)}
-                                                                style={{
-                                                                    display: 'flex',
-                                                                    alignItems: 'center',
-                                                                    gap: 10,
-                                                                    padding: '12px',
-                                                                    borderRadius: 16,
-                                                                    border: isRecommended ? `1px solid ${definition.accent}55` : '1px solid rgba(148,163,184,0.2)',
-                                                                    background: isRecommended ? `linear-gradient(135deg, ${definition.accent}18, rgba(255,255,255,0.96))` : 'rgba(255,255,255,0.96)',
-                                                                    color: '#0f172a',
-                                                                    boxShadow: isRecommended ? `0 12px 26px ${definition.accent}18` : '0 10px 20px rgba(148,163,184,0.1)',
-                                                                    cursor: 'grab',
-                                                                    textAlign: 'left'
-                                                                }}
-                                                            >
-                                                                <div style={{ width: 34, height: 34, borderRadius: 12, background: `${definition.accent}18`, border: `1px solid ${definition.accent}30`, display: 'grid', placeItems: 'center', flexShrink: 0 }}>
-                                                                    <Icon size={16} color={definition.accent} />
-                                                                </div>
-                                                                <div style={{ minWidth: 0 }}>
-                                                                    <div style={{ fontSize: 12, fontWeight: 900 }}>
-                                                                        {definition.label}{isRecommended ? ' (Next)' : ''}
-                                                                    </div>
-                                                                    <div style={{ marginTop: 3, fontSize: 10, color: '#64748b', lineHeight: 1.45 }}>
-                                                                        {definition.description}
-                                                                    </div>
-                                                                </div>
-                                                            </button>
-                                                        );
-                                                    })}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
                         </div>
                     </div>
                 ) : (
                     <div style={{ flex: 1, minWidth: 0, minHeight: 0, borderRadius: 24, overflow: 'hidden', border: '1px solid rgba(148,163,184,0.24)', boxShadow: '0 22px 50px rgba(148,163,184,0.16)', background: 'rgba(255,255,255,0.84)', display: 'flex', flexDirection: 'column' }}>
                         <div style={{ padding: compact ? '14px' : '18px', borderBottom: '1px solid rgba(148,163,184,0.18)', display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
                             <div>
-                                <div style={{ fontSize: 17, fontWeight: 800, color: '#0f172a' }}>Step 2: Review the ROFCO</div>
+                                <div style={{ fontSize: 17, fontWeight: 800, color: '#0f172a' }}>Step 2: Prompt Review</div>
                                 <div style={{ marginTop: 4, fontSize: 12, color: '#64748b' }}>
-                                    This review is derived from the map. Change meaning in the map, then regenerate here if needed.
+                                    Review the structured brief, final prompt, or full builder handoff without leaving this screen.
                                 </div>
                             </div>
                             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
@@ -1395,63 +2604,74 @@ function IdeaCanvas({
                                 <button type="button" onClick={onRegeneratePrompt} style={{ border: '1px solid rgba(37,99,235,0.24)', borderRadius: 12, background: 'rgba(239,246,255,0.95)', color: '#1d4ed8', padding: '10px 12px', fontWeight: 800, fontSize: 12 }}>
                                     Regenerate
                                 </button>
-                                <button type="button" onClick={onResetPrompt} style={{ border: '1px solid rgba(148,163,184,0.24)', borderRadius: 12, background: 'rgba(255,255,255,0.96)', color: '#334155', padding: '10px 12px', fontWeight: 800, fontSize: 12 }}>
-                                    Sync Back to Generated
-                                </button>
                                 <button type="button" onClick={onCopyPrompt} style={{ border: '1px solid rgba(37,99,235,0.32)', borderRadius: 12, background: promptCopied ? 'linear-gradient(135deg, #16a34a, #15803d)' : 'linear-gradient(135deg, #2563eb, #1d4ed8)', color: '#ffffff', padding: '10px 14px', fontWeight: 800, fontSize: 12 }}>
                                     {promptCopied ? 'Copied' : 'Copy Prompt'}
                                 </button>
                             </div>
                         </div>
-                        <div style={{ display: 'grid', gridTemplateColumns: compact ? '1fr' : '280px 1fr', gap: 0, minHeight: 0, flex: 1 }}>
-                            <div className="os-thin-scroll" style={{ borderRight: compact ? 'none' : '1px solid rgba(148,163,184,0.18)', borderBottom: compact ? '1px solid rgba(148,163,184,0.18)' : 'none', background: 'rgba(248,250,252,0.92)', padding: 16, overflowY: 'auto' }}>
-                                <div style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#475569', marginBottom: 12 }}>
-                                    Derived Review
-                                </div>
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                                    {REVIEW_SECTION_ORDER.map((sectionKey) => {
-                                        const section = reviewSections[sectionKey];
-                                        return (
-                                            <div key={sectionKey} style={{ borderRadius: 14, border: '1px solid rgba(148,163,184,0.18)', background: '#ffffff', padding: 12 }}>
-                                                <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'flex-start' }}>
-                                                    <div>
-                                                        <div style={{ fontSize: 12, fontWeight: 800, color: '#0f172a' }}>{section.heading.replace(/[\[\]]/g, '')}</div>
-                                                        <div style={{ marginTop: 4, fontSize: 11, color: section.complete ? '#166534' : '#b91c1c', fontWeight: 700 }}>
-                                                            {section.complete ? section.sourceLabel : section.sourceLabel}
-                                                        </div>
-                                                    </div>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => onJumpToNodeType(section.sourceType)}
-                                                        style={{ border: '1px solid rgba(148,163,184,0.24)', borderRadius: 10, background: 'rgba(255,255,255,0.96)', color: '#334155', padding: '6px 9px', fontSize: 10, fontWeight: 800 }}
-                                                    >
-                                                        Edit in Map
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                                <div style={{ marginTop: 16, borderRadius: 16, border: promptNeedsRegenerate ? '1px solid rgba(245,158,11,0.24)' : '1px solid rgba(148,163,184,0.18)', background: '#ffffff', padding: 12, fontSize: 12, color: promptNeedsRegenerate ? '#92400e' : '#475569', lineHeight: 1.55 }}>
+                        <div style={{ display: 'flex', gap: 8, padding: compact ? '12px 14px 0' : '14px 18px 0', flexWrap: 'wrap' }}>
+                            {[
+                                { key: 'summary', label: 'Summary', Icon: Eye },
+                                { key: 'prompt', label: 'Prompt', Icon: FileText },
+                                { key: 'handoff', label: 'Handoff', Icon: Package }
+                            ].map((tab) => {
+                                const isActive = reviewTab === tab.key;
+                                const Icon = tab.Icon;
+                                return (
+                                    <button
+                                        key={tab.key}
+                                        type="button"
+                                        onClick={() => setReviewTab(tab.key)}
+                                        style={{
+                                            border: isActive ? '1px solid rgba(37,99,235,0.28)' : '1px solid rgba(148,163,184,0.2)',
+                                            borderRadius: 12,
+                                            background: isActive ? 'linear-gradient(135deg, rgba(37,99,235,0.14), rgba(59,130,246,0.08))' : 'rgba(255,255,255,0.92)',
+                                            color: isActive ? '#1d4ed8' : '#334155',
+                                            padding: '9px 12px',
+                                            display: 'inline-flex',
+                                            alignItems: 'center',
+                                            gap: 8,
+                                            fontWeight: 800,
+                                            fontSize: 12
+                                        }}
+                                    >
+                                        <Icon size={14} />
+                                        {tab.label}
+                                    </button>
+                                );
+                            })}
+                        </div>
+                        <div style={{ minHeight: 0, flex: 1, padding: compact ? '12px 14px 14px' : '14px 18px 18px' }}>
+                            <div className="os-thin-scroll" style={{ height: '100%', borderRadius: 20, border: '1px solid rgba(148,163,184,0.18)', background: 'rgba(248,250,252,0.72)', overflowY: 'auto', padding: compact ? 14 : 18, boxSizing: 'border-box' }}>
+                                <div style={{ marginBottom: 14, borderRadius: 16, border: promptNeedsRegenerate ? '1px solid rgba(245,158,11,0.24)' : '1px solid rgba(148,163,184,0.18)', background: '#ffffff', padding: 12, fontSize: 12, color: promptNeedsRegenerate ? '#92400e' : '#475569', lineHeight: 1.55 }}>
                                     {promptNeedsRegenerate
-                                        ? 'Map changed. Prompt review is now out of date. Regenerate to sync.'
+                                        ? 'Map changed. Review is out of date. Regenerate to sync the latest meaning.'
                                         : promptDirty
-                                            ? 'Prompt has wording edits, but the current review still matches the latest map structure.'
-                                            : 'Prompt review is synced to the current map.'}
+                                            ? 'Prompt has wording edits. Use Prompt Only when you just need execution text.'
+                                            : 'Review is synced. Use Builder Handoff when you need fuller project context.'}
                                 </div>
-                            </div>
-                            <div style={{ minHeight: 0, display: 'flex', flexDirection: 'column' }}>
-                                <div className="os-thin-scroll" style={{ padding: 18, borderBottom: '1px solid rgba(148,163,184,0.18)', background: 'rgba(248,250,252,0.66)', overflowY: 'auto', maxHeight: compact ? 220 : 270 }}>
+
+                                {reviewTab === 'summary' && (
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                                         {REVIEW_SECTION_ORDER.map((sectionKey) => {
                                             const section = reviewSections[sectionKey];
                                             return (
-                                                <div key={sectionKey} style={{ borderRadius: 16, border: '1px solid rgba(148,163,184,0.18)', background: 'rgba(255,255,255,0.95)', padding: 14 }}>
-                                                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'center' }}>
-                                                        <div style={{ fontSize: 12, fontWeight: 900, color: '#0f172a' }}>{section.heading}</div>
-                                                        <div style={{ fontSize: 10, fontWeight: 800, color: section.complete ? '#166534' : '#b91c1c' }}>
-                                                            {section.sourceCount} source node{section.sourceCount === 1 ? '' : 's'}
+                                                <div key={sectionKey} style={{ borderRadius: 16, border: '1px solid rgba(148,163,184,0.18)', background: 'rgba(255,255,255,0.96)', padding: 14 }}>
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+                                                        <div>
+                                                            <div style={{ fontSize: 12, fontWeight: 900, color: '#0f172a' }}>{section.heading}</div>
+                                                            <div style={{ marginTop: 4, fontSize: 11, color: section.complete ? '#166534' : '#b91c1c', fontWeight: 700 }}>
+                                                                {section.sourceLabel}
+                                                            </div>
                                                         </div>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => onJumpToNodeType(section.sourceType)}
+                                                            style={{ border: '1px solid rgba(148,163,184,0.24)', borderRadius: 10, background: 'rgba(255,255,255,0.96)', color: '#334155', padding: '6px 9px', fontSize: 10, fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                                                        >
+                                                            Edit in Map
+                                                            <ChevronRight size={12} />
+                                                        </button>
                                                     </div>
                                                     <div style={{ marginTop: 8, fontSize: 11, color: '#334155', lineHeight: 1.7, whiteSpace: 'pre-wrap', fontFamily: "'Courier New', monospace" }}>
                                                         {section.body}
@@ -1460,13 +2680,44 @@ function IdeaCanvas({
                                             );
                                         })}
                                     </div>
-                                </div>
-                                <textarea
-                                    value={promptDraft}
-                                    onChange={(event) => onPromptDraftChange(event.target.value)}
-                                    spellCheck={false}
-                                    style={{ width: '100%', minHeight: 0, flex: 1, border: 'none', outline: 'none', resize: 'none', padding: 18, boxSizing: 'border-box', background: 'rgba(255,255,255,0.88)', color: '#0f172a', fontFamily: "'Courier New', monospace", fontSize: 12, lineHeight: 1.72 }}
-                                />
+                                )}
+
+                                {reviewTab === 'prompt' && (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 12, minHeight: '100%' }}>
+                                        <div style={{ borderRadius: 16, border: '1px solid rgba(148,163,184,0.18)', background: '#ffffff', padding: 12, fontSize: 12, color: '#475569', lineHeight: 1.55 }}>
+                                            `Prompt Only` exports just the final execution prompt for another AI coding assistant.
+                                        </div>
+                                        <textarea
+                                            value={promptDraft}
+                                            onChange={(event) => onPromptDraftChange(event.target.value)}
+                                            spellCheck={false}
+                                            style={{ width: '100%', minHeight: compact ? 420 : 520, border: '1px solid rgba(148,163,184,0.18)', outline: 'none', resize: 'vertical', borderRadius: 16, padding: 18, boxSizing: 'border-box', background: 'rgba(255,255,255,0.96)', color: '#0f172a', fontFamily: "'Courier New', monospace", fontSize: 12, lineHeight: 1.72 }}
+                                        />
+                                    </div>
+                                )}
+
+                                {reviewTab === 'handoff' && (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                                        <div style={{ borderRadius: 16, border: '1px solid rgba(148,163,184,0.18)', background: '#ffffff', padding: 12, fontSize: 12, color: '#475569', lineHeight: 1.55 }}>
+                                            `Builder Handoff` bundles metadata, ROFCO summary, warnings, and the final prompt for a teammate or future session.
+                                        </div>
+                                        <div style={{ borderRadius: 16, border: '1px solid rgba(148,163,184,0.18)', background: 'rgba(255,255,255,0.96)', padding: 16, fontSize: 12, color: '#334155', lineHeight: 1.7, whiteSpace: 'pre-wrap', fontFamily: "'Courier New', monospace" }}>
+                                            {buildHandoffPackMarkdown({
+                                                idea: {
+                                                    id: activeIdeaId,
+                                                    name: activeIdeaName,
+                                                    graph: { nodes, edges },
+                                                    metadata: ideaMetadata
+                                                },
+                                                prompt: promptDraft || buildRoFcoPrompt(nodes),
+                                                reviewSections,
+                                                completenessSummary,
+                                                warnings,
+                                                generatedAt: 'preview'
+                                            })}
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -1501,7 +2752,7 @@ export default function IdeaToPromptApp() {
     const [selectedNodeId, setSelectedNodeId] = useState(activeIdea?.graph?.nodes?.[0]?.id || null);
     const [isCompact, setIsCompact] = useState(() => (typeof window !== 'undefined' ? window.innerWidth <= 960 : false));
     const [panelOpen, setPanelOpen] = useState(() => !(typeof window !== 'undefined' ? window.innerWidth <= 960 : false));
-    const [activeStep, setActiveStep] = useState('map');
+    const [activeStep, setActiveStep] = useState('onboarding');
     const [quickAddType, setQuickAddType] = useState(null);
     const [promptDraft, setPromptDraft] = useState(activeIdea?.draftPrompt || '');
     const [promptDirty, setPromptDirty] = useState(Boolean(activeIdea?.promptDirty));
@@ -1510,6 +2761,11 @@ export default function IdeaToPromptApp() {
     const [activeDockGroup, setActiveDockGroup] = useState('core');
     const importedLegacy = Boolean(activeIdea?.importedLegacy);
     const [syncedGeneratedPrompt, setSyncedGeneratedPrompt] = useState(() => activeIdea?.syncedGeneratedPrompt || buildRoFcoPrompt(activeIdea?.graph?.nodes || []));
+    const [ideaMetadata, setIdeaMetadata] = useState(() => ({
+        ...DEFAULT_IDEA_METADATA,
+        projectName: activeIdea?.name || 'Starter Idea',
+        ...(activeIdea?.metadata || {})
+    }));
 
     const generatedPrompt = useMemo(() => buildRoFcoPrompt(nodes), [nodes]);
     const reviewSections = useMemo(() => buildReviewSections(nodes), [nodes]);
@@ -1545,6 +2801,11 @@ export default function IdeaToPromptApp() {
         setPromptDraft(activeIdea.draftPrompt || '');
         setPromptDirty(Boolean(activeIdea.promptDirty));
         setSyncedGeneratedPrompt(activeIdea.syncedGeneratedPrompt || buildRoFcoPrompt(activeIdea.graph.nodes));
+        setIdeaMetadata({
+            ...DEFAULT_IDEA_METADATA,
+            projectName: activeIdea.name || 'Idea',
+            ...(activeIdea.metadata || {})
+        });
         setSelectedNodeId(activeIdea.graph.nodes[0]?.id || null);
     }, [activeIdeaId, setEdges, setNodes]);
 
@@ -1558,11 +2819,12 @@ export default function IdeaToPromptApp() {
                     draftPrompt: promptDraft,
                     promptDirty,
                     syncedGeneratedPrompt,
+                    metadata: ideaMetadata,
                     updatedAt: Date.now()
                 }
                 : idea
         )));
-    }, [activeIdeaId, promptDraft, edges, nodes, promptDirty, syncedGeneratedPrompt]);
+    }, [activeIdeaId, promptDraft, edges, ideaMetadata, nodes, promptDirty, syncedGeneratedPrompt]);
 
     useEffect(() => {
         if (typeof window === 'undefined') return;
@@ -1599,8 +2861,75 @@ export default function IdeaToPromptApp() {
         }));
     }, [activeIdeaId, ideas]);
 
+    const handleExportIdea = useCallback(() => {
+        if (!activeIdea) return;
+        const payload = serializeIdeaExport({
+            ...activeIdea,
+            graph: { nodes, edges },
+            draftPrompt: promptDraft,
+            promptDirty,
+            syncedGeneratedPrompt
+        });
+        const filename = `${sanitizeFilenamePart(activeIdea.name, 'idea')}.kracked-idea.json`;
+        downloadTextFile(filename, JSON.stringify(payload, null, 2), 'application/json;charset=utf-8');
+    }, [activeIdea, edges, nodes, promptDraft, promptDirty, syncedGeneratedPrompt]);
+
+    const handleExportPrompt = useCallback(() => {
+        if (!activeIdea) return;
+        const promptToExport = promptDraft || generatedPrompt;
+        const filename = `${sanitizeFilenamePart(activeIdea.name, 'idea')}-prompt.md`;
+        const content = `# ${activeIdea.name}\n\nGenerated from KRACKED_OS Idea to Prompt on ${new Date().toISOString()}.\n\n---\n\n\`\`\`text\n${promptToExport}\n\`\`\`\n`;
+        downloadTextFile(filename, content, 'text/markdown;charset=utf-8');
+    }, [activeIdea, generatedPrompt, promptDraft]);
+
+    const handleExportHandoffPack = useCallback(() => {
+        if (!activeIdea) return;
+        const ideaForExport = {
+            ...activeIdea,
+            graph: { nodes, edges },
+            metadata: ideaMetadata
+        };
+        const filename = `${sanitizeFilenamePart(activeIdea.name, 'idea')}-handoff-pack.md`;
+        const content = buildHandoffPackMarkdown({
+            idea: ideaForExport,
+            prompt: promptDraft || generatedPrompt,
+            reviewSections,
+            completenessSummary,
+            warnings,
+            generatedAt: new Date().toISOString()
+        });
+        downloadTextFile(filename, content, 'text/markdown;charset=utf-8');
+    }, [activeIdea, completenessSummary, edges, generatedPrompt, ideaMetadata, nodes, promptDraft, reviewSections, warnings]);
+
+    const handleImportIdea = useCallback(() => {
+        if (typeof window === 'undefined' || typeof document === 'undefined') return;
+
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.json,application/json';
+
+        input.onchange = async (event) => {
+            const file = event.target?.files?.[0];
+            if (!file) return;
+
+            try {
+                const text = await file.text();
+                const parsed = JSON.parse(text);
+                const importedIdea = normalizeImportedIdeaPayload(parsed);
+                setIdeas((currentIdeas) => [importedIdea, ...currentIdeas]);
+                setActiveIdeaId(importedIdea.id);
+                setActiveStep('onboarding');
+                setPanelOpen(!isCompact);
+            } catch (error) {
+                window.alert(error instanceof Error ? error.message : 'Failed to import idea file.');
+            }
+        };
+
+        input.click();
+    }, [isCompact]);
+
     const handleStepChange = useCallback((step) => {
-        if (step === 'map' || step === 'review') {
+        if (step === 'onboarding' || step === 'map' || step === 'review') {
             setActiveStep(step);
             if (step === 'review') setPanelOpen(true);
             return;
@@ -1626,13 +2955,89 @@ export default function IdeaToPromptApp() {
         setActiveStep('map');
     }, [activeIdeaId]);
 
+    const handleIdeaMetadataChange = useCallback((field, value) => {
+        setIdeaMetadata((current) => ({
+            ...current,
+            [field]: value,
+            ...(field === 'referenceUrl' ? EMPTY_SCRAPE_STATE : {})
+        }));
+    }, []);
+
+    const handleLoadOnboardingExample = useCallback((nextMetadata) => {
+        setIdeaMetadata((current) => ({
+            ...DEFAULT_IDEA_METADATA,
+            ...current,
+            ...nextMetadata
+        }));
+    }, []);
+
+    const handleScrapeReferenceUrls = useCallback(async () => {
+        const referenceUrl = String(ideaMetadata?.referenceUrl || '').trim();
+
+        if (!referenceUrl) {
+            window.alert('Add a reference URL first.');
+            return;
+        }
+
+        setIdeaMetadata((current) => ({
+            ...current,
+            scrapeStatus: 'loading',
+            scrapeError: ''
+        }));
+
+        try {
+            const result = await runReferenceScrape({ referenceUrl });
+            setIdeaMetadata((current) => ({
+                ...current,
+                scrapeStatus: 'ready',
+                scrapeError: '',
+                scrapedAt: result?.fetchedAt || new Date().toISOString(),
+                designTheme: result?.merged?.designTheme || '',
+                fontDirection: result?.merged?.fontDirection || '',
+                colorPalette: result?.merged?.colorPalette || '',
+                flowStructure: result?.merged?.flowStructure || '',
+                referenceSummary: buildReferenceSummary(result?.reference)
+            }));
+        } catch (error) {
+            setIdeaMetadata((current) => ({
+                ...current,
+                ...EMPTY_SCRAPE_STATE,
+                scrapeStatus: 'error',
+                scrapeError: error instanceof Error ? error.message : 'Failed to scrape reference URL.'
+            }));
+        }
+    }, [ideaMetadata]);
+
+    const handleApplyOnboardingTemplate = useCallback(() => {
+        const nextMetadata = {
+            ...ideaMetadata,
+            laneKey: recommendLaneKey(ideaMetadata)
+        };
+        const starter = buildStarterDocument(nextMetadata);
+        setIdeaMetadata(nextMetadata);
+        setNodes(starter.nodes);
+        setEdges(starter.edges);
+        setSelectedNodeId(starter.nodes[0]?.id || null);
+        setPromptDirty(false);
+        setActiveStep('map');
+    }, [ideaMetadata, setEdges, setNodes]);
+
+    const handleClearCanvas = useCallback(() => {
+        if (!window.confirm('Clear all nodes and start with a blank canvas?')) return;
+        setNodes([]);
+        setEdges([]);
+        setSelectedNodeId(null);
+        setPromptDirty(false);
+        setActiveStep('map');
+    }, [setEdges, setNodes]);
+
     const handleCreateIdea = useCallback(() => {
         const nextName = window.prompt('Idea name', `Idea ${ideas.length + 1}`);
         if (!nextName) return;
         const nextIdea = createIdeaRecord({ name: nextName.trim() || `Idea ${ideas.length + 1}` });
         setIdeas((currentIdeas) => [nextIdea, ...currentIdeas]);
         setActiveIdeaId(nextIdea.id);
-        setActiveStep('map');
+        setActiveStep('onboarding');
     }, [ideas.length]);
 
     const handleRenameIdea = useCallback(() => {
@@ -1691,6 +3096,11 @@ export default function IdeaToPromptApp() {
             promptCopied={promptCopied}
             onCopyPrompt={handleCopyPrompt}
             importedLegacy={importedLegacy}
+            ideaMetadata={ideaMetadata}
+            onIdeaMetadataChange={handleIdeaMetadataChange}
+            onScrapeReferenceUrls={handleScrapeReferenceUrls}
+            onApplyOnboardingTemplate={handleApplyOnboardingTemplate}
+            onLoadOnboardingExample={handleLoadOnboardingExample}
             reviewSections={reviewSections}
             isReadyForReview={isReadyForReview}
             promptNeedsRegenerate={promptNeedsRegenerate}
@@ -1703,10 +3113,15 @@ export default function IdeaToPromptApp() {
             onRenameIdea={handleRenameIdea}
             onDeleteIdea={handleDeleteIdea}
             onSaveIdea={handleSaveIdea}
+            onExportIdea={handleExportIdea}
+            onExportPrompt={handleExportPrompt}
+            onExportHandoffPack={handleExportHandoffPack}
+            onImportIdea={handleImportIdea}
+            onClearCanvas={handleClearCanvas}
             activeDockGroup={activeDockGroup}
             onDockGroupChange={setActiveDockGroup}
             nodesTrayOpen={nodesTrayOpen}
-            onToggleNodesTray={() => setNodesTrayOpen((open) => !open)}
+            onSetNodesTrayOpen={setNodesTrayOpen}
         />
     );
 }

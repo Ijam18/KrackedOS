@@ -1,4 +1,7 @@
-import { contextBridge, ipcRenderer } from 'electron';
+import { createRequire } from 'node:module';
+
+const require = createRequire(import.meta.url);
+const { contextBridge, ipcRenderer } = require('electron');
 
 function invoke(channel, ...args) {
   return ipcRenderer.invoke(channel, ...args);
@@ -61,5 +64,8 @@ contextBridge.exposeInMainWorld('krackedOS', {
     start: (id) => invoke('os.container.start', id),
     stop: (id) => invoke('os.container.stop', id),
     exec: (id, command) => invoke('os.container.exec', id, command)
+  },
+  reference: {
+    scrape: (payload) => invoke('os.reference.scrape', payload)
   }
 });

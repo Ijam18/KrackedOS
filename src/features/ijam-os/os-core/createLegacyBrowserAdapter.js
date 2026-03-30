@@ -15,7 +15,7 @@ import {
   createSystemRegistryRecord,
   getDefaultWallpaperId,
   normalizeLegacyWallpaperId
-} from './constants';
+} from './constants.js';
 import {
   basenameFromPath,
   createEntryRecord,
@@ -29,8 +29,8 @@ import {
   normalizeOsPath,
   sanitizeFileName,
   sortEntries
-} from './pathUtils';
-import { deleteEntry, getAllEntries, getEntry, getMeta, putEntry, setMeta } from './idb';
+} from './pathUtils.js';
+import { deleteEntry, getAllEntries, getEntry, getMeta, putEntry, setMeta } from './idb.js';
 
 const MIGRATION_META_KEY = 'legacyMigrationVersion';
 

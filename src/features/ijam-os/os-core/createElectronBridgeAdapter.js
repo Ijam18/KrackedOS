@@ -1,4 +1,4 @@
-import { OS_RUNTIME_MODES } from './constants';
+import { OS_RUNTIME_MODES } from './constants.js';
 
 function assertBridge() {
   if (typeof window === 'undefined' || !window.krackedOS) {

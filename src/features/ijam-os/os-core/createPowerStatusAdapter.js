@@ -1,4 +1,4 @@
-import { OS_RUNTIME_MODES } from './constants';
+import { OS_RUNTIME_MODES } from './constants.js';
 
 const POLL_INTERVAL_MS = 30000;
 

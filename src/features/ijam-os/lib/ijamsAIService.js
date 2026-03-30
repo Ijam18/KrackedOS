@@ -25,7 +25,7 @@ function inferRuntimePhase() {
 }
 
 function getCommandHelpText() {
-  return `command MAJI yang available sekarang:\n\nMAJI core:\n- \`MAJI\`\n- \`load bmad\`\n- \`save\`\n- \`update memory\`\n- \`review growth\`\n\nBMAD:\n- \`bmad help\`\n- \`bmad brainstorm\`\n- \`bmad plan\`\n- \`bmad review\`\n- \`bmad edge-cases\`\n- \`bmad distill\``;
+  return `command MAJI yang available sekarang:\n\nMAJI core:\n- \`MAJI\`\n- \`load bmad\`\n- \`save\`\n- \`update memory\`\n- \`review growth\`\n\nDiary:\n- \`load diary archive\`\n- \`load save-diary\`\n- \`save diary\`\n- \`review diary\`\n\nBMAD:\n- \`bmad help\`\n- \`bmad brainstorm\`\n- \`bmad plan\`\n- \`bmad review\`\n- \`bmad edge-cases\`\n- \`bmad distill\``;
 }
 
 function getMajiRuntimeCommandResponse(userMessage, history = []) {
@@ -67,6 +67,22 @@ function getMajiRuntimeCommandResponse(userMessage, history = []) {
 
   if (command === 'review growth') {
     return `review growth ringkas:\n\n1. identity MAJI sekarang lebih konsisten: bahasa melayu dulu, muslim-friendly, dan lebih jelas sebagai operator KRACKED_OS.\n2. doctrine makin kemas: MajiOS sekarang lebih jelas sebagai layer canonical untuk memory, method, dan skills.\n3. workflow maturity naik: BMAD, skill promotion, dan boundary dengan tooling luar macam KD dah lebih tersusun.\n4. runtime alignment pun bertambah baik, tapi masih boleh diketatkan lagi supaya command semantics lebih rapat dengan MajiOS.\n\nnext best move: guna \`save\` bila kau nak preserve perubahan yang durable.`;
+  }
+
+  if (command === 'load diary archive') {
+    return `load diary archive:\n\nstatus semasa:\n- layer diary archive memang wujud dalam doctrine MajiOS\n- struktur baru guna \`daily-diary/current/\` untuk entry aktif dan \`daily-diary/archived/\` untuk bulan lama\n- repo semasa dah ada entry aktif bertarikh \`2026-03-29\`\n- archive history sebenar masih nipis, jadi benda paling berguna sekarang ialah \`review diary\`\n\nnota runtime:\n- command ini sekarang beri guided access dalam chat\n- pembacaan fail repo sebenar masih bergantung pada session agent yang ada akses fail`;
+  }
+
+  if (command === 'load save-diary') {
+    return `load save-diary:\n\ndiary system aktif dalam doctrine semasa.\n\napa yang available:\n- struktur \`daily-diary/current/\` untuk entry harian append-only\n- struktur \`daily-diary/archived/\` untuk archive bulanan\n- flow semasa: \`save diary\` untuk rekod sesi, \`review diary\` untuk recap\n\nnota penting:\n- dalam runtime chat, command ini bertindak sebagai activation/guide layer\n- persistence ke fail repo sebenar masih perlukan session yang ada akses fail`;
+  }
+
+  if (command === 'save diary') {
+    return `save diary:\n\nstate semasa:\n- semantics diary dah aktif dalam runtime\n- source of truth repo sekarang guna fail harian dalam \`daily-diary/current/\`\n- entry bertarikh \`2026-03-29\` dah wujud sebagai rekod sesi pertama untuk struktur baru\n\ncaution:\n- chat runtime sendiri tak terus menulis fail repo\n- untuk save repo-backed yang sebenar, session agent dengan akses fail masih diperlukan`;
+  }
+
+  if (command === 'review diary') {
+    return `review diary:\n\nringkasan diary semasa:\n- struktur diary baru sudah dimulakan dengan fail harian bertarikh \`2026-03-29\`\n- entry itu merakam aktivasi MAJI/BMAD, semakan \`load diary archive\`, dan kickoff save-diary flow\n\ninsight utama:\n- layer diary sekarang dah ada bentuk repo-backed yang lebih kemas\n- command diary dalam runtime dah lebih jelas, tapi operasi fail sebenar masih berasingan daripada browser-local chat state\n\nnext best move:\n- teruskan sesi dan guna \`save diary\` lagi bila ada milestone baru yang patut dipreserve`;
   }
 
   if (command === 'save') {

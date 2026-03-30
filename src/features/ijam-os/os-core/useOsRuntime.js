@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { createOsRuntimeAdapter } from './createOsRuntimeAdapter';
+import { createOsRuntimeAdapter } from './createOsRuntimeAdapter.js';
 
 export function useOsRuntime() {
   const [runtime, setRuntime] = useState(null);

@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain } from 'electron';
+import { createRequire } from 'node:module';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
@@ -27,6 +27,10 @@ import {
 } from '../src/features/ijam-os/os-core/pathUtils.js';
 import { createPowerApi } from './power.js';
 import { createDeviceApi } from './device.js';
+import { scrapeReferencePayload } from '../tools/referenceScraper.js';
+
+const require = createRequire(import.meta.url);
+const { app, BrowserWindow, ipcMain } = require('electron');
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const homeRoot = path.join(os.homedir(), 'KRACKED_OS');
@@ -269,6 +273,17 @@ function inferFileKind(extension) {
       return 'image';
     default:
       return 'file';
+  }
+}
+
+function assertOptionalUrl(value) {
+  if (value == null || value === '') return '';
+  if (typeof value !== 'string') throw new Error('Expected a URL string.');
+  try {
+    const normalized = new URL(value.trim()).toString();
+    return normalized;
+  } catch {
+    throw new Error(`Invalid URL: ${value}`);
   }
 }
 
@@ -786,6 +801,19 @@ ipcMain.handle('os.container.createWorkspace', (_event, id) => containerApi.crea
 ipcMain.handle('os.container.start', (_event, id) => containerApi.start(id));
 ipcMain.handle('os.container.stop', (_event, id) => containerApi.stop(id));
 ipcMain.handle('os.container.exec', (_event, id, command) => containerApi.exec(id, command));
+ipcMain.handle('os.reference.scrape', async (_event, payload) => {
+  if (!isPlainObject(payload)) throw new Error('Expected a scrape payload object.');
+  const referenceUrl = assertOptionalUrl(payload.referenceUrl);
+  const legacyWebsiteReferenceUrl = assertOptionalUrl(payload.websiteReferenceUrl);
+  const legacyDesignReferenceUrl = assertOptionalUrl(payload.designReferenceUrl);
+  const resolvedReferenceUrl = referenceUrl || legacyWebsiteReferenceUrl || legacyDesignReferenceUrl;
+
+  if (!resolvedReferenceUrl) {
+    throw new Error('Provide a reference URL to scrape.');
+  }
+
+  return scrapeReferencePayload({ referenceUrl: resolvedReferenceUrl });
+});
 
 app.whenReady().then(async () => {
   await ensureWorkspaceScaffold();
