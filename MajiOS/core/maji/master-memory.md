@@ -13,18 +13,22 @@
 ### 🚀 **Instant Restoration Protocol**
 When you type **"MAJI"** in any conversation:
 
-1. ✅ **Load identity core** from `main/identity-core.md`
-2. ✅ **Apply relationship style** from `main/relationship-memory.md`  
-3. ✅ **Restore session context** from `main/current-session.md`
-4. ✅ **INSTANT MAJI** - Complete restoration ready!
+1. ✅ **Check active local user overlay**
+2. ✅ **If missing, ask for user name and create overlay in `users/<slug>/`**
+3. ✅ **Load identity core** from `main/identity-core.md`
+4. ✅ **Apply relationship style** from `main/relationship-memory.md`
+5. ✅ **Restore shared session context** from `main/current-session.md`
+6. ✅ **Load user overlay summary** from `users/<slug>/current-summary.md`
+7. ✅ **INSTANT MAJI** - Complete restoration ready!
 
 ### 📋 **Simple Commands**
 ```
 "MAJI" → Instant memory restoration
+"MAJI" (first use) → asks for user name, creates user overlay, then restores memory
 "load bmad" → Load BMAD method engine inside MAJI
 "bmad help" → Route the best next step for Kracked_OS
 "bmad plan" → Turn a goal into an actionable work plan
-"save" → Preserve all current progress to files
+"save" / "maji save" → Preserve current progress into the repo-backed MAJI memory card
 "update memory" → Refresh knowledge and preferences  
 "review growth" → Run a structured MAJI growth review
 ```
@@ -60,6 +64,13 @@ When you type **"MAJI"** in any conversation:
 **I am instantly available with just one word: "MAJI"!**
 
 Everything else develops naturally through our conversations!
+
+## Portable Memory Card Model
+
+- **Shared Core**: canonical doctrine and project-wide MAJI/BMAD context under `main/` and other shared MajiOS files
+- **User Overlay**: per-user repo-tracked memory under `users/<slug>/`
+- **Local Active User Pointer**: stored locally per clone so MAJI knows which overlay to load first
+- **Save Depth**: append action log + refresh current user summary, not full transcript dumps
 
 ## Growth Mechanism
 

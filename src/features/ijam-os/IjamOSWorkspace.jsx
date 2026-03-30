@@ -26,8 +26,6 @@ import {
     Gamepad2,
     Search,
     Activity,
-    Waypoints,
-    Wand2,
     Wifi,
     SlidersHorizontal,
     Bluetooth,
@@ -66,8 +64,6 @@ import { buildShellSessionPayload, normalizeRestoredShellWindowState as normaliz
 const BuilderStudioLocal = lazy(() => import('./components/BuilderStudioLocal'));
 const VibeSimulator = lazy(() => import('../tools/simulator/VibeSimulator'));
 const IdeaToPromptApp = lazy(() => import('../tools/idea-to-prompt/IdeaToPromptApp'));
-const MindMapperApp = lazy(() => import('../tools/mind-mapper/MindMapperApp'));
-const PromptForgeApp = lazy(() => import('../tools/prompt-forge/PromptForgeApp'));
 const KrackedMissionConsole = lazy(() => import('./components/windows/KrackedMissionConsole'));
 const KrackedIjamTerminal = lazy(() => import('./components/windows/KrackedIjamTerminal'));
 const KrackedKdAcademy = lazy(() => import('./components/windows/KrackedKdAcademy'));
@@ -220,7 +216,7 @@ const LESSONS_IJAM = [
             "Pastikan flow (klik -> loading -> masuk database) berjaya.",
             "Selepas logic 100% jalan, baru masukkan \"Vibe\" (animasi, Neo-brutalist style, warna)."
         ],
-        linkLabel: "Buka Mind Mapper",
+        linkLabel: "Buka Idea to Prompt",
         linkUrl: ""
     },
     {
@@ -284,7 +280,7 @@ const LESSONS_IJAM = [
             "Jangan mengalah bila naik error merah; itu tandanya kau \"on the right track\".",
             "Kalau feature susah nak buat, tukar ke feature mudah yang capai matlamat sama."
         ],
-        linkLabel: "Buka Prompt Forge",
+        linkLabel: "Buka Idea to Prompt",
         linkUrl: ""
     },
     {
@@ -1127,7 +1123,7 @@ const LESSONS_FORMAL = [
             "Ensure the flow (click -> load -> save to database) succeeds.",
             "After logic is 100% complete, inject the \"Vibe\" (animations, colors)."
         ],
-        linkLabel: "Open Mind Mapper",
+        linkLabel: "Open Idea to Prompt",
         linkUrl: ""
     },
     {
@@ -1191,7 +1187,7 @@ const LESSONS_FORMAL = [
             "Do not give up when you see red errors; it signifies you are on the right track.",
             "If a feature is too hard to build, pivot to an easier feature that achieves the same goal."
         ],
-        linkLabel: "Open Prompt Forge",
+        linkLabel: "Open Idea to Prompt",
         linkUrl: ""
     },
     {
@@ -2847,8 +2843,8 @@ const IjamOSWorkspace = ({ session, currentUser, isMobileView, deviceMode = 'des
     const [bluetoothEnabled, setBluetoothEnabled] = useState(true);
     const [focusModeEnabled, setFocusModeEnabled] = useState(false);
     const getRoleHintFromApp = useCallback((appType) => {
-        if (appType === 'terminal' || appType === 'prompt_forge' || appType === 'idea_to_prompt') return 'engineer';
-        if (appType === 'files' || appType === 'mind_mapper') return 'analyst';
+        if (appType === 'terminal' || appType === 'idea_to_prompt') return 'engineer';
+        if (appType === 'files') return 'analyst';
         return 'devops';
     }, []);
     const emitMissionEvent = useCallback((type, message, meta = {}) => {
@@ -3679,7 +3675,7 @@ const IjamOSWorkspace = ({ session, currentUser, isMobileView, deviceMode = 'des
         [windowStates]
     );
     const mobileDockApps = useMemo(
-        () => ['files', 'wallpaper', 'idea_to_prompt', 'mind_mapper', 'simulator']
+        () => ['files', 'wallpaper', 'idea_to_prompt', 'simulator']
             .map((type) => appByType[type])
             .filter(Boolean),
         [appByType]
@@ -5766,7 +5762,6 @@ YOU DID IT. APP DEPLOYED!`);
             label: 'Help',
             items: [
                 { label: 'Open Idea to Prompt', action: () => openApp('idea_to_prompt') },
-                { label: 'Open Prompt Forge (Legacy)', action: () => openApp('prompt_forge') },
                 { label: 'Search Apps', action: () => { setIsStartMenuOpen(true); setStartMenuSearch(''); } }
             ]
         }
@@ -7638,28 +7633,6 @@ YOU DID IT. APP DEPLOYED!`);
                     <div style={{ flex: 1, minHeight: 0, overflow: 'hidden', background: 'linear-gradient(180deg, #f7faff 0%, #edf3fb 100%)' }}>
                         <Suspense fallback={<WindowModuleLoader label="IDEA_TO_PROMPT" background="transparent" />}>
                             <IdeaToPromptApp />
-                        </Suspense>
-                    </div>
-                </WindowFrame>
-            )}
-
-            {/* 9. Mind Mapper Window */}
-            {windowStates.mind_mapper?.isOpen && (
-                <WindowFrame {...mobileWindowProps} winState={windowStates.mind_mapper} title="Mind Map" AppIcon={Waypoints} onClose={() => closeApp('mind_mapper')} onMinimize={() => minimizeApp('mind_mapper')} onMaximize={() => maximizeApp('mind_mapper')} onFocus={() => focusApp('mind_mapper')} onMove={(x, y) => moveApp('mind_mapper', x, y)} onResize={(w, h) => resizeApp('mind_mapper', w, h)}>
-                    <div style={{ flex: 1, minHeight: 0, overflow: 'hidden', background: 'linear-gradient(180deg, #f7faff 0%, #edf3fb 100%)' }}>
-                        <Suspense fallback={<WindowModuleLoader label="MIND_MAPPER" background="transparent" />}>
-                            <MindMapperApp />
-                        </Suspense>
-                    </div>
-                </WindowFrame>
-            )}
-
-            {/* 10. Prompt Forge Window */}
-            {windowStates.prompt_forge?.isOpen && (
-                <WindowFrame {...mobileWindowProps} winState={windowStates.prompt_forge} title="Prompt Forge" AppIcon={Wand2} onClose={() => closeApp('prompt_forge')} onMinimize={() => minimizeApp('prompt_forge')} onMaximize={() => maximizeApp('prompt_forge')} onFocus={() => focusApp('prompt_forge')} onMove={(x, y) => moveApp('prompt_forge', x, y)} onResize={(w, h) => resizeApp('prompt_forge', w, h)}>
-                    <div style={{ flex: 1, minHeight: 0, background: 'linear-gradient(180deg, #f7faff 0%, #edf3fb 100%)', overflow: 'hidden' }}>
-                        <Suspense fallback={<WindowModuleLoader label="PROMPT_FORGE" background="transparent" />}>
-                            <PromptForgeApp />
                         </Suspense>
                     </div>
                 </WindowFrame>

@@ -99,8 +99,8 @@ const NODE_CATALOG = {
     reference: {
         label: 'Reference',
         icon: Lightbulb,
-        color: '#fde68a',
-        accent: '#ca8a04',
+        color: '#bae6fd',
+        accent: '#0284c7',
         category: 'signals',
         description: 'Competitor, inspiration, or benchmark product.'
     },
@@ -161,6 +161,22 @@ const REVIEW_SECTION_ORDER = ['role', 'objective', 'features', 'constraints', 'o
 const EDGE_TYPE = 'orthogonal';
 const FIT_VIEW_PADDING = 0.28;
 const DEFAULT_LANE_KEY = 'saas';
+const STARTER_LAYOUT = {
+    backboneY: 290,
+    topRailY: -70,
+    bottomRailY: 540,
+    backboneXs: {
+        role: 40,
+        objective: 380,
+        featureStart: 760,
+        featureGap: 360,
+        constraint: 1480,
+        output: 1840
+    },
+    topRailSlots: [380, 1020, 1380, 1740, 2100, 2460],
+    bottomRailSlots: [900, 1260, 1620, 1980, 2340],
+    overflowGap: 380
+};
 
 const IDEA_LANES = [
     {
@@ -434,8 +450,8 @@ const normalizeStoredEdges = (edges, nodes) => {
 };
 
 const buildOrthogonalPath = ({ sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition, family = 'main' }) => {
-    const primaryOffset = family === 'main' ? 52 : 40;
-    const secondaryOffset = family === 'main' ? 38 : 30;
+    const primaryOffset = family === 'main' ? 62 : 48;
+    const secondaryOffset = family === 'main' ? 46 : 34;
     const dx = targetX - sourceX;
     const dy = targetY - sourceY;
 
@@ -444,7 +460,7 @@ const buildOrthogonalPath = ({ sourceX, sourceY, targetX, targetY, sourcePositio
         const targetDirection = targetPosition === Position.Top ? -1 : 1;
         const exitY = sourceY + sourceDirection * primaryOffset;
         const entryY = targetY + targetDirection * primaryOffset;
-        const midY = Math.abs(dy) > 140 ? (exitY + entryY) / 2 : exitY;
+        const midY = Math.abs(dy) > 160 ? (exitY + entryY) / 2 : exitY;
         return `M ${sourceX} ${sourceY} L ${sourceX} ${exitY} L ${sourceX} ${midY} L ${targetX} ${midY} L ${targetX} ${entryY} L ${targetX} ${targetY}`;
     }
 
@@ -453,21 +469,21 @@ const buildOrthogonalPath = ({ sourceX, sourceY, targetX, targetY, sourcePositio
         const targetDirection = targetPosition === Position.Left ? -1 : 1;
         const exitX = sourceX + sourceDirection * primaryOffset;
         const entryX = targetX + targetDirection * primaryOffset;
-        const midX = Math.abs(dx) > 180 ? (exitX + entryX) / 2 : exitX;
+        const midX = Math.abs(dx) > 210 ? (exitX + entryX) / 2 : exitX;
         return `M ${sourceX} ${sourceY} L ${exitX} ${sourceY} L ${midX} ${sourceY} L ${midX} ${targetY} L ${entryX} ${targetY} L ${targetX} ${targetY}`;
     }
 
     if (sourcePosition === Position.Bottom && targetPosition === Position.Left) {
         const exitY = sourceY + primaryOffset;
         const entryX = targetX - secondaryOffset;
-        const bridgeY = Math.abs(dy) > 120 ? exitY : sourceY + primaryOffset * 0.7;
+        const bridgeY = Math.abs(dy) > 140 ? exitY : sourceY + primaryOffset * 0.78;
         return `M ${sourceX} ${sourceY} L ${sourceX} ${exitY} L ${entryX} ${exitY} L ${entryX} ${targetY} L ${targetX} ${targetY}`;
     }
 
     if (sourcePosition === Position.Bottom && targetPosition === Position.Right) {
         const exitY = sourceY + primaryOffset;
         const entryX = targetX + secondaryOffset;
-        const bridgeY = Math.abs(dy) > 120 ? exitY : sourceY + primaryOffset * 0.7;
+        const bridgeY = Math.abs(dy) > 140 ? exitY : sourceY + primaryOffset * 0.78;
         return `M ${sourceX} ${sourceY} L ${sourceX} ${exitY} L ${entryX} ${exitY} L ${entryX} ${targetY} L ${targetX} ${targetY}`;
     }
 
@@ -520,7 +536,17 @@ function OrthogonalEdge(props) {
         family: data.family || 'main'
     });
 
-    return <BaseEdge id={id} path={path} style={style} />;
+    return (
+        <BaseEdge
+            id={id}
+            path={path}
+            interactionWidth={0}
+            style={{
+                ...style,
+                pointerEvents: 'none'
+            }}
+        />
+    );
 }
 
 function createNodeComponent(type) {
@@ -871,14 +897,12 @@ const getLaneStarterPack = (metadata = {}) => {
                 {
                     type: 'reference',
                     title: 'Inspiration references',
-                    details: `Collect 1-2 sites whose mood or pacing feels adjacent to ${projectName}.`,
-                    position: { x: 720, y: 40 }
+                    details: `Collect 1-2 sites whose mood or pacing feels adjacent to ${projectName}.`
                 },
                 {
                     type: 'unique_value',
                     title: 'Emotional hook',
-                    details: `Name the one feeling or takeaway visitors should remember after seeing ${projectName}.`,
-                    position: { x: 1780, y: 40 }
+                    details: `Name the one feeling or takeaway visitors should remember after seeing ${projectName}.`
                 }
             ],
             helper: 'Starter pack generated from onboarding: brand-led flow, strong visual direction, and conversion-aware storytelling.'
@@ -906,8 +930,7 @@ const getLaneStarterPack = (metadata = {}) => {
                 {
                     type: 'flow',
                     title: 'Primary user flow',
-                    details: 'Map the shortest path from first entry to repeated daily use.',
-                    position: { x: 1050, y: 470 }
+                    details: 'Map the shortest path from first entry to repeated daily use.'
                 }
             ],
             helper: 'Starter pack generated from onboarding: operational workflow, structured screens, and dependable app defaults.'
@@ -935,8 +958,7 @@ const getLaneStarterPack = (metadata = {}) => {
                 {
                     type: 'flow',
                     title: 'Result path',
-                    details: 'Describe how the user moves from input to result in the fewest necessary steps.',
-                    position: { x: 1050, y: 470 }
+                    details: 'Describe how the user moves from input to result in the fewest necessary steps.'
                 }
             ],
             helper: 'Starter pack generated from onboarding: one-job utility, clean validation, and fast result delivery.'
@@ -964,8 +986,7 @@ const getLaneStarterPack = (metadata = {}) => {
                 {
                     type: 'reference',
                     title: 'Discovery benchmark',
-                    details: 'Reference one marketplace or directory with especially clear browse and filter behavior.',
-                    position: { x: 720, y: 40 }
+                    details: 'Reference one marketplace or directory with especially clear browse and filter behavior.'
                 }
             ],
             helper: 'Starter pack generated from onboarding: listings, discovery, and trust-building purchase or selection flow.'
@@ -993,8 +1014,7 @@ const getLaneStarterPack = (metadata = {}) => {
                 {
                     type: 'unique_value',
                     title: 'Signature point of view',
-                    details: `State what makes ${projectName} or its creator feel distinct from lookalike portfolios.`,
-                    position: { x: 1780, y: 40 }
+                    details: `State what makes ${projectName} or its creator feel distinct from lookalike portfolios.`
                 }
             ],
             helper: 'Starter pack generated from onboarding: credibility, proof, and a sharp call-to-action path.'
@@ -1022,8 +1042,7 @@ const getLaneStarterPack = (metadata = {}) => {
                 {
                     type: 'flow',
                     title: 'Member loop',
-                    details: 'Describe the loop that brings members back after the first visit.',
-                    position: { x: 1050, y: 470 }
+                    details: 'Describe the loop that brings members back after the first visit.'
                 }
             ],
             helper: 'Starter pack generated from onboarding: member onboarding, repeat value, and a simple engagement loop.'
@@ -1051,14 +1070,12 @@ const getLaneStarterPack = (metadata = {}) => {
                 {
                     type: 'flow',
                     title: 'AI run loop',
-                    details: 'Describe setup, generation, review, and approval as a visible product flow.',
-                    position: { x: 1050, y: 470 }
+                    details: 'Describe setup, generation, review, and approval as a visible product flow.'
                 },
                 {
                     type: 'custom',
                     title: 'AI workflow target',
-                    details: desiredOutcome,
-                    position: { x: 1770, y: 470 }
+                    details: desiredOutcome
                 }
             ],
             helper: 'Starter pack generated from onboarding: prompt flow, review loop, and human-in-the-loop output quality.'
@@ -1079,8 +1096,7 @@ const buildScrapedReferenceNodes = (metadata = {}) => {
         nodes.push({
             type: 'reference',
             title: 'Reference insight',
-            details: metadata.referenceSummary,
-            position: { x: 740, y: 40 }
+            details: metadata.referenceSummary
         });
     }
 
@@ -1093,12 +1109,53 @@ const buildScrapedReferenceNodes = (metadata = {}) => {
                 metadata?.fontDirection ? `Fonts: ${metadata.fontDirection}` : '',
                 metadata?.colorPalette ? `Palette: ${metadata.colorPalette}` : '',
                 metadata?.flowStructure ? `Flow: ${metadata.flowStructure}` : ''
-            ].filter(Boolean).join('\n'),
-            position: { x: 1770, y: 470 }
+            ].filter(Boolean).join('\n')
         });
     }
 
     return nodes;
+};
+
+const getStarterSupportRail = (nodeType) => (
+    ['target_user', 'reference', 'unique_value'].includes(nodeType) ? 'top' : 'bottom'
+);
+
+const getStarterSupportTargetId = (nodeType) => (nodeType === 'reference' ? 'starter-objective' : 'starter-output');
+
+const buildStarterSupportLayout = ({ optionalNodes = [], scrapedNodes = [] } = {}) => {
+    const topNodes = [];
+    const bottomNodes = [];
+    const pushToRail = (node) => {
+        if (getStarterSupportRail(node.type) === 'top') {
+            topNodes.push(node);
+            return;
+        }
+        bottomNodes.push(node);
+    };
+
+    pushToRail({
+        type: 'target_user',
+        id: 'starter-user',
+        title: optionalNodes.targetUser.title,
+        details: optionalNodes.targetUser.details
+    });
+
+    [...optionalNodes.sideNodes, ...scrapedNodes].forEach((node) => {
+        pushToRail(node);
+    });
+
+    const assignRailPositions = (nodes, slots, y) => nodes.map((node, index) => ({
+        ...node,
+        position: {
+            x: slots[index] ?? (slots[slots.length - 1] + ((index - slots.length + 1) * STARTER_LAYOUT.overflowGap)),
+            y
+        }
+    }));
+
+    return [
+        ...assignRailPositions(topNodes, STARTER_LAYOUT.topRailSlots, STARTER_LAYOUT.topRailY),
+        ...assignRailPositions(bottomNodes, STARTER_LAYOUT.bottomRailSlots, STARTER_LAYOUT.bottomRailY)
+    ];
 };
 
 const createIdeaNode = (type, position, overrides = {}) => {
@@ -1129,30 +1186,34 @@ const buildStarterDocument = (metadata = {}) => {
     const audience = metadata?.audience || 'people with the problem';
     const problem = metadata?.problemStatement || 'help users solve an important problem';
     const starterPack = getLaneStarterPack(metadata);
+    const backboneXs = STARTER_LAYOUT.backboneXs;
 
     const backboneNodes = [
-        createIdeaNode('role', { x: 60, y: 250 }, {
+        createIdeaNode('role', { x: backboneXs.role, y: STARTER_LAYOUT.backboneY }, {
             id: 'starter-role',
             title: starterPack.roleProfile.title,
             details: starterPack.roleProfile.details
         }),
-        createIdeaNode('objective', { x: 400, y: 250 }, {
+        createIdeaNode('objective', { x: backboneXs.objective, y: STARTER_LAYOUT.backboneY }, {
             id: 'starter-objective',
             title: starterPack.objective,
             details: starterPack.objectiveDetails
         }),
-        ...starterPack.features.map((feature, index) => createIdeaNode('feature', { x: 740 + (index * 340), y: 250 }, {
+        ...starterPack.features.map((feature, index) => createIdeaNode('feature', {
+            x: backboneXs.featureStart + (index * backboneXs.featureGap),
+            y: STARTER_LAYOUT.backboneY
+        }, {
             id: `starter-feature-${index + 1}`,
             title: feature.title,
             details: feature.details,
             priority: feature.priority || index + 1
         })),
-        createIdeaNode('constraint', { x: 1420, y: 250 }, {
+        createIdeaNode('constraint', { x: backboneXs.constraint, y: STARTER_LAYOUT.backboneY }, {
             id: 'starter-constraint',
             title: starterPack.constraint,
             details: starterPack.constraintDetails
         }),
-        createIdeaNode('output', { x: 1760, y: 250 }, {
+        createIdeaNode('output', { x: backboneXs.output, y: STARTER_LAYOUT.backboneY }, {
             id: 'starter-output',
             title: starterPack.output,
             details: starterPack.outputDetails
@@ -1160,24 +1221,28 @@ const buildStarterDocument = (metadata = {}) => {
     ];
 
     const scrapedReferenceNodes = buildScrapedReferenceNodes(metadata);
-
-    const sideNodes = [
-        createIdeaNode('target_user', { x: 400, y: 40 }, {
-            id: 'starter-user',
-            title: audience,
-            details: `Primary audience for ${projectName}. They need help with ${problem}.`
-        }),
-        ...(starterPack.optionalNodes || []).map((node, index) => createIdeaNode(node.type, node.position, {
-            id: `starter-optional-${node.type}-${index + 1}`,
-            title: node.title,
-            details: node.details
-        })),
-        ...scrapedReferenceNodes.map((node, index) => createIdeaNode(node.type, node.position, {
-            id: `starter-scrape-${node.type}-${index + 1}`,
-            title: node.title,
-            details: node.details
+    const supportDescriptors = buildStarterSupportLayout({
+        optionalNodes: {
+            targetUser: {
+                title: audience,
+                details: `Primary audience for ${projectName}. They need help with ${problem}.`
+            },
+            sideNodes: (starterPack.optionalNodes || []).map((node, index) => ({
+                ...node,
+                id: `starter-optional-${node.type}-${index + 1}`
+            }))
+        },
+        scrapedNodes: scrapedReferenceNodes.map((node, index) => ({
+            ...node,
+            id: `starter-scrape-${node.type}-${index + 1}`
         }))
-    ];
+    });
+
+    const sideNodes = supportDescriptors.map((node) => createIdeaNode(node.type, node.position, {
+        id: node.id,
+        title: node.title,
+        details: node.details
+    }));
 
     const nodes = [...backboneNodes, ...sideNodes];
     const byId = Object.fromEntries(nodes.map((node) => [node.id, node]));
@@ -1192,15 +1257,11 @@ const buildStarterDocument = (metadata = {}) => {
 
     const sideEdgeIds = [
         ['starter-user', 'starter-objective', 'e-user-objective'],
-        ...((starterPack.optionalNodes || []).map((node, index) => {
-            const starterId = `starter-optional-${node.type}-${index + 1}`;
-            const targetId = node.type === 'reference' ? 'starter-objective' : 'starter-output';
-            return [starterId, targetId, `e-${node.type}-${index + 1}`];
-        })),
-        ...scrapedReferenceNodes.map((node, index) => {
-            const starterId = `starter-scrape-${node.type}-${index + 1}`;
-            const targetId = node.type === 'reference' ? 'starter-objective' : 'starter-output';
-            return [starterId, targetId, `e-scrape-${node.type}-${index + 1}`];
+        ...supportDescriptors
+            .filter((node) => node.id !== 'starter-user')
+            .map((node, index) => {
+            const targetId = getStarterSupportTargetId(node.type);
+            return [node.id, targetId, `e-support-${node.type}-${index + 1}`];
         })
     ];
 
@@ -2285,7 +2346,7 @@ function IdeaCanvas({
 
                                 {importedLegacy && (
                                     <div style={{ borderRadius: 16, border: '1px solid rgba(234,88,12,0.24)', background: 'rgba(255,237,213,0.9)', padding: 12, fontSize: 11, color: '#9a3412', lineHeight: 1.55 }}>
-                                        Legacy Mind Map data was imported as a starting graph. Review custom nodes and fill in missing ROFCO sections before copying the prompt.
+                                        Legacy builder data was imported as a starting graph. Review custom nodes and fill in missing ROFCO sections before copying the prompt.
                                     </div>
                                 )}
 

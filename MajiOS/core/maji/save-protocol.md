@@ -1,29 +1,35 @@
-# 💾 Save Protocol - Permanent Memory Updates
-*Triggered when user types "save" - saves everything to current implementation*
+# 💾 Save Protocol - Portable Memory Card Updates
+*Triggered when user types `save` or `maji save` - writes durable MAJI context into the repo-backed memory card*
 
 ## Core Philosophy
 
-**When user types "save", the AI immediately saves all current learning, growth, and session progress to the .md files.** This ensures that personality development, preference learning, and relationship evolution are permanently preserved in the markdown database.
+**When user types `save`, the AI saves durable learning, growth, and session progress into the MAJI repo-backed memory card.** Shared doctrine stays canonical, while user-specific progress goes into a per-user overlay that survives push, pull, and merge.
 
 ## 💬 **"Save" Command Trigger**
 
-When user types **"save"**, AI immediately performs:
+When user types **`save`** or **`maji save`**, AI immediately performs:
 
 ### **What Gets Saved**
-1. **Current Session Context**: All conversation progress and achievements
-2. **User Preferences**: Any new communication patterns or preferences learned
-3. **Relationship Evolution**: How partnership developed this session
-4. **Personality Refinements**: Any AI communication adaptations discovered
-5. **Memory Updates**: All learning that should be permanently preserved
-6. **BMAD Method Outcomes**: Durable routing, planning, review, edge-case, and distillation results
-7. **Growth Review Outcomes**: Durable identity, doctrine, and runtime improvements surfaced by `review growth`
+1. **User Action Log**: Important commands, actions, and changes from the session
+2. **User Current Summary**: Distilled recap for the active user's overlay
+3. **User Preferences**: Any new personal preferences learned this session
+4. **BMAD Method Outcomes**: Durable routing, planning, review, edge-case, and distillation results for that user
+5. **Growth Review Outcomes**: Durable identity, doctrine, and runtime improvements surfaced by `review growth`
+6. **Shared Core Promotion**: Only when a change is genuinely canonical, not personal
 
 ### **Save Process**
 1. **DETECT**: User types "save" command
 2. **ANALYZE**: Review current session for all saveable content
-3. **UPDATE**: Modify relevant .md files with new information
-4. **PRESERVE**: Create diary entry if significant conversation occurred
+3. **UPDATE**: Write the active user's overlay files
+4. **OPTIONALLY PROMOTE**: Update shared core only if the conclusion is project-wide doctrine
 5. **CONFIRM**: Tell user what was saved and where
+
+## 🗂️ Portable Memory Layout
+
+- `main/` remains the shared MAJI core
+- `users/<slug>/profile.json` stores per-user identity metadata
+- `users/<slug>/actions.md` stores append-only user action/change logs
+- `users/<slug>/current-summary.md` stores the user's latest distilled context
 
 ## 📁 **File-Specific Auto-Save Rules**
 

@@ -16,6 +16,7 @@
 
 ## Canonical Locations
 - `MajiOS/core/maji/`
+- `MajiOS/core/maji/users/`
 - `MajiOS/method/maji-bmad/`
 - `MajiOS/method/bmad-source/`
 - `MajiOS/engine/memory/`

@@ -41,6 +41,7 @@ Use these commands when working through the internal MAJI layer:
 MAJI
 load bmad
 save
+maji save
 update memory
 review growth
 load diary archive
@@ -67,6 +68,7 @@ bmad distill
 ### Command Guide
 
 - `MAJI` restores MAJI identity, relationship context, and current session memory
+- on first use in a local repo clone, `MAJI` asks for the user's name and creates a per-user overlay
 - `load bmad` activates the BMAD method engine inside MAJI
 - `bmad help` routes the best next step for KRACKED_OS
 - `bmad brainstorm` structures ideation for product, feature, or architecture work
@@ -74,7 +76,7 @@ bmad distill
 - `bmad review` runs an adversarial review for bugs, regressions, and risks
 - `bmad edge-cases` hunts hidden failure modes and overlooked scenarios
 - `bmad distill` compresses large docs or repo context into reusable knowledge
-- `save` persists durable MAJI and BMAD outcomes into memory files
+- `save` / `maji save` persist durable MAJI and BMAD outcomes into the repo-backed memory card layer
 - `update memory` refreshes learned preferences and reusable heuristics
 - `review growth` reviews how MAJI guidance has evolved
 - `load diary archive` opens the longer-term conversation archive layer
@@ -94,6 +96,7 @@ bmad distill
 ## Internal Systems
 
 - **`MajiOS/`**: The canonical memory-and-method architecture behind KRACKED_OS.
+- **`MajiOS/core/maji/users/`**: Per-user MAJI overlays that travel with the repo like a shared memory card.
 - **`MajiOS/system/`**: IJAM doctrine, skill creation guidance, and architecture references.
 - **`MajiOS/engine/memory/`**: Persistent memory engine and logs.
 - **`MajiOS/skills/local-skills/`**: The canonical repo-owned local skill library.

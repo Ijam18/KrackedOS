@@ -24,6 +24,10 @@ export default function KrackedIJAMChat({ prefillMessage = '', onPrefillConsumed
     reviewDiaryEntries,
     loadDiaryArchive,
     loadSaveDiary,
+    loadMajiMemory,
+    submitMajiOnboardingName,
+    saveMajiMemory,
+    majiPendingOnboarding,
     normalizeCommand
   } = useIJAMConversation();
 
@@ -50,7 +54,13 @@ export default function KrackedIJAMChat({ prefillMessage = '', onPrefillConsumed
     const normalizedCommand = normalizeCommand(userMessage);
     let aiResponse;
 
-    if (normalizedCommand === 'save diary') {
+    if (majiPendingOnboarding) {
+      aiResponse = await submitMajiOnboardingName(userMessage);
+    } else if (normalizedCommand === 'maji') {
+      aiResponse = await loadMajiMemory();
+    } else if (normalizedCommand === 'save' || normalizedCommand === 'maji save') {
+      aiResponse = await saveMajiMemory(nextMessages);
+    } else if (normalizedCommand === 'save diary') {
       aiResponse = saveDiaryEntry(nextMessages);
     } else if (normalizedCommand === 'review diary') {
       aiResponse = reviewDiaryEntries();

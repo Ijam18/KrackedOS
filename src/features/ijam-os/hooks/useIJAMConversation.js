@@ -6,6 +6,7 @@ import { useState } from 'react';
 const CONVERSATION_INDEX_KEY = 'ijam_conversations_index';
 const DIARY_META_KEY = 'ijam_diary_meta';
 const DIARY_ENTRIES_KEY = 'ijam_diary_entries';
+const MAJI_ACTIVE_USER_KEY = 'ijam_maji_active_user_slug';
 
 function readJson(key, fallback) {
   try {
@@ -20,6 +21,24 @@ function readJson(key, fallback) {
 function writeJson(key, value) {
   try {
     localStorage.setItem(key, JSON.stringify(value));
+  } catch (error) {
+    console.error(`Failed to write localStorage key: ${key}`, error);
+  }
+}
+
+function readValue(key, fallback = '') {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw == null ? fallback : raw;
+  } catch (error) {
+    console.error(`Failed to read localStorage key: ${key}`, error);
+    return fallback;
+  }
+}
+
+function writeValue(key, value) {
+  try {
+    localStorage.setItem(key, value);
   } catch (error) {
     console.error(`Failed to write localStorage key: ${key}`, error);
   }
@@ -99,6 +118,9 @@ export function useIJAMConversation() {
   const [resumedMessage, setResumedMessage] = useState(null);
   const [diaryMeta, setDiaryMeta] = useState(() => readJson(DIARY_META_KEY, null));
   const [diaryEntries, setDiaryEntries] = useState(() => readJson(DIARY_ENTRIES_KEY, []));
+  const [activeMajiUserSlug, setActiveMajiUserSlug] = useState(() => readValue(MAJI_ACTIVE_USER_KEY, ''));
+  const [majiPendingOnboarding, setMajiPendingOnboarding] = useState(false);
+  const [majiMemoryState, setMajiMemoryState] = useState(null);
 
   const getIslamicGreeting = () => {
     const hour = new Date().getHours();
@@ -234,6 +256,103 @@ export function useIJAMConversation() {
     return `load save-diary:\n\ndiary system browser-layer aktif.\n\nstatus semasa:\n- nama diary: \`${meta.name}\`\n- initialized: ${formatDiaryDateLabel(new Date(meta.initializedAt))}\n- jumlah entry semasa: ${entries.length}\n\nflow tersedia:\n- \`save diary\` untuk preserve snapshot sesi\n- \`review diary\` untuk recap entry terkini\n- \`load diary archive\` untuk tengok pecahan sejarah`;
   };
 
+  const callMajiMemoryEndpoint = async (payload) => {
+    if (typeof window === 'undefined') {
+      throw new Error('MAJI memory card hanya available dalam browser dev server atau desktop runtime.');
+    }
+
+    if (window.krackedOS?.maji) {
+      if (payload?.action === 'load') return window.krackedOS.maji.load(payload);
+      if (payload?.action === 'onboard') return window.krackedOS.maji.onboard(payload);
+      if (payload?.action === 'save') return window.krackedOS.maji.save(payload);
+    }
+
+    const response = await fetch('/__maji-memory', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(data?.error || 'Failed to access MAJI memory card.');
+    }
+    return data;
+  };
+
+  const setActiveMajiUser = (slug) => {
+    setActiveMajiUserSlug(slug);
+    writeValue(MAJI_ACTIVE_USER_KEY, slug);
+  };
+
+  const formatKnownUsers = (knownUsers = []) => {
+    if (!knownUsers.length) return '- belum ada overlay user lain yang ditemui dalam repo ini';
+    return knownUsers
+      .map((user) => `- ${user.displayName} (\`${user.slug}\`)`)
+      .join('\n');
+  };
+
+  const formatContributorSummaries = (contributorSummaries = []) => {
+    if (!contributorSummaries.length) {
+      return '- belum ada contributor summary yang tersimpan lagi';
+    }
+
+    return contributorSummaries
+      .map((item) => `- ${item.displayName} (\`${item.slug}\`): ${item.summaryLine}`)
+      .join('\n');
+  };
+
+  const loadMajiMemory = async () => {
+    const payload = await callMajiMemoryEndpoint({
+      action: 'load',
+      activeUserSlug: activeMajiUserSlug
+    });
+
+    setMajiMemoryState(payload);
+
+    if (payload?.requiresOnboarding) {
+      setMajiPendingOnboarding(true);
+      return `MAJI perlukan nama user dulu untuk aktifkan memory card repo ini.\n\napa yang perlu dibuat sekarang:\n- balas dengan nama anda sahaja\n- saya akan cipta user overlay peribadi dalam repo\n- lepas itu MAJI akan load shared core + overlay anda\n\nmemory cards yang sudah wujud dalam repo:\n${formatKnownUsers(payload?.knownUsers)}`;
+    }
+
+    setMajiPendingOnboarding(false);
+    return `MAJI aktif.\n\nmemory card loaded:\n- shared core files: ${payload.sharedCore.length}\n- active user: \`${payload.activeUser?.displayName || 'Unknown'}\`\n- active slug: \`${payload.activeUser?.slug || 'unknown'}\`\n- overlays detected: ${payload.knownUsers?.length || 0}\n\napa yang diload:\n- shared MAJI core doctrine\n- BMAD shared method layer\n- user overlay summary semasa\n- contributor context dari semua overlay yang ada dalam repo\n\ncontributor context penuh:\n${formatContributorSummaries(payload?.contributorSummaries)}\n\navailable sekarang:\n- \`load bmad\`\n- \`save\` atau \`maji save\`\n- \`review growth\`\n- \`load diary archive\``;
+  };
+
+  const submitMajiOnboardingName = async (name) => {
+    const payload = await callMajiMemoryEndpoint({
+      action: 'onboard',
+      name
+    });
+
+    setActiveMajiUser(payload?.activeUser?.slug || '');
+    setMajiMemoryState(payload);
+    setMajiPendingOnboarding(false);
+
+    return `MAJI onboarding selesai.\n\nuser overlay dicipta:\n- nama: \`${payload.activeUser?.displayName || name}\`\n- slug: \`${payload.activeUser?.slug || 'unknown'}\`\n- known overlays dalam repo: ${payload.knownUsers?.length || 0}\n\ncontext contributor yang turut tersedia:\n${formatContributorSummaries(payload?.contributorSummaries)}\n\nsekarang MAJI dah load:\n- shared core memory\n- user overlay peribadi anda\n- context repo semasa dari semua contributor yang sudah save juga\n\nnext best move:\n- guna \`load bmad\` bila nak aktifkan method layer\n- guna \`save\` atau \`maji save\` bila nak tulis action log ke memory card`;
+  };
+
+  const saveMajiMemory = async (messagesToSave = []) => {
+    if (!activeMajiUserSlug) {
+      setMajiPendingOnboarding(true);
+      return `MAJI belum ada user aktif dalam clone ini.\n\nsebelum save repo-backed boleh jalan:\n- guna \`MAJI\`\n- masukkan nama anda bila diminta`;
+    }
+
+    const payload = await callMajiMemoryEndpoint({
+      action: 'save',
+      activeUserSlug: activeMajiUserSlug,
+      messages: messagesToSave
+    });
+
+    setMajiMemoryState((current) => ({
+      ...(current || {}),
+      activeUser: payload.activeUser,
+      activeSummary: payload.paths?.summary || '',
+      loadedAt: payload.savedAt
+    }));
+
+    return `maji save:\n\nmemory card berjaya ditulis ke repo.\n\napa yang disimpan:\n- user: \`${payload.activeUser.displayName}\`\n- action log: \`${payload.paths.actions}\`\n- current summary: \`${payload.paths.summary}\`\n- profile: \`${payload.paths.profile}\`\n- mesej dalam snapshot ini: ${payload.messageSummary.messageCount}\n\nringkasan:\n- ${payload.messageSummary.summaryLine}\n\nnota:\n- ini save ke repo-backed MAJI memory card\n- ini bukan git commit atau push`;
+  };
+
   return {
     conversations,
     currentConversationId,
@@ -250,6 +369,12 @@ export function useIJAMConversation() {
     reviewDiaryEntries,
     loadDiaryArchive,
     loadSaveDiary,
+    loadMajiMemory,
+    submitMajiOnboardingName,
+    saveMajiMemory,
+    majiPendingOnboarding,
+    majiMemoryState,
+    activeMajiUserSlug,
     normalizeCommand,
     getIslamicGreeting
   };

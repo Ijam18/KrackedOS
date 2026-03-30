@@ -19,6 +19,7 @@
 - `bmad edge-cases`
 - `bmad distill`
 - `save`
+- `maji save`
 
 ## Canonical Domains
 - [`../core/README.md`](../core/README.md)

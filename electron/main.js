@@ -28,6 +28,7 @@ import {
 import { createPowerApi } from './power.js';
 import { createDeviceApi } from './device.js';
 import { scrapeReferencePayload } from '../tools/referenceScraper.js';
+import { loadMajiMemoryCard, onboardMajiUser, saveMajiMemoryCard } from '../tools/majiMemoryCard.js';
 
 const require = createRequire(import.meta.url);
 const { app, BrowserWindow, ipcMain } = require('electron');
@@ -813,6 +814,21 @@ ipcMain.handle('os.reference.scrape', async (_event, payload) => {
   }
 
   return scrapeReferencePayload({ referenceUrl: resolvedReferenceUrl });
+});
+ipcMain.handle('os.maji.load', async (_event, payload = {}) => {
+  if (!isPlainObject(payload)) throw new Error('Expected a MAJI load payload object.');
+  return loadMajiMemoryCard({ activeUserSlug: typeof payload.activeUserSlug === 'string' ? payload.activeUserSlug : '' });
+});
+ipcMain.handle('os.maji.onboard', async (_event, payload = {}) => {
+  if (!isPlainObject(payload)) throw new Error('Expected a MAJI onboarding payload object.');
+  return onboardMajiUser({ name: typeof payload.name === 'string' ? payload.name : '' });
+});
+ipcMain.handle('os.maji.save', async (_event, payload = {}) => {
+  if (!isPlainObject(payload)) throw new Error('Expected a MAJI save payload object.');
+  return saveMajiMemoryCard({
+    activeUserSlug: typeof payload.activeUserSlug === 'string' ? payload.activeUserSlug : '',
+    messages: Array.isArray(payload.messages) ? payload.messages : []
+  });
 });
 
 app.whenReady().then(async () => {

@@ -67,5 +67,10 @@ contextBridge.exposeInMainWorld('krackedOS', {
   },
   reference: {
     scrape: (payload) => invoke('os.reference.scrape', payload)
+  },
+  maji: {
+    load: (payload) => invoke('os.maji.load', payload),
+    onboard: (payload) => invoke('os.maji.onboard', payload),
+    save: (payload) => invoke('os.maji.save', payload)
   }
 });
