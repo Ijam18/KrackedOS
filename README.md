@@ -33,6 +33,143 @@ npm run dev
 ### 3. Activate The Internal AI Layer
 Load `MajiOS/index/master-majios.md` first, then `MajiOS/system/IJAM_UNIFIED.md` to activate the unified memory-and-method layer with full project context.
 
+## How To Work On KRACKED_OS
+
+This is the recommended contributor flow when you pull the repo and start building.
+
+### 1. Pull and install
+```bash
+git pull origin main
+npm install
+```
+
+### 2. Start the app
+Use browser dev mode for normal frontend work:
+
+```bash
+npm run dev
+```
+
+Use desktop runtime when you want the Electron bridge:
+
+```bash
+npm run desktop
+```
+
+### 3. Run `MAJI` first
+When you open the internal chat/runtime, start with:
+
+```text
+MAJI
+```
+
+What happens:
+- on first use in your local clone, MAJI asks for your name
+- KRACKED_OS creates your personal user overlay in `MajiOS/core/maji/users/<your-slug>/`
+- MAJI then loads:
+  - shared project doctrine
+  - shared BMAD method layer
+  - your personal overlay
+  - saved contributor summaries from everyone else who has already used `maji save`
+
+Think of this like loading a shared memory card:
+- the repo stores the shared memory
+- each contributor gets a personal overlay
+- everyone can pull the repo and load the accumulated context
+
+### 4. Activate planning mode when needed
+If you want the built-in workflow layer, run:
+
+```text
+load bmad
+```
+
+Then use:
+
+```text
+bmad help
+bmad brainstorm
+bmad plan
+bmad review
+bmad edge-cases
+bmad distill
+```
+
+### 5. Use `Idea to Prompt` as the main builder app
+The current primary builder flow is:
+
+1. Open `Idea to Prompt`
+2. Complete `Step 0: Find Idea`
+3. Add a `Reference URL` if you want design/theme scraping
+4. Generate the starter ROFCO map
+5. Refine the graph and review the generated prompt
+
+`Mind Map` and `Prompt Forge` were removed because `Idea to Prompt` now covers that workflow in one place.
+
+### 6. Save your MAJI memory
+When you have made meaningful progress, run:
+
+```text
+save
+```
+
+or:
+
+```text
+maji save
+```
+
+This does not create a git commit.
+
+It writes durable repo-backed MAJI memory into your user overlay:
+- `profile.json`
+- `actions.md`
+- `current-summary.md`
+
+That is what lets other contributors pull the repo later and load your saved context through `MAJI`.
+
+### 7. Commit and push code separately
+MAJI save and git save are different things.
+
+Use git normally for code:
+
+```bash
+git status
+git add -A
+git commit -m "Describe your change"
+git push origin main
+```
+
+### 8. Pulling context from other contributors
+If another contributor has pushed their work and MAJI memory:
+
+```bash
+git pull origin main
+```
+
+Then run:
+
+```text
+MAJI
+```
+
+MAJI will load:
+- shared KRACKED_OS doctrine
+- your own personal overlay
+- contributor summaries from other users who have saved into the repo
+
+This is the main collaboration model for KRACKED_OS.
+
+## Collaboration Rules
+
+- Run `MAJI` at the start of a real work session
+- Use `save` or `maji save` to preserve progress into the portable memory layer
+- Use git commit/push for code, not for MAJI memory semantics
+- Keep shared doctrine in `MajiOS/core/maji/main/`
+- Keep per-user memory in `MajiOS/core/maji/users/`
+- Do not treat browser-local chat storage as the source of truth
+- Pull latest `main` before starting major work so your MAJI context stays current
+
 ## MAJI Commands
 
 Use these commands when working through the internal MAJI layer:
