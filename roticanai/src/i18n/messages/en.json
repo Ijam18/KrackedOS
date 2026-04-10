@@ -1,0 +1,460 @@
+{
+  "header": {
+    "brand": "ROTICAN.AI",
+    "myApps": "MY APPS",
+    "explore": "EXPLORE",
+    "signIn": "Sign in",
+    "guest": "Guest",
+    "signInToContinue": "Sign in to continue",
+    "preferences": "Preferences"
+  },
+  "home": {
+    "title": "BUILD ANYTHING YOU CAN IMAGINE",
+    "titleLeft": "YOUR IDEA",
+    "titleRight": "NOW REAL",
+    "remixing": "REMIXING",
+    "browseMoreInspo": "or browse more inspo",
+    "placeholder": "Describe your grand idea...",
+    "placeholderRemix": "Edit the prompt or just hit submit to start...",
+    "start": "START",
+    "getInspired": "Get inspired",
+    "mode": {
+      "build": "Build",
+      "chat": "Chat"
+    },
+    "chat": {
+      "placeholder": "Ask me anything...",
+      "emptyTitle": "READY TO CHAT",
+      "emptyDescription": "Ask questions, brainstorm ideas, or just have a conversation.",
+      "retry": "Retry",
+      "copy": "Copy",
+      "backToBuild": "← Back to Build Mode",
+      "thinking": "Thinking...",
+      "switchToBuild": "Switch to Build",
+      "suggestions": {
+        "0": "What can you help me with?",
+        "1": "What is rotican.ai?",
+        "2": "Give me app ideas"
+      }
+    },
+    "ideaWizard": {
+      "cta": "Need ideas?",
+      "title": "PICK AN IDEA",
+      "description": "Pick, narrow, choose.",
+      "chooseCategory": "Category",
+      "choosePreference": "Direction",
+      "pickIdea": "Ideas",
+      "pickIdeaDescription": "Pick one.",
+      "startOver": "Reset",
+      "back": "Back",
+      "tryAgain": "Try again",
+      "refreshIdeas": "More",
+      "starterLabel": "Prompt seed",
+      "loadingIdeasTitle": "Generating ideas...",
+      "loadingIdeasDescription": "Generating...",
+      "loadingPromptTitle": "Starting build...",
+      "loadingPromptDescription": "Building {idea}...",
+      "loadingPromptFallback": "Starting build...",
+      "steps": {
+        "category": "Category",
+        "preference": "Direction",
+        "idea": "Idea"
+      },
+      "axes": {
+        "game": "Choose the kind of play loop you want.",
+        "website": "Choose the kind of site you want to make.",
+        "tool": "Choose the kind of job the tool should do.",
+        "tracker": "Choose what the app should keep tabs on.",
+        "creative": "Choose the kind of creative output you want.",
+        "personal": "Choose the slice of life you want the app to help with."
+      },
+      "categories": {
+        "game": {
+          "label": "Game",
+          "description": "Something playful, interactive, and easy to pick up."
+        },
+        "website": {
+          "label": "Website",
+          "description": "A landing page or themed site with a clear public-facing purpose."
+        },
+        "tool": {
+          "label": "Tool",
+          "description": "A focused utility that helps someone do one job quickly."
+        },
+        "tracker": {
+          "label": "Tracker",
+          "description": "An app that logs progress, counts, habits, or collections."
+        },
+        "creative": {
+          "label": "Creative",
+          "description": "Something expressive, visual, or playful for making things."
+        },
+        "personal": {
+          "label": "Personal",
+          "description": "An app for everyday life, moods, choices, or routines."
+        }
+      },
+      "preferences": {
+        "game": {
+          "arcade": {
+            "label": "Arcade",
+            "description": "Fast loops, scores, reflexes, and instant replay value."
+          },
+          "puzzle": {
+            "label": "Puzzle",
+            "description": "Pattern solving, logic, and satisfying little wins."
+          },
+          "quiz": {
+            "label": "Quiz",
+            "description": "Trivia, guessing, and playful challenge rounds."
+          },
+          "cozy": {
+            "label": "Cozy",
+            "description": "Low-pressure, charming interactions and soft vibes."
+          }
+        },
+        "website": {
+          "portfolio": {
+            "label": "Portfolio",
+            "description": "Showcase a person, project, or body of work."
+          },
+          "smallBusiness": {
+            "label": "Small business",
+            "description": "Promote a service, menu, studio, or local brand."
+          },
+          "event": {
+            "label": "Event",
+            "description": "Highlight a launch, gathering, schedule, or RSVP flow."
+          },
+          "fanPage": {
+            "label": "Fan page",
+            "description": "Celebrate a niche obsession, artist, team, or fictional world."
+          }
+        },
+        "tool": {
+          "generator": {
+            "label": "Generator",
+            "description": "Create names, combinations, prompts, or random outputs."
+          },
+          "calculator": {
+            "label": "Calculator",
+            "description": "Compute totals, scores, costs, or conversions."
+          },
+          "planner": {
+            "label": "Planner",
+            "description": "Help someone organize choices, steps, or schedules."
+          },
+          "comparer": {
+            "label": "Comparer",
+            "description": "Let someone weigh options side by side."
+          }
+        },
+        "tracker": {
+          "habits": {
+            "label": "Habits",
+            "description": "Track routines, streaks, consistency, or daily check-ins."
+          },
+          "money": {
+            "label": "Money",
+            "description": "Track spending, saving, splitting, or budgeting."
+          },
+          "fitness": {
+            "label": "Fitness",
+            "description": "Track movement, workouts, goals, or recovery."
+          },
+          "collection": {
+            "label": "Collection",
+            "description": "Track books, foods, cards, outfits, or anything collectible."
+          }
+        },
+        "creative": {
+          "visual": {
+            "label": "Visual",
+            "description": "Colors, layouts, collages, pixel art, or image play."
+          },
+          "writing": {
+            "label": "Writing",
+            "description": "Words, captions, prompts, stories, or poetic experiments."
+          },
+          "music": {
+            "label": "Music",
+            "description": "Mood, playlists, rhythm, or sound-based ideas."
+          },
+          "meme": {
+            "label": "Meme energy",
+            "description": "Chaotic, funny, internet-native, and very shareable."
+          }
+        },
+        "personal": {
+          "food": {
+            "label": "Food",
+            "description": "Help decide, rank, plan, or randomize meals and cravings."
+          },
+          "travel": {
+            "label": "Travel",
+            "description": "Trips, destination picks, road plans, or local adventures."
+          },
+          "relationships": {
+            "label": "Relationships",
+            "description": "Dates, friendship games, compatibility, or conversation starters."
+          },
+          "selfCare": {
+            "label": "Self-care",
+            "description": "Mood, reflection, routines, encouragement, or calm."
+          }
+        }
+      },
+      "errors": {
+        "ideasTitle": "Couldn't generate ideas",
+        "promptTitle": "Couldn't build the prompt",
+        "genericIdeas": "The idea generator returned something unusable. Try again.",
+        "genericPrompt": "The prompt writer failed. Pick the idea again or retry."
+      }
+    }
+  },
+  "apps": {
+    "title": "My Apps",
+    "projects": "{count, plural, =1 {project} other {projects}}",
+    "newApp": "NEW APP",
+    "new": "NEW",
+    "emptyTitle": "NO APPS YET",
+    "emptyDescription": "Start building your first app by describing what you want to create.",
+    "createFirst": "CREATE YOUR FIRST APP",
+    "untitled": "Untitled App",
+    "noDescription": "No description",
+    "deleteTitle": "DELETE APP",
+    "deleteConfirm": "Are you sure you want to permanently delete \"{title}\"? This action cannot be undone.",
+    "cancel": "CANCEL",
+    "delete": "DELETE",
+    "deleting": "DELETING..."
+  },
+  "inspo": {
+    "title": "GET INSPIRED",
+    "examples": "{count, plural, =1 {example} other {examples}}",
+    "toRemix": "to remix",
+    "inCategory": "in {category}",
+    "startFromScratch": "START FROM SCRATCH",
+    "emptyTitle": "NOTHING HERE YET",
+    "emptyDescription": "We're adding {category} examples soon. Try another category or start building!",
+    "comingSoonTitle": "COMING SOON",
+    "comingSoonDescription": "We're curating inspiring examples. Check back soon!",
+    "remix": "REMIX",
+    "categories": {
+      "all": "All",
+      "games": "Games",
+      "productivity": "Productivity",
+      "utilities": "Tools",
+      "creative": "Creative"
+    }
+  },
+  "explore": {
+    "title": "EXPLORE",
+    "subtitle": "Discover apps built by the community",
+    "published": "{count, plural, =1 {app} other {apps}} published",
+    "recent": "RECENT",
+    "popular": "POPULAR",
+    "like": "Like",
+    "remix": "REMIX",
+    "makeItYourOwn": "Make it your own",
+    "remixed": "Remix",
+    "backToExplore": "Back to Explore",
+    "openApp": "Open App",
+    "remixing": "REMIXING...",
+    "signInToLike": "Sign in to like",
+    "signInToRemix": "Sign in to make it your own",
+    "untitled": "Untitled App",
+    "noDescription": "No description",
+    "emptyTitle": "NO APPS YET",
+    "emptyDescription": "Be the first to publish an app! Open any app and use the Share button to publish it to the community.",
+    "errorTitle": "SOMETHING WENT WRONG",
+    "errorDescription": "Failed to load the feed. Please try again later."
+  },
+  "profile": {
+    "title": "PROFILE",
+    "editProfile": "Edit Profile",
+    "editDescription": "Update your public profile information.",
+    "username": "Username",
+    "usernamePlaceholder": "your-username",
+    "usernameHint": "3-30 characters (lowercase letters, numbers, hyphens).",
+    "usernameTooShort": "Too short — at least 3 characters",
+    "bio": "Bio",
+    "bioPlaceholder": "Tell us about yourself...",
+    "joined": "Joined {date}",
+    "appsPublished": "apps",
+    "totalLikes": "likes",
+    "totalViews": "views",
+    "emptyTitle": "NO PUBLISHED APPS YET",
+    "emptyDescription": "This user hasn't published any apps to the community yet.",
+    "save": "Save",
+    "saving": "Saving...",
+    "saved": "Saved",
+    "cancel": "Cancel",
+    "checkFailed": "Failed to check availability",
+    "saveFailed": "Failed to save"
+  },
+  "auth": {
+    "signInTitle": "SIGN IN",
+    "signInDescription": "Continue with your account to start building",
+    "continueGoogle": "Continue with Google",
+    "continueGithub": "Continue with GitHub",
+    "terms": "By signing in, you agree to our terms of service",
+    "signOut": "Sign Out",
+    "myApps": "My Apps"
+  },
+  "guest": {
+    "banner": "Sign in to save your work & get more daily messages",
+    "signIn": "Sign in"
+  },
+  "usage": {
+    "limitReachedTitle": "LIMIT REACHED",
+    "limitReachedDescription": "We're limiting usage for now.",
+    "resetsAt": "Your limit resets at {time} (MYT).",
+    "gotIt": "Got it",
+    "limitReached": "Limit reached. Resets in {hours}h",
+    "messagesCompact": "{remaining} / {limit} Messages",
+    "messagesAvailable": "{remaining} messages available",
+    "resetsIn": "Resets in {hours} {hours, plural, =1 {hour} other {hours}}"
+  },
+  "language": {
+    "en": "EN",
+    "ms": "BM"
+  },
+  "githubSync": {
+    "title": "Push to GitHub",
+    "subtitle": "Sync this app to your GitHub",
+    "signInRequired": "Sign in with a real account to connect GitHub.",
+    "sessionExpired": "Session expired — refresh and sign in again.",
+    "connected": "GitHub connected",
+    "connectedAs": "@{login}",
+    "reconnectRequired": "Reconnection required",
+    "notConnected": "Not connected to your GitHub account",
+    "reconnect": "Reconnect",
+    "connect": "Connect Now",
+    "repoInvalid": "Repo link invalid — unlink and create a new one.",
+    "push": "Push",
+    "unlink": "Unlink",
+    "createSection": "Create public repo",
+    "repoNamePlaceholder": "repo-name",
+    "descriptionPlaceholder": "Description (optional)",
+    "createAndLink": "Create Repo",
+    "viewCommit": "View commit"
+  },
+  "suggestions": {
+    "pomodoroTimer": "Pomodoro timer",
+    "habitTracker": "Habit tracker with streaks",
+    "dailyJournal": "Daily journal",
+    "weeklyMealPlanner": "Weekly meal planner",
+    "expenseTracker": "Expense tracker",
+    "readingListTracker": "Reading list tracker",
+    "studyTimer": "Study timer with breaks",
+    "typingSpeedTest": "Typing speed test",
+    "memoryMatchingGame": "Memory matching game",
+    "ticTacToe": "Tic-tac-toe",
+    "snakeGame": "Snake game",
+    "guessTheNumber": "Guess the number",
+    "rockPaperScissors": "Rock paper scissors",
+    "quizGameBuilder": "Quiz game builder",
+    "qrCodeGenerator": "QR code generator",
+    "colorPaletteGenerator": "Color palette generator",
+    "unitConverter": "Unit converter",
+    "passwordGenerator": "Password generator",
+    "countdownTimer": "Countdown timer",
+    "tipCalculator": "Tip calculator",
+    "randomQuoteGenerator": "Random quote generator",
+    "gradientMaker": "Gradient maker",
+    "pixelArtCanvas": "Pixel art canvas",
+    "memeGenerator": "Meme generator",
+    "asciiArtGenerator": "ASCII art generator",
+    "photoCollageMaker": "Photo collage maker",
+    "markdownPreview": "Markdown preview",
+    "birthdayCountdown": "Birthday countdown",
+    "wouldYouRather": "Would you rather",
+    "truthOrDareGenerator": "Truth or dare",
+    "loveCalculator": "Love calculator",
+    "babyNameGenerator": "Baby name generator",
+    "movieNightPicker": "Movie night picker",
+    "bucketListMaker": "Bucket list maker",
+    "fortuneCookieGenerator": "Fortune cookie generator",
+    "dreamJournalApp": "Dream journal",
+    "zodiacCompatibilityChecker": "Zodiac compatibility",
+    "travelDestinationSpinner": "Travel destination spinner",
+    "nicknameMaker": "Nickname maker",
+    "complimentGenerator": "Compliment generator",
+    "emojiStoryMaker": "Emoji story maker",
+    "whatShouldIEatPicker": "What should I eat?",
+    "playlistMoodMaker": "Playlist mood maker",
+    "friendshipQuiz": "Friendship quiz",
+    "petNameGenerator": "Pet name generator",
+    "dailyAffirmations": "Daily affirmations",
+    "randomDateIdeaGenerator": "Date idea generator",
+    "vibeCheckQuiz": "Vibe check quiz",
+    "spotifyWrappedClone": "Spotify Wrapped clone",
+    "aestheticMoodBoard": "Aesthetic mood board",
+    "screenTimeTracker": "Screen time tracker",
+    "hotTakesGenerator": "Hot takes generator",
+    "twoTruthsOneLie": "Two truths one lie",
+    "charadesWordGenerator": "Charades word generator",
+    "sleepSoundMixer": "Sleep sound mixer",
+    "auraPointsCalculator": "Aura points calculator",
+    "fitnessBingoCard": "Fitness bingo card",
+    "redFlagGreenFlagQuiz": "Red flag green flag quiz",
+    "mainCharacterGenerator": "Main character energy",
+    "unpopularOpinionRanker": "Unpopular opinion ranker",
+    "romanticDinnerPlanner": "Romantic dinner planner",
+    "skinCareRoutineBuilder": "Skincare routine builder",
+    "mamakMenuRoulette": "Mamak menu roulette",
+    "splitBillMalaysia": "Split bill calculator",
+    "grabVsWalkCalculator": "Grab vs walk calculator",
+    "malaysianSlangQuiz": "Malaysian slang quiz",
+    "kopiBuildYourOwn": "Build your own kopi",
+    "publicHolidayCountdown": "Public holiday countdown",
+    "whatToTapauDecider": "What to tapau decider",
+    "malaysianFlagQuiz": "State flag quiz",
+    "tollFareCalculator": "Toll fare calculator",
+    "whichMalaysianFoodAreYou": "Which Malaysian food are you?",
+    "parkingTimerReminder": "Parking timer",
+    "malaysianDialectTranslator": "Malaysian dialect translator",
+    "roadTripPlaylistMaker": "Road trip playlist maker",
+    "mamakVsFancyDinner": "Mamak vs fancy dinner",
+    "cnyAngPauCalculator": "Ang pau calculator",
+    "malaysianMemeGenerator": "Malaysian meme generator",
+    "touchNGoBalanceTracker": "Touch n Go balance tracker",
+    "hawkerFoodRanker": "Hawker food ranker"
+  },
+  "homeTour": {
+    "steps": {
+      "intro": {
+        "title": "Welcome to RotiCan.ai",
+        "description": "Describe an idea. Get a working app. No setup, no deploy, just code that runs."
+      },
+      "modeToggle": {
+        "title": "Pick Your Mode",
+        "description": "Build ships working apps. Chat is for brainstorming without the commitment."
+      },
+      "buildPrompt": {
+        "title": "Describe It",
+        "description": "Type your idea. Hit submit. Get a working app."
+      },
+      "buildHelpers": {
+        "title": "Stuck?",
+        "description": "Idea Wizard finds the perfect app for you. Just pick a vibe."
+      },
+      "buildSuggestions": {
+        "title": "Popular Shortcuts",
+        "description": "One click. Instant app. No typing required."
+      },
+      "chatPrompt": {
+        "title": "Brainstorm Mode",
+        "description": "Ask anything. Test ideas. No apps created — just pure exploration."
+      },
+      "chatSuggestions": {
+        "title": "Quick Starters",
+        "description": "Jump in with these. Or ask whatever comes to mind."
+      },
+      "completion": {
+        "title": "Go Build.",
+        "description": "Toggle between modes anytime. Build ships. Chat thinks. Your move."
+      }
+    }
+  }
+}

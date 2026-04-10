@@ -1,0 +1,1 @@
+ALTER TABLE "app" RENAME COLUMN "thumbnail_url" TO "thumbnail_key";
