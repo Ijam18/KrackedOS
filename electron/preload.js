@@ -1,11 +1,38 @@
-import { createRequire } from 'node:module';
-
-const require = createRequire(import.meta.url);
 const { contextBridge, ipcRenderer } = require('electron');
+let browserWindowOpenListener = null;
+const nativeBrowserStateListeners = new Set();
 
 function invoke(channel, ...args) {
   return ipcRenderer.invoke(channel, ...args);
 }
+
+ipcRenderer.on('os.browser.windowOpenRequested', (_event, payload) => {
+  if (typeof browserWindowOpenListener === 'function') {
+    browserWindowOpenListener(payload);
+  }
+});
+
+ipcRenderer.on('os.browser.native.state', (_event, payload) => {
+  nativeBrowserStateListeners.forEach((listener) => {
+    try {
+      listener(payload);
+    } catch {
+      // Ignore listener failures in preload fanout.
+    }
+  });
+});
+
+window.addEventListener('error', (event) => {
+  const error = event.error;
+  const message = error instanceof Error ? `${error.message}\n${error.stack || ''}` : String(event.message || 'Unknown renderer error');
+  console.error('[renderer:error]', message);
+});
+
+window.addEventListener('unhandledrejection', (event) => {
+  const reason = event.reason;
+  const message = reason instanceof Error ? `${reason.message}\n${reason.stack || ''}` : String(reason || 'Unknown renderer rejection');
+  console.error('[renderer:unhandledrejection]', message);
+});
 
 contextBridge.exposeInMainWorld('krackedOS', {
   runtime: {
@@ -51,6 +78,8 @@ contextBridge.exposeInMainWorld('krackedOS', {
     saveProfile: (profile) => invoke('os.settings.saveProfile', profile),
     loadDesktopLayout: () => invoke('os.settings.loadDesktopLayout'),
     saveDesktopLayout: (layout) => invoke('os.settings.saveDesktopLayout', layout),
+    loadInstalledApps: () => invoke('os.settings.loadInstalledApps'),
+    saveInstalledApps: (state) => invoke('os.settings.saveInstalledApps', state),
     loadSession: () => invoke('os.settings.loadSession'),
     saveSession: (session) => invoke('os.settings.saveSession', session),
     loadPersonalization: () => invoke('os.settings.loadPersonalization'),
@@ -64,6 +93,30 @@ contextBridge.exposeInMainWorld('krackedOS', {
     start: (id) => invoke('os.container.start', id),
     stop: (id) => invoke('os.container.stop', id),
     exec: (id, command) => invoke('os.container.exec', id, command)
+  },
+  browser: {
+    getCapabilities: () => invoke('os.browser.getCapabilities'),
+    loadState: (profileId) => invoke('os.browser.loadState', profileId),
+    saveState: (state) => invoke('os.browser.saveState', state),
+    openExternal: (url) => invoke('os.browser.openExternal', url),
+    resetProfile: (profileId) => invoke('os.browser.resetProfile', profileId),
+    onWindowOpenRequested: (listener) => {
+      browserWindowOpenListener = typeof listener === 'function' ? listener : null;
+    },
+    native: {
+      openWindow: (payload) => invoke('os.browser.native.openWindow', payload),
+      getWindowState: (windowKey) => invoke('os.browser.native.getWindowState', windowKey),
+      navigate: (windowKey, url) => invoke('os.browser.native.navigate', windowKey, url),
+      action: (windowKey, action) => invoke('os.browser.native.action', windowKey, action),
+      closeWindow: (windowKey) => invoke('os.browser.native.closeWindow', windowKey),
+      onState: (listener) => {
+        if (typeof listener !== 'function') return () => {};
+        nativeBrowserStateListeners.add(listener);
+        return () => {
+          nativeBrowserStateListeners.delete(listener);
+        };
+      }
+    }
   },
   reference: {
     scrape: (payload) => invoke('os.reference.scrape', payload)

@@ -42,13 +42,17 @@ import IjamBotMascot from './components/IjamBotMascot';
 import MobileStatusBar from './components/MobileStatusBar';
 import { useIjamOSWindowManager } from './hooks/useIjamOSWindowManager';
 import { useMissionControlState } from './hooks/useMissionControlState';
-import { APP_REGISTRY } from './constants/appRegistry';
+import { createComposedAppRegistry, getWebAppType } from './constants/appRegistry';
+import { KDSTORE_CATALOG } from './constants/kdStoreCatalog';
 import KrackedInteractiveLoading from './components/loading/KrackedInteractiveLoading';
 import DesktopIcon from './components/DesktopIcon';
 import StartMenu from './components/StartMenu';
 import WindowFrame from './components/WindowFrame';
 import FilesWindowContent, { VsCodeExplorerIcon } from './components/windows/FilesWindowContent';
 import SettingsWindowContent from './components/windows/SettingsWindowContent';
+import KDStoreWindowContent from './components/windows/KDStoreWindowContent';
+import KDBrowserWindowContent from './components/windows/KDBrowserWindowContent';
+import HostedWebAppWindowContent from './components/windows/HostedWebAppWindowContent';
 import {
     BUILT_IN_WALLPAPERS,
     DEFAULT_PERSONALIZATION,
@@ -56,8 +60,15 @@ import {
     getDefaultWallpaperId,
     normalizeLegacyWallpaperId
 } from './os-core/constants';
+import {
+    DEFAULT_BROWSER_STATE,
+    createBrowserTabRecord,
+    getKDBrowserTitleFromUrl,
+    sanitizeBrowserState
+} from './os-core/browserState';
 import { createDefaultPowerStatus, createPowerStatusAdapter } from './os-core/createPowerStatusAdapter';
 import { createDefaultDeviceStatus, createDeviceStatusAdapter } from './os-core/createDeviceStatusAdapter';
+import { DEFAULT_INSTALLED_APPS_STATE, sanitizeInstalledAppsState } from './os-core/installedAppsState';
 import { basenameFromPath, dirnameFromPath, extnameFromPath, joinOsPath, normalizeOsPath } from './os-core/pathUtils';
 import { buildShellSessionPayload, normalizeRestoredShellWindowState as normalizeShellWindowState } from './shell/session';
 
@@ -2179,6 +2190,29 @@ const TOOL_REFERENCES = [
     }
 ];
 
+const normalizeKDBrowserLaunchUrl = (value, fallbackProtocol = 'https:') => {
+    const raw = String(value || '').trim();
+    if (!raw) return '';
+
+    try {
+        return new URL(raw).toString();
+    } catch {
+        try {
+            return new URL(`${fallbackProtocol}//${raw}`).toString();
+        } catch {
+            return '';
+        }
+    }
+};
+
+const getUrlOrigin = (value) => {
+    try {
+        return new URL(String(value || '')).origin;
+    } catch {
+        return '';
+    }
+};
+
 const TECH_TERMS = [
     {
         term: 'AI Agent',
@@ -2828,6 +2862,7 @@ const IjamOSWorkspace = ({ session, currentUser, isMobileView, deviceMode = 'des
     const desktopSlotsLoadedRef = useRef(false);
     const desktopSlotsHydratedRef = useRef(false);
     const sessionUiHydratedRef = useRef(false);
+    const browserStateHydratedRef = useRef(false);
     const desktopIconsContainerRef = useRef(null);
     const startSearchInputRef = useRef(null);
     const [desktopGridMetrics, setDesktopGridMetrics] = useState(null);
@@ -2861,6 +2896,85 @@ const IjamOSWorkspace = ({ session, currentUser, isMobileView, deviceMode = 'des
     const { missionState, missionActions } = useMissionControlState({
         missionEvents
     });
+    const [installedAppsState, setInstalledAppsState] = useState(DEFAULT_INSTALLED_APPS_STATE);
+    const [browserState, setBrowserState] = useState(DEFAULT_BROWSER_STATE);
+    const appRegistry = useMemo(
+        () => createComposedAppRegistry({ installedAppsState, runtimeMode: runtime?.mode }),
+        [installedAppsState, runtime?.mode]
+    );
+    const launchUrlInKDBrowser = useCallback((nextUrl, options = {}) => {
+        const normalizedUrl = normalizeKDBrowserLaunchUrl(nextUrl);
+        if (!normalizedUrl) return null;
+
+        const matchOrigin = options.matchOrigin !== false;
+        const targetOrigin = getUrlOrigin(normalizedUrl);
+        let resolvedTabId = null;
+
+        setBrowserState((prev) => {
+            const safeState = sanitizeBrowserState(prev);
+            const matchingTab = safeState.tabs.find((tab) => {
+                const tabUrl = normalizeKDBrowserLaunchUrl(tab.url);
+                if (!tabUrl) return false;
+                if (tabUrl === normalizedUrl) return true;
+                if (!matchOrigin) return false;
+                return targetOrigin && getUrlOrigin(tabUrl) === targetOrigin;
+            });
+
+            const nextTitle = options.title || getKDBrowserTitleFromUrl(normalizedUrl);
+
+            if (matchingTab) {
+                resolvedTabId = matchingTab.id;
+                return sanitizeBrowserState({
+                    ...safeState,
+                    activeTabId: matchingTab.id,
+                    tabs: safeState.tabs.map((tab) => (
+                        tab.id === matchingTab.id
+                            ? {
+                                ...tab,
+                                title: nextTitle || tab.title,
+                                lastVisitedAt: new Date().toISOString()
+                            }
+                            : tab
+                    )),
+                    updatedAt: new Date().toISOString()
+                });
+            }
+
+            const nextTab = createBrowserTabRecord({
+                url: normalizedUrl,
+                title: nextTitle
+            });
+            resolvedTabId = nextTab.id;
+            return sanitizeBrowserState({
+                ...safeState,
+                activeTabId: nextTab.id,
+                tabs: [...safeState.tabs, nextTab].slice(-16),
+                updatedAt: new Date().toISOString()
+            });
+        });
+
+        return resolvedTabId;
+    }, []);
+    const closeKDBrowserTabsForUrl = useCallback((targetUrl) => {
+        const normalizedUrl = normalizeKDBrowserLaunchUrl(targetUrl);
+        const targetOrigin = getUrlOrigin(normalizedUrl);
+        if (!normalizedUrl || !targetOrigin) return;
+
+        setBrowserState((prev) => {
+            const safeState = sanitizeBrowserState(prev);
+            const nextTabs = safeState.tabs.filter((tab) => getUrlOrigin(tab.url) !== targetOrigin);
+            if (nextTabs.length === safeState.tabs.length) return safeState;
+
+            return sanitizeBrowserState({
+                ...safeState,
+                activeTabId: nextTabs.some((tab) => tab.id === safeState.activeTabId)
+                    ? safeState.activeTabId
+                    : nextTabs[0]?.id,
+                tabs: nextTabs,
+                updatedAt: new Date().toISOString()
+            });
+        });
+    }, []);
     const triggerHaptic = useCallback(() => {
         if (
             typeof navigator !== 'undefined' &&
@@ -2908,13 +3022,35 @@ const IjamOSWorkspace = ({ session, currentUser, isMobileView, deviceMode = 'des
         setFocusedWindow,
         setZCounter
     } = useIjamOSWindowManager({
-        appRegistry: APP_REGISTRY,
+        appRegistry,
         isTouchIjamMode,
         isPhoneMode,
         isTabletMode,
         getRestoredWindowMetrics,
-        onAppOpen: (type, appCfg) => {
-            emitMissionEvent('app_open', `Opened ${appCfg?.label || type}`, { appType: type, roleHint: getRoleHintFromApp(type) });
+        resolveOpenType: (type, appCfg) => {
+            if (appCfg?.launchSurface === 'kdbrowser' && appCfg?.launchUrl) {
+                return 'kdbrowser';
+            }
+            return type;
+        },
+        onAppOpen: (requestedType, appCfg, meta) => {
+            const sourceApp = meta?.requestedAppCfg || appCfg;
+            const resolvedType = meta?.resolvedType || requestedType;
+
+            if (sourceApp?.launchSurface === 'kdbrowser' && sourceApp?.launchUrl) {
+                launchUrlInKDBrowser(sourceApp.launchUrl, {
+                    title: sourceApp.title || sourceApp.label || getKDBrowserTitleFromUrl(sourceApp.launchUrl),
+                    matchOrigin: true
+                });
+                emitMissionEvent(
+                    'app_open',
+                    `Opened ${sourceApp?.label || sourceApp?.title || requestedType} in KDBROWSER`,
+                    { appType: requestedType, targetAppType: resolvedType, roleHint: getRoleHintFromApp(resolvedType) }
+                );
+                return;
+            }
+
+            emitMissionEvent('app_open', `Opened ${appCfg?.label || resolvedType}`, { appType: requestedType, targetAppType: resolvedType, roleHint: getRoleHintFromApp(resolvedType) });
         },
         onAppFocus: (type, appCfg) => {
             emitMissionEvent('focus_change', `Focus switched to ${appCfg?.label || type}`, { appType: type, roleHint: getRoleHintFromApp(type) });
@@ -3116,19 +3252,30 @@ const IjamOSWorkspace = ({ session, currentUser, isMobileView, deviceMode = 'des
         Promise.all([
             runtime.settings.loadSession(),
             runtime.settings.loadCommunityResources(),
-            refreshWallpaperState()
-        ]).then(([sessionState, resources]) => {
+            refreshWallpaperState(),
+            runtime.settings.loadInstalledApps
+                ? runtime.settings.loadInstalledApps()
+                : Promise.resolve(DEFAULT_INSTALLED_APPS_STATE),
+            runtime.browser?.loadState
+                ? runtime.browser.loadState()
+                : Promise.resolve(DEFAULT_BROWSER_STATE)
+        ]).then(([sessionState, resources, _wallpaperState, installedState, loadedBrowserState]) => {
             if (!active) return;
+            const nextInstalledAppsState = sanitizeInstalledAppsState(installedState || DEFAULT_INSTALLED_APPS_STATE);
+            const nextBrowserState = sanitizeBrowserState(loadedBrowserState || DEFAULT_BROWSER_STATE);
+            const resolvedAppRegistry = createComposedAppRegistry({ installedAppsState: nextInstalledAppsState, runtimeMode: runtime?.mode });
             setIsBooted(Boolean(sessionState?.isBooted));
             setCommunityResources(Array.isArray(resources) ? resources : []);
+            setInstalledAppsState(nextInstalledAppsState);
+            setBrowserState(nextBrowserState);
             const shellState = sessionState?.shell && typeof sessionState.shell === 'object'
                 ? sessionState.shell
                 : sessionState;
             const savedWindowLayout = shellState?.windowStates || sessionState?.windowLayout;
             if (savedWindowLayout && typeof savedWindowLayout === 'object') {
                 const nextWindowStates = {};
-                APP_REGISTRY.forEach((app) => {
-                    const restored = normalizeShellWindowState(app.type, savedWindowLayout[app.type], { isTouchIjamMode });
+                resolvedAppRegistry.forEach((app) => {
+                    const restored = normalizeShellWindowState(app.type, savedWindowLayout[app.type], { isTouchIjamMode, appRegistry: resolvedAppRegistry });
                     if (restored) {
                         nextWindowStates[app.type] = restored;
                     }
@@ -3154,7 +3301,7 @@ const IjamOSWorkspace = ({ session, currentUser, isMobileView, deviceMode = 'des
                 }
             }
 
-            const restoredFocusedWindow = typeof shellState?.focusedWindow === 'string' && APP_REGISTRY.some((app) => app.type === shellState.focusedWindow)
+            const restoredFocusedWindow = typeof shellState?.focusedWindow === 'string' && resolvedAppRegistry.some((app) => app.type === shellState.focusedWindow)
                 ? shellState.focusedWindow
                 : null;
             setFocusedWindow(restoredFocusedWindow);
@@ -3162,23 +3309,39 @@ const IjamOSWorkspace = ({ session, currentUser, isMobileView, deviceMode = 'des
             setIsStartMenuOpen(false);
             setZCounter(typeof shellState?.windowZCounter === 'number' ? Math.max(100, shellState.windowZCounter) : 100);
             sessionUiHydratedRef.current = true;
+            browserStateHydratedRef.current = true;
         }).catch(() => {
             if (!active) return;
             setCommunityResources([]);
+            setInstalledAppsState(DEFAULT_INSTALLED_APPS_STATE);
+            setBrowserState(DEFAULT_BROWSER_STATE);
             setWindowStates({});
             setFocusedWindow(null);
             sessionUiHydratedRef.current = true;
+            browserStateHydratedRef.current = true;
         });
 
         return () => {
             active = false;
         };
     }, [refreshWallpaperState, runtime]);
+
+    useEffect(() => {
+        const validAppTypes = new Set(appRegistry.map((app) => app.type));
+        setWindowStates((prev) => {
+            const entries = Object.entries(prev);
+            const nextEntries = entries.filter(([type]) => validAppTypes.has(type));
+            return nextEntries.length === entries.length ? prev : Object.fromEntries(nextEntries);
+        });
+        setFocusedWindow((prev) => (prev && !validAppTypes.has(prev) ? null : prev));
+    }, [appRegistry, setFocusedWindow, setWindowStates]);
+
     useEffect(() => {
         if (!runtime || !sessionUiHydratedRef.current) return;
 
         const saveTimer = setTimeout(() => {
             const shellSession = buildShellSessionPayload({
+                appRegistry,
                 windowStates,
                 focusedWindow,
                 startMenuSearch,
@@ -3202,7 +3365,17 @@ const IjamOSWorkspace = ({ session, currentUser, isMobileView, deviceMode = 'des
         }, 250);
 
         return () => clearTimeout(saveTimer);
-    }, [explorerPath, explorerSort, explorerView, focusedWindow, isTouchIjamMode, runtime, showExplorerDetails, startMenuSearch, windowStates, zCounter]);
+    }, [appRegistry, explorerPath, explorerSort, explorerView, focusedWindow, isTouchIjamMode, runtime, showExplorerDetails, startMenuSearch, windowStates, zCounter]);
+
+    useEffect(() => {
+        if (!runtime?.browser?.saveState || !browserStateHydratedRef.current) return;
+
+        const saveTimer = setTimeout(() => {
+            runtime.browser.saveState(browserState).catch(() => {});
+        }, 700);
+
+        return () => clearTimeout(saveTimer);
+    }, [browserState, runtime]);
 
     useEffect(() => {
         if (currentUser) {
@@ -3525,20 +3698,36 @@ const IjamOSWorkspace = ({ session, currentUser, isMobileView, deviceMode = 'des
         return 'L3 VIBE CODER';
     }, [userVibes]);
     const focusedWindowLabel = useMemo(
-        () => APP_REGISTRY.find((app) => app.type === focusedWindow)?.label || null,
-        [focusedWindow]
+        () => appRegistry.find((app) => app.type === focusedWindow)?.label || null,
+        [appRegistry, focusedWindow]
     );
     const openWindowsCount = useMemo(
         () => Object.values(windowStates).filter((state) => state?.isOpen && !state?.isMinimized).length,
         [windowStates]
     );
-    const appTypeList = useMemo(() => APP_REGISTRY.map((app) => app.type), []);
+    const appTypeList = useMemo(() => appRegistry.map((app) => app.type), [appRegistry]);
+    const desktopAppRegistry = useMemo(
+        () => appRegistry.filter((app) => app.desktopVisible !== false),
+        [appRegistry]
+    );
+    const startMenuAppRegistry = useMemo(
+        () => appRegistry.filter((app) => app.startMenuVisible !== false),
+        [appRegistry]
+    );
+    const hostedWebApps = useMemo(
+        () => appRegistry.filter((app) => app.kind === 'hosted-web-app'),
+        [appRegistry]
+    );
     const appByType = useMemo(
-        () => Object.fromEntries(APP_REGISTRY.map((app) => [app.type, app])),
-        []
+        () => Object.fromEntries(appRegistry.map((app) => [app.type, app])),
+        [appRegistry]
+    );
+    const desktopAppTypeList = useMemo(
+        () => desktopAppRegistry.map((app) => app.type),
+        [desktopAppRegistry]
     );
     const desktopShortcutItems = useMemo(() => (
-        APP_REGISTRY.map((app) => ({
+        desktopAppRegistry.map((app) => ({
             id: `desktop-shortcut:${app.type}`,
             path: null,
             name: app.label,
@@ -3554,7 +3743,7 @@ const IjamOSWorkspace = ({ session, currentUser, isMobileView, deviceMode = 'des
                 color: app.color
             }
         }))
-    ), []);
+    ), [desktopAppRegistry]);
     const desktopGridColumns = desktopGridMetrics?.columns ?? 0;
     const desktopGridRows = desktopGridMetrics?.rows ?? 0;
     const DESKTOP_LAYOUT_VERSION = 4;
@@ -3564,10 +3753,10 @@ const IjamOSWorkspace = ({ session, currentUser, isMobileView, deviceMode = 'des
     const isBrowserDesktopPersistence = runtime?.mode === 'web-demo';
     const desktopSlotCount = useMemo(() => {
         if (isMacMode && !isTouchIjamMode) {
-            return Math.max(appTypeList.length, desktopGridColumns * desktopGridRows);
+            return Math.max(desktopAppTypeList.length, desktopGridColumns * desktopGridRows);
         }
-        return Math.max(24, appTypeList.length + 8);
-    }, [isMacMode, isTouchIjamMode, appTypeList.length, desktopGridColumns, desktopGridRows]);
+        return Math.max(24, desktopAppTypeList.length + 8);
+    }, [desktopAppTypeList.length, isMacMode, isTouchIjamMode, desktopGridColumns, desktopGridRows]);
     const displayPowerPercent = powerStatus?.levelPercent ?? null;
     const powerMeterLevel = useMemo(() => {
         if (displayPowerPercent == null) return powerStatus?.hasBattery === false ? 100 : 0;
@@ -3639,14 +3828,14 @@ const IjamOSWorkspace = ({ session, currentUser, isMobileView, deviceMode = 'des
         [calendarCursor.month, calendarCursor.year]
     );
     const recentApps = useMemo(
-        () => APP_REGISTRY.filter((app) => windowStates[app.type]?.isOpen).slice(0, 4),
-        [windowStates]
+        () => appRegistry.filter((app) => windowStates[app.type]?.isOpen).slice(0, 4),
+        [appRegistry, windowStates]
     );
     const filteredStartApps = useMemo(
         () => {
             const normalizedQuery = startMenuSearch.trim().toLowerCase();
-            if (!normalizedQuery) return APP_REGISTRY;
-            return APP_REGISTRY.filter((app) => {
+            if (!normalizedQuery) return startMenuAppRegistry;
+            return startMenuAppRegistry.filter((app) => {
                 const haystack = [
                     app.label,
                     app.title,
@@ -3660,7 +3849,7 @@ const IjamOSWorkspace = ({ session, currentUser, isMobileView, deviceMode = 'des
                 return haystack.includes(normalizedQuery);
             });
         },
-        [startMenuSearch]
+        [startMenuAppRegistry, startMenuSearch]
     );
     const pinnedStartApps = useMemo(
         () => filteredStartApps.filter((app) => app.pinned !== false),
@@ -3671,8 +3860,26 @@ const IjamOSWorkspace = ({ session, currentUser, isMobileView, deviceMode = 'des
         [filteredStartApps, pinnedStartApps, startPanelMode]
     );
     const runningAppTypes = useMemo(
-        () => APP_REGISTRY.filter((app) => windowStates[app.type]?.isOpen).map((app) => app.type),
-        [windowStates]
+        () => {
+            const directRunningTypes = appRegistry
+                .filter((app) => windowStates[app.type]?.isOpen)
+                .map((app) => app.type);
+
+            const browserRunningOrigins = windowStates.kdbrowser?.isOpen
+                ? new Set(
+                    sanitizeBrowserState(browserState).tabs
+                        .map((tab) => getUrlOrigin(tab.url))
+                        .filter(Boolean)
+                )
+                : new Set();
+
+            const routedHostedTypes = appRegistry
+                .filter((app) => app.launchSurface === 'kdbrowser' && browserRunningOrigins.has(getUrlOrigin(app.launchUrl)))
+                .map((app) => app.type);
+
+            return Array.from(new Set([...directRunningTypes, ...routedHostedTypes]));
+        },
+        [appRegistry, browserState, windowStates]
     );
     const mobileDockApps = useMemo(
         () => ['files', 'wallpaper', 'idea_to_prompt', 'simulator']
@@ -3851,8 +4058,8 @@ const IjamOSWorkspace = ({ session, currentUser, isMobileView, deviceMode = 'des
         [desktopRenderableFsItems, getDesktopFsPositionKey]
     );
     const desktopPositionKeys = useMemo(
-        () => [...appTypeList, ...desktopFsPositionKeys],
-        [appTypeList, desktopFsPositionKeys]
+        () => [...desktopAppTypeList, ...desktopFsPositionKeys],
+        [desktopAppTypeList, desktopFsPositionKeys]
     );
     const normalizeDesktopPositions = useCallback((positions) => {
         const safeColumns = Math.max(1, desktopGridColumns || 1);
@@ -3947,12 +4154,12 @@ const IjamOSWorkspace = ({ session, currentUser, isMobileView, deviceMode = 'des
         }
     }, [DESKTOP_LAYOUT_CACHE_KEY, DESKTOP_LAYOUT_VERSION, DESKTOP_POSITION_CACHE_KEY]);
     const desktopRenderSlotCount = useMemo(
-        () => Math.max(desktopSlotCount, appTypeList.length + desktopRenderableFsItems.length),
-        [appTypeList.length, desktopRenderableFsItems.length, desktopSlotCount]
+        () => Math.max(desktopSlotCount, desktopAppTypeList.length + desktopRenderableFsItems.length),
+        [desktopAppTypeList.length, desktopRenderableFsItems.length, desktopSlotCount]
     );
     const desktopCells = useMemo(() => {
         const normalizedPositions = normalizeDesktopPositions(desktopIconPositions);
-        const cells = appTypeList.map((appType) => ({
+        const cells = desktopAppTypeList.map((appType) => ({
             kind: 'app',
             entityKey: appType,
             appType,
@@ -3972,7 +4179,7 @@ const IjamOSWorkspace = ({ session, currentUser, isMobileView, deviceMode = 'des
         });
 
         return cells.sort((left, right) => left.slotIndex - right.slotIndex);
-    }, [appTypeList, desktopGridRows, desktopIconPositions, desktopRenderableFsItems, getDesktopFsPositionKey, getSlotIndexFromPosition, normalizeDesktopPositions]);
+    }, [desktopAppTypeList, desktopGridRows, desktopIconPositions, desktopRenderableFsItems, getDesktopFsPositionKey, getSlotIndexFromPosition, normalizeDesktopPositions]);
     useEffect(() => {
         if (desktopSlotsLoadedRef.current || !runtime || !isDesktopGridReady) return;
         let active = true;
@@ -4234,6 +4441,71 @@ const IjamOSWorkspace = ({ session, currentUser, isMobileView, deviceMode = 'des
         window.open(normalized, '_blank', 'noopener,noreferrer');
         addVibes(10, "Resource Studied");
     };
+
+    const persistInstalledAppsState = useCallback((updater) => {
+        setInstalledAppsState((prev) => {
+            const baseState = sanitizeInstalledAppsState(prev);
+            const nextCandidate = typeof updater === 'function' ? updater(baseState) : updater;
+            const nextState = sanitizeInstalledAppsState(nextCandidate);
+
+            if (JSON.stringify(nextState) === JSON.stringify(baseState)) {
+                return baseState;
+            }
+
+            runtime?.settings?.saveInstalledApps?.(nextState).catch(() => { });
+            return nextState;
+        });
+    }, [runtime]);
+
+    const handleInstallCatalogApp = useCallback((catalogId) => {
+        if (!catalogId) return;
+        persistInstalledAppsState((prev) => {
+            if (prev.installedIds.includes(catalogId)) return prev;
+            return {
+                ...prev,
+                installedIds: [...prev.installedIds, catalogId],
+                updatedAt: new Date().toISOString()
+            };
+        });
+    }, [persistInstalledAppsState]);
+
+    const handleUninstallCatalogApp = useCallback((catalogId) => {
+        const catalogItem = KDSTORE_CATALOG.find((item) => item.id === catalogId);
+        if (!catalogItem) return;
+
+        const appType = getWebAppType(catalogItem.slug);
+        closeApp(appType);
+        if (catalogItem.launchSurface === 'kdbrowser' && catalogItem.launchUrl) {
+            closeKDBrowserTabsForUrl(catalogItem.launchUrl);
+        }
+        setWindowStates((prev) => {
+            if (!(appType in prev)) return prev;
+            const next = { ...prev };
+            delete next[appType];
+            return next;
+        });
+        setFocusedWindow((prev) => (prev === appType ? null : prev));
+
+        persistInstalledAppsState((prev) => {
+            if (!prev.installedIds.includes(catalogId)) return prev;
+            return {
+                ...prev,
+                installedIds: prev.installedIds.filter((id) => id !== catalogId),
+                updatedAt: new Date().toISOString()
+            };
+        });
+    }, [closeApp, closeKDBrowserTabsForUrl, persistInstalledAppsState, setFocusedWindow, setWindowStates]);
+
+    const handleOpenRegistryApp = useCallback((appType) => {
+        const resolvedType = openApp(appType);
+        focusApp(resolvedType || appType);
+    }, [focusApp, openApp]);
+
+    const handleBrowserStateChange = useCallback((updater) => {
+        setBrowserState((prev) => sanitizeBrowserState(
+            typeof updater === 'function' ? updater(prev) : updater
+        ));
+    }, []);
 
     const pathSegmentsToAbsolutePath = useCallback((segments) => {
         if (!Array.isArray(segments) || !segments.length) return null;
@@ -7246,7 +7518,7 @@ YOU DID IT. APP DEPLOYED!`);
                     {...mobileWindowProps}
                     winState={windowStates.mission}
                     title="Mission"
-                    AppIcon={APP_REGISTRY.find((app) => app.type === 'mission')?.icon || Bot}
+                    AppIcon={appByType.mission?.icon || Bot}
                     onClose={() => closeApp('mission')}
                     onMinimize={() => minimizeApp('mission')}
                     onMaximize={() => maximizeApp('mission')}
@@ -7637,6 +7909,56 @@ YOU DID IT. APP DEPLOYED!`);
                     </div>
                 </WindowFrame>
             )}
+
+            {windowStates.kdstore?.isOpen && (
+                <WindowFrame {...mobileWindowProps} winState={windowStates.kdstore} title="KDSTORE" AppIcon={appByType.kdstore?.icon} onClose={() => closeApp('kdstore')} onMinimize={() => minimizeApp('kdstore')} onMaximize={() => maximizeApp('kdstore')} onFocus={() => focusApp('kdstore')} onMove={(x, y) => moveApp('kdstore', x, y)} onResize={(w, h) => resizeApp('kdstore', w, h)}>
+                    <KDStoreWindowContent
+                        catalogItems={KDSTORE_CATALOG}
+                        installedAppIds={installedAppsState.installedIds}
+                        runningAppTypes={runningAppTypes}
+                        onInstall={handleInstallCatalogApp}
+                        onUninstall={handleUninstallCatalogApp}
+                        onOpenApp={handleOpenRegistryApp}
+                        onOpenExternal={openExternal}
+                    />
+                </WindowFrame>
+            )}
+
+            {appByType.kdbrowser && windowStates.kdbrowser?.isOpen && (
+                <WindowFrame {...mobileWindowProps} winState={windowStates.kdbrowser} title="KDBROWSER" AppIcon={appByType.kdbrowser?.icon} onClose={() => closeApp('kdbrowser')} onMinimize={() => minimizeApp('kdbrowser')} onMaximize={() => maximizeApp('kdbrowser')} onFocus={() => focusApp('kdbrowser')} onMove={(x, y) => moveApp('kdbrowser', x, y)} onResize={(w, h) => resizeApp('kdbrowser', w, h)}>
+                    <KDBrowserWindowContent
+                        app={appByType.kdbrowser}
+                        runtime={runtime}
+                        browserState={browserState}
+                        onBrowserStateChange={handleBrowserStateChange}
+                        onOpenExternal={openExternal}
+                    />
+                </WindowFrame>
+            )}
+
+            {hostedWebApps.map((app) => (
+                windowStates[app.type]?.isOpen ? (
+                    <WindowFrame
+                        key={app.type}
+                        {...mobileWindowProps}
+                        winState={windowStates[app.type]}
+                        title={app.title}
+                        AppIcon={app.icon}
+                        onClose={() => closeApp(app.type)}
+                        onMinimize={() => minimizeApp(app.type)}
+                        onMaximize={() => maximizeApp(app.type)}
+                        onFocus={() => focusApp(app.type)}
+                        onMove={(x, y) => moveApp(app.type, x, y)}
+                        onResize={(w, h) => resizeApp(app.type, w, h)}
+                    >
+                        <HostedWebAppWindowContent
+                            app={app}
+                            runtime={runtime}
+                            onOpenExternal={openExternal}
+                        />
+                    </WindowFrame>
+                ) : null
+            ))}
 
             {/* 4. Recycle Bin Window */}
             {windowStates.trash?.isOpen && (

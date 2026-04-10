@@ -15,6 +15,7 @@ It is designed to support both browser and desktop-like workflows while staying 
 - **Builder workspace**: A desktop-style shell for opening tools, navigating work, and keeping momentum in one place.
 - **AI assistance**: KRACKED_OS includes an AI-guided operating layer for context, planning, and builder support.
 - **Builder tools**: The workspace is designed to help move from raw idea to structured execution.
+- **Hosted web apps**: KDSTORE can install curated hosted apps into the KDOS desktop and start menu.
 - **Persistence**: Session continuity, memory, and system context support longer-lived work.
 - **Installability**: The app supports PWA-style install flows and desktop-like usage patterns.
 
@@ -128,7 +129,22 @@ It writes durable repo-backed MAJI memory into your user overlay:
 
 That is what lets other contributors pull the repo later and load your saved context through `MAJI`.
 
-### 7. Commit and push code separately
+### 7. Use KDSTORE for hosted web apps
+KDSTORE is the built-in curated app store inside KDOS.
+
+Current flow:
+
+1. Open `KDSTORE`
+2. Confirm MAJI preflight is already active for the session
+3. Install a curated hosted app
+4. Launch it from desktop or the start menu
+5. Use the in-window browser chrome first, then fall back to external open when the site needs a stricter browser context
+
+The first seeded hosted app is:
+
+- `Rotican.ai`
+
+### 8. Commit and push code separately
 MAJI save and git save are different things.
 
 Use git normally for code:
@@ -140,7 +156,7 @@ git commit -m "Describe your change"
 git push origin main
 ```
 
-### 8. Pulling context from other contributors
+### 9. Pulling context from other contributors
 If another contributor has pushed their work and MAJI memory:
 
 ```bash

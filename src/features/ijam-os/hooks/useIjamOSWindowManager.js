@@ -6,6 +6,7 @@ export const useIjamOSWindowManager = ({
   isPhoneMode = false,
   isTabletMode = false,
   getRestoredWindowMetrics = null,
+  resolveOpenType = null,
   onAppOpen = null,
   onAppFocus = null
 }) => {
@@ -16,10 +17,29 @@ export const useIjamOSWindowManager = ({
   const [startMenuSearch, setStartMenuSearch] = useState('');
 
   const openApp = useCallback(
-    (type) => {
-      const appCfg = appRegistry.find((a) => a.type === type);
-      if (!appCfg) return;
-      onAppOpen?.(type, appCfg);
+    (requestedType) => {
+      const requestedAppCfg = appRegistry.find((a) => a.type === requestedType);
+      if (!requestedAppCfg) return null;
+
+      let type = requestedType;
+      let appCfg = requestedAppCfg;
+      const resolvedType = resolveOpenType?.(requestedType, requestedAppCfg);
+      if (typeof resolvedType === 'string' && resolvedType.trim() && resolvedType !== requestedType) {
+        const resolvedAppCfg = appRegistry.find((a) => a.type === resolvedType);
+        if (!resolvedAppCfg) return null;
+        type = resolvedType;
+        appCfg = resolvedAppCfg;
+      }
+
+      const openResult = onAppOpen?.(requestedType, appCfg, {
+        requestedType,
+        resolvedType: type,
+        requestedAppCfg,
+        resolvedAppCfg: appCfg
+      });
+      if (openResult === false || openResult?.preventDefault) {
+        return type;
+      }
 
       setZCounter((z) => {
         const newZ = z + 1;
@@ -113,8 +133,10 @@ export const useIjamOSWindowManager = ({
         setFocusedWindow(type);
         return newZ;
       });
+
+      return type;
     },
-    [appRegistry, getRestoredWindowMetrics, isPhoneMode, isTabletMode, isTouchIjamMode, onAppOpen]
+    [appRegistry, getRestoredWindowMetrics, isPhoneMode, isTabletMode, isTouchIjamMode, onAppOpen, resolveOpenType]
   );
 
   const closeApp = useCallback((type) => {

@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>KDBROWSER</title>
+    <style>
+      :root {
+        color-scheme: light;
+        font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background: #dbeafe;
+        color: #0f172a;
+      }
+
+      .toolbar {
+        height: 56px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 12px;
+        border-bottom: 1px solid rgba(148, 163, 184, 0.22);
+        background: linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(241,245,249,0.98) 100%);
+      }
+
+      .actions {
+        display: flex;
+        gap: 8px;
+      }
+
+      button {
+        border: 1px solid rgba(148, 163, 184, 0.24);
+        background: rgba(255,255,255,0.96);
+        color: #0f172a;
+        border-radius: 10px;
+        min-width: 36px;
+        height: 36px;
+        font-size: 14px;
+        cursor: pointer;
+      }
+
+      button:disabled {
+        opacity: 0.45;
+        cursor: default;
+      }
+
+      form {
+        flex: 1;
+        display: flex;
+      }
+
+      input {
+        width: 100%;
+        min-height: 36px;
+        border-radius: 12px;
+        border: 1px solid rgba(148, 163, 184, 0.26);
+        background: rgba(255,255,255,0.98);
+        color: #0f172a;
+        padding: 0 14px;
+        font-size: 13px;
+        outline: none;
+      }
+
+      .meta {
+        display: flex;
+        flex-direction: column;
+        min-width: 150px;
+        max-width: 260px;
+      }
+
+      .title {
+        font-size: 12px;
+        font-weight: 700;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .status {
+        font-size: 11px;
+        color: #475569;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="toolbar">
+      <div class="actions">
+        <button id="back-button" type="button" title="Back">&#8592;</button>
+        <button id="forward-button" type="button" title="Forward">&#8594;</button>
+        <button id="reload-button" type="button" title="Reload">&#8635;</button>
+        <button id="home-button" type="button" title="Home">&#8962;</button>
+      </div>
+      <form id="address-form">
+        <input id="address-input" type="text" autocomplete="off" spellcheck="false" placeholder="Enter URL or domain" />
+      </form>
+      <div class="meta">
+        <div class="title" id="browser-title">KDBROWSER</div>
+        <div class="status" id="browser-status"></div>
+      </div>
+    </div>
+    <script src="./nativeBrowserShellRenderer.js"></script>
+  </body>
+</html>

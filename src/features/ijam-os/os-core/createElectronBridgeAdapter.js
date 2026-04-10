@@ -71,6 +71,8 @@ export function createElectronBridgeAdapter() {
       saveProfile: (profile) => bridge.settings.saveProfile(profile),
       loadDesktopLayout: () => bridge.settings.loadDesktopLayout(),
       saveDesktopLayout: (layout) => bridge.settings.saveDesktopLayout(layout),
+      loadInstalledApps: () => bridge.settings.loadInstalledApps(),
+      saveInstalledApps: (state) => bridge.settings.saveInstalledApps(state),
       loadSession: () => bridge.settings.loadSession(),
       saveSession: (session) => bridge.settings.saveSession(session),
       loadPersonalization: () => bridge.settings.loadPersonalization(),
@@ -84,6 +86,42 @@ export function createElectronBridgeAdapter() {
       start: (id) => bridge.container?.start?.(id),
       stop: (id) => bridge.container?.stop?.(id),
       exec: (id, command) => bridge.container?.exec?.(id, command)
+    },
+    browser: {
+      getCapabilities: () => bridge.browser?.getCapabilities?.(),
+      loadState: (profileId) => bridge.browser?.loadState?.(profileId),
+      saveState: (state) => bridge.browser?.saveState?.(state),
+      openExternal: (url) => bridge.browser?.openExternal?.(url),
+      resetProfile: (profileId) => bridge.browser?.resetProfile?.(profileId),
+      onWindowOpenRequested: (listener) => bridge.browser?.onWindowOpenRequested?.(listener),
+      native: {
+        openWindow: (payload) => bridge.browser?.native?.openWindow?.(payload),
+        getWindowState: (windowKey) => bridge.browser?.native?.getWindowState?.(windowKey),
+        navigate: (windowKey, url) => bridge.browser?.native?.navigate?.(windowKey, url),
+        action: (windowKey, action) => bridge.browser?.native?.action?.(windowKey, action),
+        closeWindow: (windowKey) => bridge.browser?.native?.closeWindow?.(windowKey),
+        onState: (listener) => bridge.browser?.native?.onState?.(listener)
+      },
+      remote: {
+        getStatus: async () => ({ available: false, transport: 'electron-webview' }),
+        createSession: async () => {
+          throw new Error('Remote browser sessions are not used in Electron desktop mode.');
+        },
+        getSession: async () => {
+          throw new Error('Remote browser sessions are not used in Electron desktop mode.');
+        },
+        closeSession: async () => ({ ok: true }),
+        navigate: async () => {
+          throw new Error('Remote browser sessions are not used in Electron desktop mode.');
+        },
+        resize: async () => ({ ok: true }),
+        action: async () => {
+          throw new Error('Remote browser sessions are not used in Electron desktop mode.');
+        },
+        input: async () => ({ ok: true }),
+        getStreamUrl: () => '',
+        getFrameUrl: () => ''
+      }
     },
     async initialize() {
       if (bridge.runtime?.initialize) {

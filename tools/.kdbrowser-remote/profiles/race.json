@@ -1,0 +1,95 @@
+{
+  "cookies": [
+    {
+      "name": "__Secure-YNID",
+      "value": "17.YT=obnHFyGNbg4d67uT2Lal_9H6tm-I8u1hNPdCMAZ9m1PaVzg49xUGdOqldd_9C5LwI6ktQfLQrVyg8lK8zIZQSlIjslkI0z88IPxA8t37GcB0BsZgBGyhWrx7TulFXDOdayos-lZY4PwFpsFkn2Egtz9VmfzCtHGYhus5oI8iUSbNDT7kBSqWwTIH023WA9CnGnkWV27HK3WdD-sbZNM0JqL-rKWnKUzFtsxrYiz6SPPnb3dtoqoYFrcZFp5fs_iMd2Ip4217Q7PfzeyyccVf-qaaWwIK1W42n9dqXxxndJjSCa8mR9Dwf-T3Zk4dB7MhjbvRI-cdhVqUaQ49WkxwGw",
+      "domain": ".youtube.com",
+      "path": "/",
+      "expires": 1790781810.687763,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "None",
+      "partitionKey": "https://youtube.com",
+      "_crHasCrossSiteAncestor": false
+    },
+    {
+      "name": "GPS",
+      "value": "1",
+      "domain": ".youtube.com",
+      "path": "/",
+      "expires": 1775231610.687819,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "YSC",
+      "value": "lRs3UXHFKk0",
+      "domain": ".youtube.com",
+      "path": "/",
+      "expires": -1,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "None",
+      "partitionKey": "https://youtube.com",
+      "_crHasCrossSiteAncestor": false
+    },
+    {
+      "name": "VISITOR_INFO1_LIVE",
+      "value": "ZrT_J2IgdRs",
+      "domain": ".youtube.com",
+      "path": "/",
+      "expires": 1790781810.687863,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "None",
+      "partitionKey": "https://youtube.com",
+      "_crHasCrossSiteAncestor": false
+    },
+    {
+      "name": "VISITOR_PRIVACY_METADATA",
+      "value": "CgJNWRIEGgAgTg%3D%3D",
+      "domain": ".youtube.com",
+      "path": "/",
+      "expires": 1790781810.687877,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "None",
+      "partitionKey": "https://youtube.com",
+      "_crHasCrossSiteAncestor": false
+    },
+    {
+      "name": "__Secure-ROLLOUT_TOKEN",
+      "value": "CPqDqe-Ch4uQ4QEQjbqGsv7RkwMYjbqGsv7RkwM%3D",
+      "domain": ".youtube.com",
+      "path": "/",
+      "expires": 1790781810.687891,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "None",
+      "partitionKey": "https://youtube.com",
+      "_crHasCrossSiteAncestor": false
+    },
+    {
+      "name": "PREF",
+      "value": "tz=Asia.Singapore",
+      "domain": ".youtube.com",
+      "path": "/",
+      "expires": 1809789812.416072,
+      "httpOnly": false,
+      "secure": true,
+      "sameSite": "Lax"
+    }
+  ],
+  "origins": [
+    {
+      "origin": "https://www.youtube.com",
+      "localStorage": [
+        {
+          "name": "yt-icons-last-purged",
+          "value": "1772724212317"
+        }
+      ]
+    }
+  ]
+}

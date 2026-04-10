@@ -2,11 +2,14 @@ import React from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import './KrackedInteractiveLoading.css';
 
+const assetBase = `${import.meta.env.BASE_URL || './'}`.replace(/\/?$/, '/');
+
 const ASSETS = {
-    sky: '/kdacademy/assets/backgrounds/sky.png',
-    far: '/kdacademy/assets/boot/boot-layer-far.png',
-    mid: '/kdacademy/assets/boot/boot-layer-mid.png',
-    front: '/kdacademy/assets/boot/boot-layer-front.png'
+    sky: `${assetBase}kdacademy/assets/backgrounds/sky.png`,
+    far: `${assetBase}kdacademy/assets/boot/boot-layer-far.png`,
+    mid: `${assetBase}kdacademy/assets/boot/boot-layer-mid.png`,
+    front: `${assetBase}kdacademy/assets/boot/boot-layer-front.png`,
+    logo: `${assetBase}kdacademy/assets/boot/boot-brand-kd.svg`
 };
 
 const SPARKLES = [
@@ -140,7 +143,7 @@ const KrackedInteractiveLoading = ({
                     >
                         <div className="boot-brand-title" aria-label="<KD/>">
                             <img
-                                src="/kdacademy/assets/boot/boot-brand-kd.svg"
+                                src={ASSETS.logo}
                                 alt="<KD/>"
                                 className="boot-brand-logo"
                                 draggable="false"

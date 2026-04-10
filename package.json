@@ -5,11 +5,13 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "npx concurrently \"vite\" \"cd roticanai && bun run dev\"",
+    "dev:kdos": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "desktop": "electron electron/main.js",
-    "desktop:dist": "npm run build && electron electron/main.js"
+    "browser-host": "node tools/kdbrowserRemoteHostServer.js",
+    "desktop": "env -u ELECTRON_RUN_AS_NODE electron electron/main.js",
+    "desktop:dist": "npm run build && env -u ELECTRON_RUN_AS_NODE electron electron/main.js"
   },
   "dependencies": {
     "@vercel/analytics": "^1.6.1",
@@ -18,6 +20,7 @@
     "framer-motion": "^12.34.0",
     "loudness": "^0.4.2",
     "lucide-react": "^0.395.0",
+    "playwright": "^1.59.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "systeminformation": "^5.31.4"
@@ -25,7 +28,7 @@
   "devDependencies": {
     "@vitejs/plugin-react-swc": "^3.5.0",
     "electron": "^36.9.5",
-    "react-grab": "^0.1.25",
+    "react-grab": "^0.1.29",
     "vite": "^5.3.1"
   }
 }

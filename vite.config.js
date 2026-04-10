@@ -2,6 +2,7 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react-swc'
 import { scrapeReferencePayload } from './tools/referenceScraper.js'
 import { loadMajiMemoryCard, onboardMajiUser, saveMajiMemoryCard } from './tools/majiMemoryCard.js'
+import { kdbrowserRemoteDevPlugin } from './tools/kdbrowserRemoteDevService.js'
 
 function ideaToPromptScrapePlugin() {
   return {
@@ -91,7 +92,8 @@ function majiMemoryCardPlugin() {
 }
 
 export default defineConfig({
-  plugins: [react(), ideaToPromptScrapePlugin(), majiMemoryCardPlugin()],
+  base: './',
+  plugins: [react(), ideaToPromptScrapePlugin(), majiMemoryCardPlugin(), kdbrowserRemoteDevPlugin()],
   server: {
     host: '127.0.0.1',
     port: 5173,
