@@ -29,9 +29,27 @@ import { createPowerApi } from './power.js';
 import { createDeviceApi } from './device.js';
 import { scrapeReferencePayload } from '../tools/referenceScraper.js';
 import { loadMajiMemoryCard, onboardMajiUser, saveMajiMemoryCard } from '../tools/majiMemoryCard.js';
+import {
+  DEFAULT_BROWSER_PROFILE_ID,
+  DEFAULT_BROWSER_RUNTIME_CAPABILITIES,
+  DEFAULT_BROWSER_STATE,
+  DEFAULT_BROWSER_USER_AGENT,
+  KDBROWSER_HOME_URL,
+  createDefaultBrowserState,
+  getBrowserPartition,
+  getBrowserProfileIdFromPartition,
+  sanitizeBrowserProfileId,
+  sanitizeBrowserState
+} from '../src/features/ijam-os/os-core/browserState.js';
+import {
+  DEFAULT_INSTALLED_APPS_STATE,
+  applyCatalogAutoInstallSeed,
+  hasInstalledAppsStateChanged,
+  sanitizeInstalledAppsState
+} from '../src/features/ijam-os/os-core/installedAppsState.js';
 
 const require = createRequire(import.meta.url);
-const { app, BrowserWindow, ipcMain } = require('electron');
+const { app, BrowserView, BrowserWindow, ipcMain, session, shell } = require('electron');
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const homeRoot = path.join(os.homedir(), 'KRACKED_OS');
@@ -40,7 +58,36 @@ const devServerUrl = process.env.KRACKED_OS_DEV_SERVER_URL || '';
 const distIndexPath = path.join(__dirname, '..', 'dist', 'index.html');
 const powerApi = createPowerApi();
 const deviceApi = createDeviceApi();
+const nativeBrowserShellPath = path.join(__dirname, 'nativeBrowserShell.html');
+const nativeBrowserShellPreloadPath = path.join(__dirname, 'nativeBrowserShellPreload.js');
+const nativeBrowserGuestPreloadPath = path.join(__dirname, 'nativeBrowserGuestPreload.js');
 const VALID_WALLPAPER_FITS = new Set(['fill', 'contain', 'cover']);
+const BROWSER_WINDOW_OPEN_EVENT = 'os.browser.windowOpenRequested';
+const NATIVE_BROWSER_STATE_EVENT = 'os.browser.native.state';
+const BROWSER_SESSION_PARTITION_PREFIX = 'persist:kdbrowser:';
+const NATIVE_BROWSER_SESSION_PARTITION_PREFIX = 'persist:kdbrowser-native:';
+const NATIVE_BROWSER_TOOLBAR_HEIGHT = 56;
+const ALLOWED_BROWSER_PERMISSIONS = new Set([
+  'clipboard-read',
+  'clipboard-sanitized-write',
+  'fullscreen',
+  'geolocation',
+  'media',
+  'mediaKeySystem',
+  'notifications',
+  'pointerLock'
+]);
+let mainWindow = null;
+const configuredBrowserSessions = new Set();
+const nativeBrowserWindows = new Map();
+
+process.on('uncaughtException', (error) => {
+  console.error('[electron:main] uncaughtException', error);
+});
+
+process.on('unhandledRejection', (reason) => {
+  console.error('[electron:main] unhandledRejection', reason);
+});
 
 function isPlainObject(value) {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
@@ -313,6 +360,480 @@ async function updateMetadata(mutator) {
   return next;
 }
 
+function emitBrowserWindowOpenRequested(payload = {}) {
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+  mainWindow.webContents.send(BROWSER_WINDOW_OPEN_EVENT, payload);
+}
+
+function emitNativeBrowserState(payload = {}) {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send(NATIVE_BROWSER_STATE_EVENT, payload);
+  }
+}
+
+function sanitizeNativeBrowserWindowKey(value = '') {
+  const safeValue = String(value || '').trim().replace(/[^a-zA-Z0-9:_-]+/g, '-').slice(0, 160);
+  if (!safeValue) {
+    throw new Error('Expected a non-empty native browser window key.');
+  }
+  return safeValue;
+}
+
+function getNativeBrowserPartition(profileId = DEFAULT_BROWSER_PROFILE_ID) {
+  return `${NATIVE_BROWSER_SESSION_PARTITION_PREFIX}${sanitizeBrowserProfileId(profileId)}`;
+}
+
+function isManagedBrowserPartition(partition = '') {
+  return partition.startsWith(BROWSER_SESSION_PARTITION_PREFIX) || partition.startsWith(NATIVE_BROWSER_SESSION_PARTITION_PREFIX);
+}
+
+function serializeNativeBrowserWindow(controller) {
+  if (!controller) return null;
+  return {
+    windowKey: controller.windowKey,
+    profileId: controller.profileId,
+    homeUrl: controller.homeUrl,
+    url: controller.url,
+    title: controller.title,
+    isLoading: controller.isLoading,
+    canGoBack: controller.canGoBack,
+    canGoForward: controller.canGoForward,
+    error: controller.error || '',
+    ownerAppId: controller.ownerAppId || '',
+    isOpen: Boolean(controller.shellWindow && !controller.shellWindow.isDestroyed())
+  };
+}
+
+function broadcastNativeBrowserWindowState(controller) {
+  const payload = serializeNativeBrowserWindow(controller);
+  if (!payload) return;
+
+  if (controller.shellWindow && !controller.shellWindow.isDestroyed()) {
+    controller.shellWindow.webContents.send(NATIVE_BROWSER_STATE_EVENT, payload);
+  }
+
+  emitNativeBrowserState(payload);
+}
+
+function normalizeNativeBrowserTargetUrl(value, fallbackUrl = KDBROWSER_HOME_URL) {
+  if (typeof value === 'string' && value.trim()) {
+    try {
+      return new URL(value.trim()).toString();
+    } catch {
+      try {
+        return new URL(`https://${value.trim()}`).toString();
+      } catch {
+        // Fall through to default below.
+      }
+    }
+  }
+  return fallbackUrl;
+}
+
+function updateNativeBrowserWindowState(controller, patch = {}) {
+  Object.assign(controller, patch);
+  broadcastNativeBrowserWindowState(controller);
+}
+
+function isBrowserPermissionAllowed(permission = '') {
+  return ALLOWED_BROWSER_PERMISSIONS.has(String(permission || ''));
+}
+
+function configureBrowserSession(targetSession) {
+  const partition = targetSession?.getPartition?.() || '';
+  if (!isManagedBrowserPartition(partition)) return;
+  if (configuredBrowserSessions.has(partition)) return;
+
+  configuredBrowserSessions.add(partition);
+  targetSession.setPermissionCheckHandler((_webContents, permission) => (
+    isBrowserPermissionAllowed(permission)
+  ));
+  targetSession.setPermissionRequestHandler((_webContents, permission, callback) => {
+    callback(isBrowserPermissionAllowed(permission));
+  });
+}
+
+function attachWebviewGuards(win) {
+  win.webContents.on('will-attach-webview', (event, webPreferences, params) => {
+    const targetUrl = typeof params?.src === 'string' ? params.src : '';
+    if (!/^https?:\/\//i.test(targetUrl)) {
+      event.preventDefault();
+      return;
+    }
+
+    delete params.preload;
+    delete webPreferences.preload;
+    delete webPreferences.preloadURL;
+    webPreferences.nodeIntegration = false;
+    webPreferences.contextIsolation = true;
+    webPreferences.webSecurity = true;
+    webPreferences.sandbox = true;
+    webPreferences.allowRunningInsecureContent = false;
+    webPreferences.autoplayPolicy = 'no-user-gesture-required';
+  });
+
+  win.webContents.on('did-attach-webview', (_event, guestContents) => {
+    configureBrowserSession(guestContents.session);
+
+    let guestRequestedFullScreen = false;
+    guestContents.on('enter-html-full-screen', () => {
+      guestRequestedFullScreen = true;
+      if (!win.isDestroyed()) {
+        win.setFullScreen(true);
+      }
+    });
+    guestContents.on('leave-html-full-screen', () => {
+      if (guestRequestedFullScreen && !win.isDestroyed()) {
+        win.setFullScreen(false);
+      }
+      guestRequestedFullScreen = false;
+    });
+
+    guestContents.setWindowOpenHandler((details) => {
+      let targetUrl = '';
+      try {
+        targetUrl = assertOptionalUrl(details.url);
+      } catch {
+        targetUrl = '';
+      }
+
+      if (!targetUrl) {
+        return { action: 'deny' };
+      }
+
+      const partition = guestContents.session?.getPartition?.() || '';
+      const profileId = getBrowserProfileIdFromPartition(partition);
+      if (profileId.startsWith('app-')) {
+        guestContents.loadURL(targetUrl).catch(() => {});
+        return { action: 'deny' };
+      }
+
+      emitBrowserWindowOpenRequested({
+        url: targetUrl,
+        title: typeof details.frameName === 'string' ? details.frameName : '',
+        disposition: details.disposition || 'new-window',
+        profileId,
+        partition
+      });
+
+      return { action: 'deny' };
+    });
+  });
+}
+
+function layoutNativeBrowserView(controller) {
+  if (!controller?.shellWindow || controller.shellWindow.isDestroyed() || !controller.browserView) return;
+  const [contentWidth, contentHeight] = controller.shellWindow.getContentSize();
+  const viewHeight = Math.max(200, contentHeight - NATIVE_BROWSER_TOOLBAR_HEIGHT);
+  controller.browserView.setBounds({
+    x: 0,
+    y: NATIVE_BROWSER_TOOLBAR_HEIGHT,
+    width: Math.max(320, contentWidth),
+    height: viewHeight
+  });
+  controller.browserView.setAutoResize({
+    width: true,
+    height: true
+  });
+}
+
+function attachNativeBrowserGuestListeners(controller) {
+  const browserContents = controller?.browserView?.webContents;
+  if (!browserContents) return;
+
+  configureBrowserSession(browserContents.session);
+  browserContents.setUserAgent(DEFAULT_BROWSER_USER_AGENT);
+
+  browserContents.on('did-start-loading', () => {
+    updateNativeBrowserWindowState(controller, {
+      isLoading: true,
+      error: ''
+    });
+  });
+
+  browserContents.on('did-stop-loading', () => {
+    updateNativeBrowserWindowState(controller, {
+      isLoading: false,
+      url: browserContents.getURL?.() || controller.url,
+      title: browserContents.getTitle?.() || controller.title,
+      canGoBack: Boolean(browserContents.navigationHistory?.canGoBack?.() ?? browserContents.canGoBack?.()),
+      canGoForward: Boolean(browserContents.navigationHistory?.canGoForward?.() ?? browserContents.canGoForward?.()),
+      error: ''
+    });
+    if (controller.shellWindow && !controller.shellWindow.isDestroyed()) {
+      controller.shellWindow.setTitle(controller.title || 'KDBROWSER');
+    }
+  });
+
+  browserContents.on('page-title-updated', (_event, title) => {
+    updateNativeBrowserWindowState(controller, {
+      title: title || controller.title
+    });
+    if (controller.shellWindow && !controller.shellWindow.isDestroyed()) {
+      controller.shellWindow.setTitle(title || 'KDBROWSER');
+    }
+  });
+
+  browserContents.on('did-navigate', (_event, url) => {
+    updateNativeBrowserWindowState(controller, {
+      url,
+      canGoBack: Boolean(browserContents.navigationHistory?.canGoBack?.() ?? browserContents.canGoBack?.()),
+      canGoForward: Boolean(browserContents.navigationHistory?.canGoForward?.() ?? browserContents.canGoForward?.())
+    });
+  });
+
+  browserContents.on('did-navigate-in-page', (_event, url) => {
+    updateNativeBrowserWindowState(controller, {
+      url,
+      canGoBack: Boolean(browserContents.navigationHistory?.canGoBack?.() ?? browserContents.canGoBack?.()),
+      canGoForward: Boolean(browserContents.navigationHistory?.canGoForward?.() ?? browserContents.canGoForward?.())
+    });
+  });
+
+  browserContents.on('did-fail-load', (_event, errorCode, errorDescription, validatedURL, isMainFrame) => {
+    if (isMainFrame === false || errorCode === -3) return;
+    updateNativeBrowserWindowState(controller, {
+      isLoading: false,
+      url: validatedURL || controller.url,
+      error: errorDescription || 'This page could not be loaded in the native KDOS browser window.'
+    });
+  });
+
+  browserContents.on('render-process-gone', (_event, details) => {
+    updateNativeBrowserWindowState(controller, {
+      isLoading: false,
+      error: details?.reason ? `Browser renderer exited: ${details.reason}` : 'Browser renderer exited unexpectedly.'
+    });
+  });
+
+  browserContents.setWindowOpenHandler((details) => {
+    let targetUrl = '';
+    try {
+      targetUrl = normalizeNativeBrowserTargetUrl(details.url, controller.homeUrl || KDBROWSER_HOME_URL);
+    } catch {
+      targetUrl = '';
+    }
+
+    if (!targetUrl) {
+      return { action: 'deny' };
+    }
+
+    openNativeAuthPopup({
+      title: typeof details.frameName === 'string' && details.frameName.trim() ? details.frameName.trim() : (controller.title || 'Browser'),
+      url: targetUrl,
+      profileId: controller.profileId,
+      width: 1180,
+      height: 820
+    }).catch(() => {});
+
+    return { action: 'deny' };
+  });
+}
+
+async function openNativeAuthPopup(payload = {}) {
+  const targetUrl = normalizeNativeBrowserTargetUrl(payload.url, KDBROWSER_HOME_URL);
+  const profileId = sanitizeBrowserProfileId(payload.profileId || DEFAULT_BROWSER_PROFILE_ID);
+  const popupWindow = new BrowserWindow({
+    width: clampNumber(payload.width, 720, 1600, 1180),
+    height: clampNumber(payload.height, 560, 1400, 820),
+    minWidth: 720,
+    minHeight: 560,
+    autoHideMenuBar: true,
+    backgroundColor: '#ffffff',
+    title: typeof payload.title === 'string' && payload.title.trim() ? payload.title.trim() : 'Browser popup',
+    webPreferences: {
+      partition: getNativeBrowserPartition(profileId),
+      preload: nativeBrowserGuestPreloadPath,
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: true,
+      autoplayPolicy: 'no-user-gesture-required'
+    }
+  });
+
+  configureBrowserSession(popupWindow.webContents.session);
+  popupWindow.webContents.setUserAgent(DEFAULT_BROWSER_USER_AGENT);
+  popupWindow.webContents.setWindowOpenHandler((details) => {
+    openNativeAuthPopup({
+      title: typeof details.frameName === 'string' && details.frameName.trim() ? details.frameName.trim() : (payload.title || 'Browser popup'),
+      url: details.url,
+      profileId,
+      width: 1100,
+      height: 800
+    }).catch(() => {});
+    return { action: 'deny' };
+  });
+
+  await popupWindow.loadURL(targetUrl);
+  popupWindow.show();
+  popupWindow.focus();
+  return { ok: true, url: targetUrl, profileId };
+}
+
+async function openNativeBrowserWindow(payload = {}) {
+  const windowKey = sanitizeNativeBrowserWindowKey(payload.windowKey || `browser-${Date.now().toString(36)}`);
+  const existing = nativeBrowserWindows.get(windowKey);
+  const targetUrl = normalizeNativeBrowserTargetUrl(payload.url, payload.homeUrl || KDBROWSER_HOME_URL);
+  const profileId = sanitizeBrowserProfileId(payload.profileId || DEFAULT_BROWSER_PROFILE_ID);
+
+  if (existing && existing.shellWindow && !existing.shellWindow.isDestroyed()) {
+    if (targetUrl && targetUrl !== existing.url) {
+      existing.browserView.webContents.loadURL(targetUrl).catch(() => {});
+    }
+    if (payload.focus !== false) {
+      existing.shellWindow.show();
+      existing.shellWindow.focus();
+    }
+    broadcastNativeBrowserWindowState(existing);
+    return serializeNativeBrowserWindow(existing);
+  }
+
+  const shellWindow = new BrowserWindow({
+    width: clampNumber(payload.width, 960, 2000, 1380),
+    height: clampNumber(payload.height, 680, 1600, 900),
+    minWidth: 960,
+    minHeight: 680,
+    autoHideMenuBar: true,
+    backgroundColor: '#e2e8f0',
+    title: typeof payload.title === 'string' && payload.title.trim() ? payload.title.trim() : 'KDBROWSER',
+    webPreferences: {
+      preload: nativeBrowserShellPreloadPath,
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: true
+    }
+  });
+
+  const browserView = new BrowserView({
+    webPreferences: {
+      partition: getNativeBrowserPartition(profileId),
+      preload: nativeBrowserGuestPreloadPath,
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: true,
+      autoplayPolicy: 'no-user-gesture-required'
+    }
+  });
+
+  shellWindow.setBrowserView(browserView);
+
+  const controller = {
+    windowKey,
+    profileId,
+    ownerAppId: typeof payload.ownerAppId === 'string' ? payload.ownerAppId : '',
+    homeUrl: normalizeNativeBrowserTargetUrl(payload.homeUrl, KDBROWSER_HOME_URL),
+    url: targetUrl,
+    title: typeof payload.title === 'string' && payload.title.trim() ? payload.title.trim() : 'KDBROWSER',
+    isLoading: true,
+    canGoBack: false,
+    canGoForward: false,
+    error: '',
+    shellWindow,
+    browserView
+  };
+
+  nativeBrowserWindows.set(windowKey, controller);
+
+  attachNativeBrowserGuestListeners(controller);
+  shellWindow.on('resize', () => layoutNativeBrowserView(controller));
+  shellWindow.on('enter-full-screen', () => layoutNativeBrowserView(controller));
+  shellWindow.on('leave-full-screen', () => layoutNativeBrowserView(controller));
+  shellWindow.on('closed', () => {
+    nativeBrowserWindows.delete(windowKey);
+    emitNativeBrowserState({
+      windowKey,
+      isOpen: false,
+      profileId,
+      ownerAppId: controller.ownerAppId || ''
+    });
+  });
+  shellWindow.webContents.on('did-finish-load', () => {
+    broadcastNativeBrowserWindowState(controller);
+  });
+
+  layoutNativeBrowserView(controller);
+  await shellWindow.loadFile(nativeBrowserShellPath, {
+    query: {
+      windowKey
+    }
+  });
+
+  try {
+    await browserView.webContents.loadURL(targetUrl);
+  } catch (error) {
+    updateNativeBrowserWindowState(controller, {
+      isLoading: false,
+      error: error instanceof Error ? error.message : 'Failed to open the requested page.'
+    });
+  }
+
+  if (payload.focus !== false) {
+    shellWindow.show();
+    shellWindow.focus();
+  }
+  broadcastNativeBrowserWindowState(controller);
+  return serializeNativeBrowserWindow(controller);
+}
+
+function getNativeBrowserWindowOrThrow(windowKey) {
+  const safeWindowKey = sanitizeNativeBrowserWindowKey(windowKey);
+  const controller = nativeBrowserWindows.get(safeWindowKey);
+  if (!controller || !controller.shellWindow || controller.shellWindow.isDestroyed()) {
+    throw new Error(`Native browser window not found: ${safeWindowKey}`);
+  }
+  return controller;
+}
+
+async function navigateNativeBrowserWindow(windowKey, url) {
+  const controller = getNativeBrowserWindowOrThrow(windowKey);
+  const targetUrl = normalizeNativeBrowserTargetUrl(url, controller.homeUrl || KDBROWSER_HOME_URL);
+  updateNativeBrowserWindowState(controller, {
+    isLoading: true,
+    error: '',
+    url: targetUrl
+  });
+  await controller.browserView.webContents.loadURL(targetUrl);
+  return serializeNativeBrowserWindow(controller);
+}
+
+async function runNativeBrowserWindowAction(windowKey, action) {
+  const controller = getNativeBrowserWindowOrThrow(windowKey);
+  const browserContents = controller.browserView.webContents;
+
+  if (action === 'back' && (browserContents.navigationHistory?.canGoBack?.() ?? browserContents.canGoBack?.())) {
+    browserContents.goBack();
+  } else if (action === 'forward' && (browserContents.navigationHistory?.canGoForward?.() ?? browserContents.canGoForward?.())) {
+    browserContents.goForward();
+  } else if (action === 'reload') {
+    browserContents.reload();
+  } else if (action === 'home') {
+    await browserContents.loadURL(controller.homeUrl || KDBROWSER_HOME_URL);
+  } else if (action === 'focus') {
+    controller.shellWindow.show();
+    controller.shellWindow.focus();
+  } else {
+    throw new Error(`Unsupported native browser action: ${action}`);
+  }
+
+  updateNativeBrowserWindowState(controller, {
+    isLoading: action !== 'focus',
+    error: ''
+  });
+  return serializeNativeBrowserWindow(controller);
+}
+
+async function closeNativeBrowserWindow(windowKey) {
+  const controller = getNativeBrowserWindowOrThrow(windowKey);
+  nativeBrowserWindows.delete(controller.windowKey);
+  if (!controller.shellWindow.isDestroyed()) {
+    controller.shellWindow.close();
+  }
+  return {
+    ok: true,
+    windowKey: controller.windowKey
+  };
+}
+
 function buildEntryRecord(osPath, stats, metadata = {}) {
   const normalized = normalizeOsPath(osPath);
   const extension = stats.isDirectory() ? '' : extnameFromPath(normalized);
@@ -380,6 +901,8 @@ async function ensureWorkspaceScaffold() {
 
   await Promise.all(directories.map((osPath) => fs.mkdir(toHostPath(osPath), { recursive: true })));
   await ensureJsonFile(WORKSPACE_PATHS.profile, DEFAULT_PROFILE);
+  await ensureJsonFile(WORKSPACE_PATHS.installedApps, DEFAULT_INSTALLED_APPS_STATE);
+  await ensureJsonFile(WORKSPACE_PATHS.browserState, DEFAULT_BROWSER_STATE);
   await ensureJsonFile(WORKSPACE_PATHS.desktopLayout, DEFAULT_DESKTOP_LAYOUT);
   await ensureJsonFile(WORKSPACE_PATHS.session, DEFAULT_SESSION_STATE);
   await ensureJsonFile(WORKSPACE_PATHS.personalization, {
@@ -602,12 +1125,82 @@ const settingsApi = {
   saveProfile: (profile) => writeJsonFile(WORKSPACE_PATHS.profile, { ...DEFAULT_PROFILE, ...(profile || {}), updated_at: new Date().toISOString() }),
   loadDesktopLayout: async () => sanitizeDesktopLayoutState(await readJsonFile(WORKSPACE_PATHS.desktopLayout, DEFAULT_DESKTOP_LAYOUT)),
   saveDesktopLayout: (layout) => writeJsonFile(WORKSPACE_PATHS.desktopLayout, sanitizeDesktopLayoutState({ ...layout, updatedAt: new Date().toISOString() })),
+  loadInstalledApps: async () => {
+    const storedState = sanitizeInstalledAppsState(await readJsonFile(WORKSPACE_PATHS.installedApps, DEFAULT_INSTALLED_APPS_STATE));
+    const seededState = applyCatalogAutoInstallSeed(storedState);
+    if (hasInstalledAppsStateChanged(storedState, seededState)) {
+      await writeJsonFile(WORKSPACE_PATHS.installedApps, seededState);
+    }
+    return seededState;
+  },
+  saveInstalledApps: (state) => writeJsonFile(WORKSPACE_PATHS.installedApps, sanitizeInstalledAppsState({ ...(state || {}), updatedAt: new Date().toISOString() })),
   loadSession: async () => sanitizeSessionState(await readJsonFile(WORKSPACE_PATHS.session, DEFAULT_SESSION_STATE)),
   saveSession: (session) => writeJsonFile(WORKSPACE_PATHS.session, sanitizeSessionState(session)),
   loadPersonalization: async () => sanitizePersonalizationState(await readJsonFile(WORKSPACE_PATHS.personalization, { ...DEFAULT_PERSONALIZATION, currentWallpaperId: getDefaultWallpaperId() })),
   savePersonalization: (personalization) => writeJsonFile(WORKSPACE_PATHS.personalization, sanitizePersonalizationState({ ...personalization, lastUpdatedAt: new Date().toISOString() })),
   loadCommunityResources: () => readJsonFile(WORKSPACE_PATHS.communityResources, []),
   saveCommunityResources: (resources) => writeJsonFile(WORKSPACE_PATHS.communityResources, Array.isArray(resources) ? resources : [])
+};
+
+const browserApi = {
+  async getCapabilities() {
+    return {
+      ...DEFAULT_BROWSER_RUNTIME_CAPABILITIES,
+      embeddedBrowser: false,
+      nativeBrowserWindow: true,
+      remoteBrowser: false,
+      popupTabs: true,
+      persistentProfile: true,
+      profileReset: true,
+      openExternal: true
+    };
+  },
+
+  async loadState(profileId = DEFAULT_BROWSER_PROFILE_ID) {
+    await ensureWorkspaceScaffold();
+    return sanitizeBrowserState(
+      await readJsonFile(WORKSPACE_PATHS.browserState, DEFAULT_BROWSER_STATE),
+      { profileId }
+    );
+  },
+
+  async saveState(state) {
+    const nextState = sanitizeBrowserState({
+      ...(state || {}),
+      updatedAt: new Date().toISOString()
+    });
+    await writeJsonFile(WORKSPACE_PATHS.browserState, nextState);
+    return nextState;
+  },
+
+  async openExternal(url) {
+    const nextUrl = assertOptionalUrl(url);
+    if (!nextUrl) {
+      throw new Error('Provide a URL to open externally.');
+    }
+
+    await shell.openExternal(nextUrl);
+    return { ok: true, url: nextUrl };
+  },
+
+  async resetProfile(profileId = DEFAULT_BROWSER_PROFILE_ID) {
+    const safeProfileId = sanitizeBrowserProfileId(profileId);
+    const targetSession = session.fromPartition(getBrowserPartition(safeProfileId));
+    await targetSession.clearStorageData();
+    await targetSession.clearCache();
+
+    const nextState = createDefaultBrowserState({
+      profileId: safeProfileId,
+      updatedAt: new Date().toISOString()
+    });
+    await writeJsonFile(WORKSPACE_PATHS.browserState, nextState);
+
+    return {
+      ok: true,
+      profileId: safeProfileId,
+      partition: getBrowserPartition(safeProfileId)
+    };
+  }
 };
 
 const wallpaperApi = {
@@ -721,7 +1314,53 @@ async function createMainWindow() {
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
-      nodeIntegration: false
+      nodeIntegration: false,
+      webviewTag: true
+    }
+  });
+  mainWindow = win;
+  attachWebviewGuards(win);
+  win.webContents.on('console-message', (_event, level, message, line, sourceId) => {
+    console.log(`[electron:renderer:${level}] ${message} (${sourceId || 'unknown'}:${line || 0})`);
+  });
+  win.webContents.on('did-finish-load', () => {
+    setTimeout(() => {
+      if (!win || win.isDestroyed()) return;
+      win.webContents.executeJavaScript(`(() => {
+        const root = document.getElementById('root');
+        return {
+          title: document.title,
+          readyState: document.readyState,
+          bodyChildren: document.body ? document.body.children.length : 0,
+          rootExists: Boolean(root),
+          rootChildren: root ? root.children.length : 0,
+          rootHtmlLength: root ? root.innerHTML.length : 0,
+          bodyTextPreview: document.body ? String(document.body.innerText || '').slice(0, 240) : ''
+        };
+      })()`).then((snapshot) => {
+        console.log('[electron:renderer] dom-snapshot', snapshot);
+      }).catch((error) => {
+        console.error('[electron:renderer] dom-snapshot failed', error);
+      });
+    }, 1800);
+  });
+  win.webContents.on('did-fail-load', (_event, errorCode, errorDescription, validatedURL, isMainFrame) => {
+    console.error('[electron:renderer] did-fail-load', {
+      errorCode,
+      errorDescription,
+      validatedURL,
+      isMainFrame
+    });
+  });
+  win.webContents.on('render-process-gone', (_event, details) => {
+    console.error('[electron:renderer] render-process-gone', details);
+  });
+  win.webContents.on('unresponsive', () => {
+    console.error('[electron:renderer] main window became unresponsive');
+  });
+  win.on('closed', () => {
+    if (mainWindow === win) {
+      mainWindow = null;
     }
   });
 
@@ -784,6 +1423,11 @@ ipcMain.handle('os.settings.saveDesktopLayout', (_event, layout) => {
   if (!isPlainObject(layout)) throw new Error('Expected a desktop layout object.');
   return settingsApi.saveDesktopLayout(layout);
 });
+ipcMain.handle('os.settings.loadInstalledApps', () => settingsApi.loadInstalledApps());
+ipcMain.handle('os.settings.saveInstalledApps', (_event, state) => {
+  if (!isPlainObject(state)) throw new Error('Expected an installed apps state object.');
+  return settingsApi.saveInstalledApps(state);
+});
 ipcMain.handle('os.settings.loadSession', () => settingsApi.loadSession());
 ipcMain.handle('os.settings.saveSession', (_event, session) => {
   if (!isPlainObject(session)) throw new Error('Expected a session object.');
@@ -796,6 +1440,20 @@ ipcMain.handle('os.settings.savePersonalization', (_event, personalization) => {
 });
 ipcMain.handle('os.settings.loadCommunityResources', () => settingsApi.loadCommunityResources());
 ipcMain.handle('os.settings.saveCommunityResources', (_event, resources) => settingsApi.saveCommunityResources(resources));
+
+ipcMain.handle('os.browser.getCapabilities', () => browserApi.getCapabilities());
+ipcMain.handle('os.browser.loadState', (_event, profileId) => browserApi.loadState(typeof profileId === 'string' ? profileId : DEFAULT_BROWSER_PROFILE_ID));
+ipcMain.handle('os.browser.saveState', (_event, state) => {
+  if (!isPlainObject(state)) throw new Error('Expected a browser state object.');
+  return browserApi.saveState(state);
+});
+ipcMain.handle('os.browser.openExternal', (_event, url) => browserApi.openExternal(url));
+ipcMain.handle('os.browser.resetProfile', (_event, profileId) => browserApi.resetProfile(typeof profileId === 'string' ? profileId : DEFAULT_BROWSER_PROFILE_ID));
+ipcMain.handle('os.browser.native.openWindow', (_event, payload) => openNativeBrowserWindow(isPlainObject(payload) ? payload : {}));
+ipcMain.handle('os.browser.native.getWindowState', (_event, windowKey) => serializeNativeBrowserWindow(getNativeBrowserWindowOrThrow(windowKey)));
+ipcMain.handle('os.browser.native.navigate', (_event, windowKey, url) => navigateNativeBrowserWindow(windowKey, url));
+ipcMain.handle('os.browser.native.action', (_event, windowKey, action) => runNativeBrowserWindowAction(windowKey, typeof action === 'string' ? action : ''));
+ipcMain.handle('os.browser.native.closeWindow', (_event, windowKey) => closeNativeBrowserWindow(windowKey));
 
 ipcMain.handle('os.container.probe', () => containerApi.probe());
 ipcMain.handle('os.container.createWorkspace', (_event, id) => containerApi.createWorkspace(id));
@@ -830,6 +1488,18 @@ ipcMain.handle('os.maji.save', async (_event, payload = {}) => {
     messages: Array.isArray(payload.messages) ? payload.messages : []
   });
 });
+
+app.commandLine.appendSwitch('disable-renderer-backgrounding');
+app.commandLine.appendSwitch('disable-backgrounding-occluded-windows');
+app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
+app.commandLine.appendSwitch('disable-blink-features', 'AutomationControlled');
+if (process.platform === 'linux') {
+  app.disableHardwareAcceleration();
+  app.commandLine.appendSwitch('disable-features', 'Vulkan');
+  app.commandLine.appendSwitch('use-gl', 'swiftshader');
+  app.commandLine.appendSwitch('disable-gpu');
+  app.commandLine.appendSwitch('disable-gpu-vsync');
+}
 
 app.whenReady().then(async () => {
   await ensureWorkspaceScaffold();

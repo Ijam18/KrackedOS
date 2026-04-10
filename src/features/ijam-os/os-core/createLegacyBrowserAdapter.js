@@ -31,8 +31,23 @@ import {
   sortEntries
 } from './pathUtils.js';
 import { deleteEntry, getAllEntries, getEntry, getMeta, putEntry, setMeta } from './idb.js';
+import {
+  DEFAULT_BROWSER_PROFILE_ID,
+  DEFAULT_BROWSER_RUNTIME_CAPABILITIES,
+  DEFAULT_BROWSER_STATE,
+  createDefaultBrowserState,
+  sanitizeBrowserProfileId,
+  sanitizeBrowserState
+} from './browserState.js';
+import {
+  DEFAULT_INSTALLED_APPS_STATE,
+  applyCatalogAutoInstallSeed,
+  hasInstalledAppsStateChanged,
+  sanitizeInstalledAppsState
+} from './installedAppsState.js';
 
 const MIGRATION_META_KEY = 'legacyMigrationVersion';
+const REMOTE_BROWSER_BASE_PATH = '/__kdbrowser-remote';
 
 function safeJsonParse(rawValue, fallbackValue) {
   if (!rawValue) return fallbackValue;
@@ -56,12 +71,48 @@ function clampNumber(value, min, max, fallback) {
   return Math.min(max, Math.max(min, value));
 }
 
+function normalizeExternalUrl(value, fallbackProtocol = 'https:') {
+  const raw = typeof value === 'string' ? value.trim() : '';
+  if (!raw) return '';
+
+  try {
+    return new URL(raw).toString();
+  } catch {
+    try {
+      return new URL(`${fallbackProtocol}//${raw}`).toString();
+    } catch {
+      return '';
+    }
+  }
+}
+
 function sanitizeStringArray(value, maxLength = 64, maxItemLength = 260) {
   if (!Array.isArray(value)) return [];
   return value
     .filter((item) => typeof item === 'string' && item.trim())
     .map((item) => item.trim().slice(0, maxItemLength))
     .slice(0, maxLength);
+}
+
+async function requestRemoteBrowser(path, { method = 'GET', body = undefined } = {}) {
+  if (typeof window === 'undefined' || typeof fetch !== 'function') {
+    throw new Error('Remote browser bridge is only available in the browser runtime.');
+  }
+
+  const response = await fetch(`${REMOTE_BROWSER_BASE_PATH}${path}`, {
+    method,
+    headers: body ? { 'Content-Type': 'application/json' } : undefined,
+    body: body ? JSON.stringify(body) : undefined
+  });
+
+  const text = await response.text();
+  const payload = text ? safeJsonParse(text, null) : null;
+
+  if (!response.ok) {
+    throw new Error(payload?.error || `Remote browser request failed with status ${response.status}.`);
+  }
+
+  return payload;
 }
 
 function sanitizeWindowStates(value) {
@@ -267,6 +318,8 @@ async function seedWorkspaceScaffold() {
     ...DEFAULT_PERSONALIZATION,
     currentWallpaperId: getDefaultWallpaperId()
   });
+  await ensureJsonFile(WORKSPACE_PATHS.installedApps, DEFAULT_INSTALLED_APPS_STATE, 'workspace');
+  await ensureJsonFile(WORKSPACE_PATHS.browserState, DEFAULT_BROWSER_STATE, 'workspace');
   await ensureJsonFile(WORKSPACE_PATHS.desktopLayout, DEFAULT_DESKTOP_LAYOUT, 'workspace');
   await ensureJsonFile(WORKSPACE_PATHS.session, DEFAULT_SESSION_STATE, 'workspace');
   await ensureJsonFile(WORKSPACE_PATHS.communityResources, [], 'workspace');
@@ -753,6 +806,39 @@ export function createLegacyBrowserAdapter() {
       }
     },
 
+    async loadInstalledApps() {
+      await seedWorkspaceScaffold();
+      const fileState = sanitizeInstalledAppsState(await readJsonFile(WORKSPACE_PATHS.installedApps, DEFAULT_INSTALLED_APPS_STATE));
+      const localState = safeJsonParse(
+        typeof window !== 'undefined' ? window.localStorage.getItem(LEGACY_STORAGE_KEYS.installedApps) : '',
+        null
+      );
+      const preferredState = choosePreferredState(fileState, localState, sanitizeInstalledAppsState);
+      const seededState = applyCatalogAutoInstallSeed(preferredState);
+
+      if (hasInstalledAppsStateChanged(fileState, seededState)) {
+        await writeJsonFile(WORKSPACE_PATHS.installedApps, seededState);
+      }
+
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem(LEGACY_STORAGE_KEYS.installedApps, JSON.stringify(seededState));
+      }
+
+      return seededState;
+    },
+
+    async saveInstalledApps(state) {
+      const nextState = sanitizeInstalledAppsState({
+        ...(state || {}),
+        updatedAt: new Date().toISOString()
+      });
+      await writeJsonFile(WORKSPACE_PATHS.installedApps, nextState);
+
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem(LEGACY_STORAGE_KEYS.installedApps, JSON.stringify(nextState));
+      }
+    },
+
     async loadSession() {
       await seedWorkspaceScaffold();
       return sanitizeSessionState(await readJsonFile(WORKSPACE_PATHS.session, DEFAULT_SESSION_STATE));
@@ -889,6 +975,157 @@ export function createLegacyBrowserAdapter() {
     }
   };
 
+  const browserProvider = {
+    async getCapabilities() {
+      let remoteStatus = { available: false };
+
+      try {
+        remoteStatus = await requestRemoteBrowser('/status');
+      } catch {
+        remoteStatus = { available: false };
+      }
+
+      return {
+        ...DEFAULT_BROWSER_RUNTIME_CAPABILITIES,
+        embeddedBrowser: false,
+        popupTabs: false,
+        persistentProfile: false,
+        profileReset: true,
+        openExternal: true,
+        remoteBrowser: Boolean(remoteStatus?.available)
+      };
+    },
+
+    async loadState(profileId = DEFAULT_BROWSER_PROFILE_ID) {
+      await seedWorkspaceScaffold();
+      const fileState = sanitizeBrowserState(
+        await readJsonFile(WORKSPACE_PATHS.browserState, DEFAULT_BROWSER_STATE),
+        { profileId }
+      );
+      const localState = safeJsonParse(
+        typeof window !== 'undefined' ? window.localStorage.getItem(LEGACY_STORAGE_KEYS.browserState) : '',
+        null
+      );
+      const preferredState = choosePreferredState(
+        fileState,
+        localState,
+        (value) => sanitizeBrowserState(value, { profileId })
+      );
+
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem(LEGACY_STORAGE_KEYS.browserState, JSON.stringify(preferredState));
+      }
+
+      return preferredState;
+    },
+
+    async saveState(state) {
+      const nextState = sanitizeBrowserState({
+        ...(state || {}),
+        updatedAt: new Date().toISOString()
+      });
+      await writeJsonFile(WORKSPACE_PATHS.browserState, nextState);
+
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem(LEGACY_STORAGE_KEYS.browserState, JSON.stringify(nextState));
+      }
+
+      return nextState;
+    },
+
+    async openExternal(url) {
+      const normalizedUrl = normalizeExternalUrl(url);
+      if (!normalizedUrl) {
+        throw new Error(`Invalid URL: ${url}`);
+      }
+
+      const popup = typeof window !== 'undefined'
+        ? window.open(normalizedUrl, '_blank', 'noopener,noreferrer')
+        : null;
+
+      return {
+        ok: Boolean(popup) || typeof window === 'undefined',
+        url: normalizedUrl
+      };
+    },
+
+    async resetProfile(profileId = DEFAULT_BROWSER_PROFILE_ID) {
+      const nextState = createDefaultBrowserState({
+        profileId: sanitizeBrowserProfileId(profileId),
+        updatedAt: new Date().toISOString()
+      });
+      await this.saveState(nextState);
+      return { ok: true, profileId: nextState.profileId };
+    },
+
+    onWindowOpenRequested() {},
+
+    native: {
+      async openWindow() {
+        throw new Error('Native browser windows are only available in Electron desktop mode.');
+      },
+      async getWindowState() {
+        throw new Error('Native browser windows are only available in Electron desktop mode.');
+      },
+      async navigate() {
+        throw new Error('Native browser windows are only available in Electron desktop mode.');
+      },
+      async action() {
+        throw new Error('Native browser windows are only available in Electron desktop mode.');
+      },
+      async closeWindow() {
+        return { ok: true };
+      },
+      onState() {
+        return () => {};
+      }
+    },
+
+    remote: {
+      async getStatus() {
+        try {
+          return await requestRemoteBrowser('/status');
+        } catch (error) {
+          return {
+            available: false,
+            error: error instanceof Error ? error.message : 'Remote browser bridge is unavailable.'
+          };
+        }
+      },
+
+      createSession: (payload) => requestRemoteBrowser('/sessions', { method: 'POST', body: payload }),
+      getSession: (sessionId) => requestRemoteBrowser(`/sessions/${encodeURIComponent(sessionId)}`),
+      closeSession: (sessionId) => requestRemoteBrowser(`/sessions/${encodeURIComponent(sessionId)}`, { method: 'DELETE' }),
+      navigate: (sessionId, url) => requestRemoteBrowser(`/sessions/${encodeURIComponent(sessionId)}/navigate`, {
+        method: 'POST',
+        body: { url }
+      }),
+      resize: (sessionId, width, height) => requestRemoteBrowser(`/sessions/${encodeURIComponent(sessionId)}/resize`, {
+        method: 'POST',
+        body: { width, height }
+      }),
+      action: (sessionId, action) => requestRemoteBrowser(`/sessions/${encodeURIComponent(sessionId)}/action`, {
+        method: 'POST',
+        body: { action }
+      }),
+      setActivity: (sessionId, active = true) => requestRemoteBrowser(`/sessions/${encodeURIComponent(sessionId)}/activity`, {
+        method: 'POST',
+        body: { active }
+      }),
+      input: (sessionId, event) => requestRemoteBrowser(`/sessions/${encodeURIComponent(sessionId)}/input`, {
+        method: 'POST',
+        body: { event }
+      }),
+      getStreamUrl: (sessionId) => {
+        const path = `${REMOTE_BROWSER_BASE_PATH}/sessions/${encodeURIComponent(sessionId)}/stream`;
+        if (typeof window === 'undefined') return path;
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        return `${protocol}//${window.location.host}${path}`;
+      },
+      getFrameUrl: (sessionId, revision = 0) => `${REMOTE_BROWSER_BASE_PATH}/sessions/${encodeURIComponent(sessionId)}/frame?revision=${encodeURIComponent(String(revision || 0))}&ts=${Date.now()}`
+    }
+  };
+
   return {
     mode: OS_RUNTIME_MODES.WEB_DEMO,
     capabilities: {
@@ -966,6 +1203,7 @@ export function createLegacyBrowserAdapter() {
     fs: fsProvider,
     wallpaper: wallpaperProvider,
     settings: settingsProvider,
+    browser: browserProvider,
     containers: createUnsupportedContainerProvider(),
     async initialize() {
       await fsProvider.mountWorkspace();

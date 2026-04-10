@@ -4,6 +4,8 @@ import { Analytics } from '@vercel/analytics/react';
 import App from './App.jsx';
 import './index.css';
 
+const isElectronRuntime = typeof window !== 'undefined' && Boolean(window.krackedOS);
+
 if (import.meta.env.DEV) {
   import('react-grab');
   import('react-grab/dist/styles.css');
@@ -28,13 +30,13 @@ if (import.meta.env.DEV && 'serviceWorker' in navigator) {
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <App />
-    <Analytics />
+    {!isElectronRuntime ? <Analytics /> : null}
   </React.StrictMode>
 );
 
 // Keep the service worker out of dev so Vite HMR and React refresh stay clean.
-if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+if (import.meta.env.PROD && !isElectronRuntime && 'serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').catch(err => console.log('SW registration failed:', err));
+    navigator.serviceWorker.register('./sw.js').catch(err => console.log('SW registration failed:', err));
   });
 }

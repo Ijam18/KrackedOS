@@ -1,0 +1,460 @@
+{
+  "header": {
+    "brand": "ROTICAN.AI",
+    "myApps": "Apps Saya",
+    "explore": "TEROKAI",
+    "signIn": "Log masuk",
+    "guest": "Tetamu",
+    "signInToContinue": "Log masuk untuk teruskan",
+    "preferences": "Keutamaan"
+  },
+  "home": {
+    "title": "BINA APA SAHAJA YANG ANDA BAYANGKAN",
+    "titleLeft": "TAIP IDEA",
+    "titleRight": "TERUS JADI",
+    "remixing": "REMIX",
+    "browseMoreInspo": "atau lihat lagi inspirasi",
+    "placeholder": "Huraikan idea besar anda...",
+    "placeholderRemix": "Ubah prompt atau tekan hantar untuk mula...",
+    "start": "MULA",
+    "getInspired": "Dapatkan inspirasi",
+    "mode": {
+      "build": "Bina",
+      "chat": "Chat"
+    },
+    "chat": {
+      "placeholder": "Tanya saya apa-apa...",
+      "emptyTitle": "SEDIA UNTUK CHAT",
+      "emptyDescription": "Tanya soalan, brainstorm idea, atau sembang santai.",
+      "retry": "Cuba lagi",
+      "copy": "Salin",
+      "backToBuild": "← Kembali ke Mod Bina",
+      "thinking": "Sedang berfikir...",
+      "switchToBuild": "Tukar ke Mod Bina",
+      "suggestions": {
+        "0": "Apa yang boleh anda bantu?",
+        "1": "Apa itu rotican.ai?",
+        "2": "Beri saya idea app"
+      }
+    },
+    "ideaWizard": {
+      "cta": "Perlu idea?",
+      "title": "PILIH IDEA",
+      "description": "Pilih, sempitkan, teruskan.",
+      "chooseCategory": "Kategori",
+      "choosePreference": "Arah",
+      "pickIdea": "Idea",
+      "pickIdeaDescription": "Pilih satu.",
+      "startOver": "Reset",
+      "back": "Kembali",
+      "tryAgain": "Cuba lagi",
+      "refreshIdeas": "Lagi",
+      "starterLabel": "Asas prompt",
+      "loadingIdeasTitle": "Menjana idea...",
+      "loadingIdeasDescription": "Menjana...",
+      "loadingPromptTitle": "Memulakan binaan...",
+      "loadingPromptDescription": "Membina {idea}...",
+      "loadingPromptFallback": "Memulakan binaan...",
+      "steps": {
+        "category": "Kategori",
+        "preference": "Arah",
+        "idea": "Idea"
+      },
+      "axes": {
+        "game": "Pilih jenis loop permainan yang anda mahu.",
+        "website": "Pilih jenis laman yang anda mahu hasilkan.",
+        "tool": "Pilih jenis tugas yang alat ini patut selesaikan.",
+        "tracker": "Pilih apa yang app ini patut jejak.",
+        "creative": "Pilih jenis output kreatif yang anda mahu.",
+        "personal": "Pilih bahagian hidup yang anda mahu app ini bantu."
+      },
+      "categories": {
+        "game": {
+          "label": "Permainan",
+          "description": "Sesuatu yang menyeronokkan, interaktif, dan mudah terus main."
+        },
+        "website": {
+          "label": "Laman web",
+          "description": "Landing page atau laman bertema dengan tujuan awam yang jelas."
+        },
+        "tool": {
+          "label": "Alat",
+          "description": "Utiliti fokus yang membantu orang buat satu kerja dengan cepat."
+        },
+        "tracker": {
+          "label": "Penjejak",
+          "description": "App yang merekod progres, kiraan, tabiat, atau koleksi."
+        },
+        "creative": {
+          "label": "Kreatif",
+          "description": "Sesuatu yang ekspresif, visual, atau playful untuk mencipta benda."
+        },
+        "personal": {
+          "label": "Peribadi",
+          "description": "App untuk hidup harian, mood, pilihan, atau rutin."
+        }
+      },
+      "preferences": {
+        "game": {
+          "arcade": {
+            "label": "Arked",
+            "description": "Loop pantas, skor, refleks, dan nilai ulang main segera."
+          },
+          "puzzle": {
+            "label": "Puzzle",
+            "description": "Menyelesaikan corak, logik, dan kemenangan kecil yang memuaskan."
+          },
+          "quiz": {
+            "label": "Kuiz",
+            "description": "Trivia, teka-teki, dan pusingan cabaran yang playful."
+          },
+          "cozy": {
+            "label": "Cozy",
+            "description": "Interaksi santai, comel, dan vibe yang lembut."
+          }
+        },
+        "website": {
+          "portfolio": {
+            "label": "Portfolio",
+            "description": "Paparkan individu, projek, atau hasil kerja."
+          },
+          "smallBusiness": {
+            "label": "Bisnes kecil",
+            "description": "Promosikan servis, menu, studio, atau jenama tempatan."
+          },
+          "event": {
+            "label": "Acara",
+            "description": "Tonjolkan pelancaran, gathering, jadual, atau RSVP."
+          },
+          "fanPage": {
+            "label": "Halaman peminat",
+            "description": "Raikan obsesi niche, artis, pasukan, atau dunia fiksyen."
+          }
+        },
+        "tool": {
+          "generator": {
+            "label": "Penjana",
+            "description": "Cipta nama, kombinasi, prompt, atau output rawak."
+          },
+          "calculator": {
+            "label": "Kalkulator",
+            "description": "Kira jumlah, skor, kos, atau penukaran."
+          },
+          "planner": {
+            "label": "Perancang",
+            "description": "Bantu seseorang susun pilihan, langkah, atau jadual."
+          },
+          "comparer": {
+            "label": "Pembanding",
+            "description": "Benarkan seseorang timbang pilihan secara sebelah menyebelah."
+          }
+        },
+        "tracker": {
+          "habits": {
+            "label": "Tabiat",
+            "description": "Jejak rutin, streak, konsistensi, atau check-in harian."
+          },
+          "money": {
+            "label": "Wang",
+            "description": "Jejak belanja, simpanan, split, atau bajet."
+          },
+          "fitness": {
+            "label": "Kecergasan",
+            "description": "Jejak pergerakan, workout, sasaran, atau pemulihan."
+          },
+          "collection": {
+            "label": "Koleksi",
+            "description": "Jejak buku, makanan, kad, outfit, atau apa-apa yang boleh dikumpul."
+          }
+        },
+        "creative": {
+          "visual": {
+            "label": "Visual",
+            "description": "Warna, susun atur, kolaj, seni piksel, atau permainan imej."
+          },
+          "writing": {
+            "label": "Penulisan",
+            "description": "Perkataan, kapsyen, prompt, cerita, atau eksperimen puitis."
+          },
+          "music": {
+            "label": "Muzik",
+            "description": "Mood, playlist, ritma, atau idea berasaskan bunyi."
+          },
+          "meme": {
+            "label": "Tenaga meme",
+            "description": "Chaotic, lucu, internet-native, dan sangat mudah dikongsi."
+          }
+        },
+        "personal": {
+          "food": {
+            "label": "Makanan",
+            "description": "Bantu pilih, susun, rancang, atau rawakkan makanan dan craving."
+          },
+          "travel": {
+            "label": "Travel",
+            "description": "Trip, pilihan destinasi, pelan jalan, atau adventure tempatan."
+          },
+          "relationships": {
+            "label": "Hubungan",
+            "description": "Dating, game persahabatan, keserasian, atau pembuka perbualan."
+          },
+          "selfCare": {
+            "label": "Penjagaan diri",
+            "description": "Mood, refleksi, rutin, galakan, atau ketenangan."
+          }
+        }
+      },
+      "errors": {
+        "ideasTitle": "Tak dapat jana idea",
+        "promptTitle": "Tak dapat bina prompt",
+        "genericIdeas": "Penjana idea pulangkan sesuatu yang tak boleh dipakai. Cuba lagi.",
+        "genericPrompt": "Penulis prompt gagal. Pilih idea itu semula atau cuba lagi."
+      }
+    }
+  },
+  "apps": {
+    "title": "Aplikasi Saya",
+    "projects": "{count, plural, =1 {projek} other {projek}}",
+    "newApp": "APP BARU",
+    "new": "BARU",
+    "emptyTitle": "BELUM ADA APLIKASI",
+    "emptyDescription": "Mula bina aplikasi pertama anda dengan menerangkan apa yang anda mahu cipta.",
+    "createFirst": "CIPTA APLIKASI PERTAMA",
+    "untitled": "Aplikasi Tanpa Nama",
+    "noDescription": "Tiada penerangan",
+    "deleteTitle": "PADAM APLIKASI",
+    "deleteConfirm": "Adakah anda pasti mahu memadamkan \"{title}\" secara kekal? Tindakan ini tidak boleh dibatalkan.",
+    "cancel": "BATAL",
+    "delete": "PADAM",
+    "deleting": "MEMADAMKAN..."
+  },
+  "inspo": {
+    "title": "DAPATKAN INSPIRASI",
+    "examples": "{count, plural, =1 {contoh} other {contoh}}",
+    "toRemix": "untuk remix",
+    "inCategory": "dalam {category}",
+    "startFromScratch": "MULA DARI AWAL",
+    "emptyTitle": "BELUM ADA APA-APA",
+    "emptyDescription": "Kami sedang menambah contoh {category}. Cuba kategori lain atau mula membina!",
+    "comingSoonTitle": "AKAN DATANG",
+    "comingSoonDescription": "Kami sedang menyusun contoh-contoh menarik. Nantikan!",
+    "remix": "REMIX",
+    "categories": {
+      "all": "Semua",
+      "games": "Permainan",
+      "productivity": "Produktiviti",
+      "utilities": "Alatan",
+      "creative": "Kreatif"
+    }
+  },
+  "explore": {
+    "title": "TEROKAI",
+    "subtitle": "Terokai aplikasi yang dibina oleh komuniti",
+    "published": "{count, plural, =1 {aplikasi} other {aplikasi}} diterbitkan",
+    "recent": "TERKINI",
+    "popular": "POPULAR",
+    "like": "Suka",
+    "remix": "REMIX",
+    "makeItYourOwn": "Jadikan milik anda",
+    "remixed": "Remix",
+    "backToExplore": "Kembali ke Terokai",
+    "openApp": "Buka Aplikasi",
+    "remixing": "MEMPROSES...",
+    "signInToLike": "Log masuk untuk suka",
+    "signInToRemix": "Log masuk untuk jadikan milik anda",
+    "untitled": "Aplikasi Tanpa Nama",
+    "noDescription": "Tiada penerangan",
+    "emptyTitle": "BELUM ADA APLIKASI",
+    "emptyDescription": "Jadilah yang pertama menerbitkan aplikasi! Buka mana-mana aplikasi dan gunakan butang Kongsi untuk menerbitkannya kepada komuniti.",
+    "errorTitle": "SESUATU TIDAK KENA",
+    "errorDescription": "Gagal memuatkan suapan. Sila cuba lagi kemudian."
+  },
+  "profile": {
+    "title": "PROFIL",
+    "editProfile": "Edit Profil",
+    "editDescription": "Kemaskini maklumat profil awam anda.",
+    "username": "Nama pengguna",
+    "usernamePlaceholder": "nama-pengguna",
+    "usernameHint": "3-30 aksara (huruf kecil, nombor, sengkang).",
+    "usernameTooShort": "Terlalu pendek — sekurang-kurangnya 3 aksara",
+    "bio": "Bio",
+    "bioPlaceholder": "Ceritakan tentang diri anda...",
+    "joined": "Menyertai {date}",
+    "appsPublished": "aplikasi",
+    "totalLikes": "suka",
+    "totalViews": "tontonan",
+    "emptyTitle": "BELUM ADA APLIKASI DITERBITKAN",
+    "emptyDescription": "Pengguna ini belum menerbitkan sebarang aplikasi kepada komuniti.",
+    "save": "Simpan",
+    "saving": "Menyimpan...",
+    "saved": "Disimpan",
+    "cancel": "Batal",
+    "checkFailed": "Gagal menyemak ketersediaan",
+    "saveFailed": "Gagal menyimpan"
+  },
+  "auth": {
+    "signInTitle": "LOG MASUK",
+    "signInDescription": "Teruskan dengan akaun anda untuk mula membina",
+    "continueGoogle": "Teruskan dengan Google",
+    "continueGithub": "Teruskan dengan GitHub",
+    "terms": "Dengan log masuk, anda bersetuju dengan terma perkhidmatan kami",
+    "signOut": "Log Keluar",
+    "myApps": "Aplikasi Saya"
+  },
+  "guest": {
+    "banner": "Log masuk untuk simpan kerja anda & dapatkan lebih banyak mesej harian",
+    "signIn": "Log masuk"
+  },
+  "usage": {
+    "limitReachedTitle": "HAD DICAPAI",
+    "limitReachedDescription": "Kami mengehadkan penggunaan buat masa ini.",
+    "resetsAt": "Had anda ditetapkan semula pada {time} (MYT).",
+    "gotIt": "Faham",
+    "limitReached": "Had dicapai. Ditetapkan semula dalam {hours}j",
+    "messagesCompact": "{remaining} / {limit} Mesej",
+    "messagesAvailable": "{remaining} mesej tersedia",
+    "resetsIn": "Ditetapkan semula dalam {hours} {hours, plural, =1 {jam} other {jam}}"
+  },
+  "language": {
+    "en": "EN",
+    "ms": "BM"
+  },
+  "githubSync": {
+    "title": "Hantar ke GitHub",
+    "subtitle": "Segerakkan app ini ke GitHub anda",
+    "signInRequired": "Log masuk dengan akaun sebenar untuk sambungkan GitHub.",
+    "sessionExpired": "Sesi tamat — muat semula dan log masuk semula.",
+    "connected": "GitHub disambung",
+    "connectedAs": "@{login}",
+    "reconnectRequired": "Sambungan semula diperlukan",
+    "notConnected": "Belum disambung ke akaun GitHub anda",
+    "reconnect": "Sambung semula",
+    "connect": "Sambung Sekarang",
+    "repoInvalid": "Pautan repo tidak sah — nyahpaut dan buat yang baru.",
+    "push": "Hantar",
+    "unlink": "Nyahpaut",
+    "createSection": "Cipta repo awam",
+    "repoNamePlaceholder": "nama-repo",
+    "descriptionPlaceholder": "Penerangan (pilihan)",
+    "createAndLink": "Cipta Repo",
+    "viewCommit": "Lihat commit"
+  },
+  "suggestions": {
+    "pomodoroTimer": "Pemasa Pomodoro",
+    "habitTracker": "Penjejak tabiat dengan streak",
+    "dailyJournal": "Jurnal harian",
+    "weeklyMealPlanner": "Perancang makanan mingguan",
+    "expenseTracker": "Penjejak perbelanjaan",
+    "readingListTracker": "Penjejak senarai bacaan",
+    "studyTimer": "Pemasa belajar dengan rehat",
+    "typingSpeedTest": "Ujian kelajuan menaip",
+    "memoryMatchingGame": "Permainan padanan ingatan",
+    "ticTacToe": "Tic-tac-toe",
+    "snakeGame": "Permainan ular",
+    "guessTheNumber": "Teka nombor",
+    "rockPaperScissors": "Batu gunting kertas",
+    "quizGameBuilder": "Pembina kuiz",
+    "qrCodeGenerator": "Penjana kod QR",
+    "colorPaletteGenerator": "Penjana palet warna",
+    "unitConverter": "Penukar unit",
+    "passwordGenerator": "Penjana kata laluan",
+    "countdownTimer": "Pemasa undur",
+    "tipCalculator": "Kalkulator tip",
+    "randomQuoteGenerator": "Penjana petikan rawak",
+    "gradientMaker": "Pembuat gradien",
+    "pixelArtCanvas": "Kanvas seni piksel",
+    "memeGenerator": "Penjana meme",
+    "asciiArtGenerator": "Penjana seni ASCII",
+    "photoCollageMaker": "Pembuat kolaj foto",
+    "markdownPreview": "Pratonton Markdown",
+    "birthdayCountdown": "Kira detik hari lahir",
+    "wouldYouRather": "Pilih mana satu",
+    "truthOrDareGenerator": "Benar atau berani",
+    "loveCalculator": "Kalkulator cinta",
+    "babyNameGenerator": "Penjana nama bayi",
+    "movieNightPicker": "Pemilih malam filem",
+    "bucketListMaker": "Senarai impian",
+    "fortuneCookieGenerator": "Biskut nasib",
+    "dreamJournalApp": "Jurnal mimpi",
+    "zodiacCompatibilityChecker": "Keserasian zodiak",
+    "travelDestinationSpinner": "Roda destinasi travel",
+    "nicknameMaker": "Pembuat nama panggilan",
+    "complimentGenerator": "Penjana pujian",
+    "emojiStoryMaker": "Pembuat cerita emoji",
+    "whatShouldIEatPicker": "Nak makan apa?",
+    "playlistMoodMaker": "Playlist ikut mood",
+    "friendshipQuiz": "Kuiz persahabatan",
+    "petNameGenerator": "Penjana nama haiwan",
+    "dailyAffirmations": "Afirmasi harian",
+    "randomDateIdeaGenerator": "Idea dating rawak",
+    "vibeCheckQuiz": "Kuiz vibe check",
+    "spotifyWrappedClone": "Klon Spotify Wrapped",
+    "aestheticMoodBoard": "Papan mood estetik",
+    "screenTimeTracker": "Penjejak masa skrin",
+    "hotTakesGenerator": "Penjana hot takes",
+    "twoTruthsOneLie": "Dua kebenaran satu pembohongan",
+    "charadesWordGenerator": "Penjana perkataan charades",
+    "sleepSoundMixer": "Pencampur bunyi tidur",
+    "auraPointsCalculator": "Kalkulator poin aura",
+    "fitnessBingoCard": "Kad bingo kecergasan",
+    "redFlagGreenFlagQuiz": "Kuiz red flag green flag",
+    "mainCharacterGenerator": "Penjana main character energy",
+    "unpopularOpinionRanker": "Penarafan pendapat kontroversi",
+    "romanticDinnerPlanner": "Perancang makan malam romantik",
+    "skinCareRoutineBuilder": "Pembina rutin penjagaan kulit",
+    "mamakMenuRoulette": "Roulette menu mamak",
+    "splitBillMalaysia": "Kalkulator split bil",
+    "grabVsWalkCalculator": "Grab vs jalan kaki",
+    "malaysianSlangQuiz": "Kuiz slanga Malaysia",
+    "kopiBuildYourOwn": "Bina order kopi sendiri",
+    "publicHolidayCountdown": "Kira detik cuti umum",
+    "whatToTapauDecider": "Nak tapau apa?",
+    "malaysianFlagQuiz": "Kuiz bendera negeri",
+    "tollFareCalculator": "Kalkulator tambang tol",
+    "whichMalaysianFoodAreYou": "Makanan Malaysia mana kau?",
+    "parkingTimerReminder": "Pemasa parking",
+    "malaysianDialectTranslator": "Penterjemah dialek Malaysia",
+    "roadTripPlaylistMaker": "Pembuat playlist road trip",
+    "mamakVsFancyDinner": "Mamak vs makan fancy",
+    "cnyAngPauCalculator": "Kalkulator ang pau",
+    "malaysianMemeGenerator": "Penjana meme Malaysia",
+    "touchNGoBalanceTracker": "Penjejak baki Touch n Go",
+    "hawkerFoodRanker": "Penarafan makanan hawker"
+  },
+  "homeTour": {
+    "steps": {
+      "intro": {
+        "title": "Selamat Datang ke RotiCan.ai",
+        "description": "Huraikan idea. Dapat app berfungsi. Tiada setup, tiada deploy, hanya kod yang berjalan."
+      },
+      "modeToggle": {
+        "title": "Pilih Mod",
+        "description": "Bina hasilkan app berfungsi. Sembang untuk fikir tanpa komitmen."
+      },
+      "buildPrompt": {
+        "title": "Huraikan",
+        "description": "Taip idea. Tekan hantar. Dapat app."
+      },
+      "buildHelpers": {
+        "title": "Tak Tahu?",
+        "description": "Wizard Idea carikan app untuk anda. Pilih vibe sahaja."
+      },
+      "buildSuggestions": {
+        "title": "Pintasan Popular",
+        "description": "Satu klik. App siap. Tak perlu taip."
+      },
+      "chatPrompt": {
+        "title": "Mode Brainstorm",
+        "description": "Tanya apa saja. Uji idea. Tiada app dicipta — eksplorasi sahaja."
+      },
+      "chatSuggestions": {
+        "title": "Pemula Pantas",
+        "description": "Mula dengan ini. Atau tanya apa yang terfikir."
+      },
+      "completion": {
+        "title": "Go Bina.",
+        "description": "Tukar mod bila-bila masa. Bina hasil. Sembang fikir. Giliran anda."
+      }
+    }
+  }
+}

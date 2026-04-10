@@ -3,9 +3,9 @@ import { DEFAULT_EXPLORER_PREFERENCES } from '../os-core/constants';
 
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 
-export function normalizeRestoredShellWindowState(appType, rawState, { isTouchIjamMode = false } = {}) {
+export function normalizeRestoredShellWindowState(appType, rawState, { isTouchIjamMode = false, appRegistry = APP_REGISTRY } = {}) {
   if (!rawState || typeof rawState !== 'object') return null;
-  const appConfig = APP_REGISTRY.find((app) => app.type === appType);
+  const appConfig = appRegistry.find((app) => app.type === appType);
   if (!appConfig) return null;
 
   const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 1200;
@@ -44,6 +44,7 @@ export function normalizeRestoredShellWindowState(appType, rawState, { isTouchIj
 }
 
 export function buildShellSessionPayload({
+  appRegistry = APP_REGISTRY,
   windowStates,
   focusedWindow,
   startMenuSearch,
@@ -53,7 +54,7 @@ export function buildShellSessionPayload({
   explorerSort,
   zCounter
 }) {
-  const windowStatesPayload = APP_REGISTRY.reduce((acc, app) => {
+  const windowStatesPayload = appRegistry.reduce((acc, app) => {
     const state = windowStates[app.type];
     if (!state) return acc;
     acc[app.type] = {
