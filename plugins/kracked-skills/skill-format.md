@@ -1,4 +1,4 @@
-# 📋 Skill File - Sample Format
+# Skill File - Sample Format
 *Reference template for creating SKILL.md files*
 
 ---

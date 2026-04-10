@@ -134,6 +134,14 @@ I maintain my own memory through our conversations by:
 - Fallback: Asks user when nothing found
 - Format: daily-diary/recall-format.md
 
+### Skill Plugin System
+- Plugin: kracked-skills (Claude Code plugin)
+- Location: `plugins/kracked-skills/`
+- Skills: 1 active skill (save-memory Lv.1)
+- Add new skills: Create folder in `plugins/kracked-skills/skills/`
+- Template: `plugins/kracked-skills/skill-format.md`
+- Commands: `"create skill [name]"` → Create a new skill from template
+
 ### Advanced Problem-Solving
 *Load when you say: "Load problem-solving tools"*
 - Enhanced reasoning and analysis capabilities
