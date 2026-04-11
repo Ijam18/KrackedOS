@@ -37,6 +37,16 @@ function normalizeUrlCandidate(value, fallbackProtocol = 'https:') {
   const raw = String(value || '').trim();
   if (!raw) return '';
 
+  // Relative paths (e.g. "/rotican/ms") should resolve against the current origin,
+  // not be reinterpreted as absolute URLs with the path as a hostname.
+  if (raw.startsWith('/') && typeof window !== 'undefined' && window.location) {
+    try {
+      return new URL(raw, window.location.origin).toString();
+    } catch {
+      return '';
+    }
+  }
+
   try {
     return new URL(raw).toString();
   } catch {
@@ -51,6 +61,8 @@ function normalizeUrlCandidate(value, fallbackProtocol = 'https:') {
 function isUrlAllowed(url, allowedOrigins = []) {
   if (!url) return false;
   if (!allowedOrigins.length) return true;
+  // Wildcard means any origin is allowed (used for relative paths on the same host).
+  if (allowedOrigins.includes('*')) return true;
 
   try {
     const origin = new URL(url).origin;
