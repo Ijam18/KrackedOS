@@ -1,0 +1,14 @@
+KD Academy asset sources
+
+Downloaded CC0 assets:
+- OpenGameArt 16x16 8-bit RPG character set
+  https://lpc.opengameart.org/content/16x16-8-bit-rpg-character-set
+- OpenGameArt Punyworld Overworld Tileset
+  https://opengameart.org/content/punyworld-overworld-tileset
+- OpenGameArt Punyworld Dungeon Tileset
+  https://opengameart.org/content/punyworld-dungeon-tileset
+
+Local project assets reused:
+- KDSyllabus/Documents/KDA_Builders background layers
+- media/Free-Basic-Pixel-Art-UI-for-RPG UI pack
+- Kracked_Skills_Agent-main/frontend/public/assets character and tile sheets

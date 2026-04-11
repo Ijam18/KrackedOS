@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <style>
+    .kda { font: bold 260px sans-serif; fill: #18d300; filter: drop-shadow(4px 4px 0px #0b6b00); }
+  </style>
+  <text x="50%" y="55%" dominant-baseline="middle" text-anchor="middle" class="kda">KDA</text>
+</svg>
