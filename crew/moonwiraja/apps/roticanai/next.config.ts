@@ -4,9 +4,12 @@ import NodePolyfillPlugin from "node-polyfill-webpack-plugin";
 
 const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 
-const isProd = process.env.NODE_ENV === "production";
-
 const nextConfig: NextConfig = {
+  // Serve under /rotican/* in production so all asset and API paths
+  // (including /_next/*) are namespaced. This makes the Vercel edge
+  // rewrite from kracked-os.vercel.app/rotican/* → rotican-ai.vercel.app/rotican/*
+  // work cleanly without asset URL collisions.
+  basePath: process.env.NODE_ENV === "production" ? "/rotican" : undefined,
   // Use Turbopack (Next.js 16 default)
   turbopack: {},
   // Allow external images from OAuth providers and storage
@@ -49,28 +52,6 @@ const nextConfig: NextConfig = {
       headers: [{ key: "Cross-Origin-Opener-Policy", value: "same-origin-allow-popups" }],
     },
   ],
-  // In prod:
-  //   /                  → KrackedOS static (kos.html from public/)
-  //   /rotican           → roticanai default locale
-  //   /rotican/:path*    → roticanai :path*
-  //   /assets/*, /icons/* etc → public/ files (Vite assets)
-  //   /_next/*           → Next.js chunks
-  // Dev uses Vite proxy, no Next.js rewrites needed.
-  ...(isProd
-    ? {
-        async rewrites() {
-          return {
-            beforeFiles: [
-              { source: "/", destination: "/kos.html" },
-              { source: "/rotican", destination: "/ms" },
-              { source: "/rotican/:path*", destination: "/:path*" },
-            ],
-            afterFiles: [],
-            fallback: [],
-          };
-        },
-      }
-    : {}),
 };
 
 export default withNextIntl(nextConfig);

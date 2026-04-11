@@ -4,15 +4,11 @@ export const KDSTORE_CATALOG_VERSION = 2;
 // This file provides the runtime catalog for the KDStore UI.
 // To add a new app: create crew/<your-name>/crew.json with your app declaration.
 
-// In dev: Vite proxies /rotican/* → roticanai at :3003.
-// In prod (Vercel single-deploy): roticanai runs natively at root — /ms works directly.
-// Use import.meta.env.DEV to pick the right path at build time.
-const ROTICAN_BASE = import.meta.env?.DEV ? '/rotican/ms' : '/ms';
-
+// /rotican/ms works in both dev and prod:
+// - Dev: Vite proxies /rotican/* → roticanai at localhost:3003 (prefix stripped)
+// - Prod: Vercel edge rewrite in vercel.json proxies /rotican/:path* → Moon's
+//         separate Vercel deployment (e.g. https://rotican-ai.vercel.app/:path*)
 function loadCrewCatalog() {
-  // In dev, crew apps are discovered by the Vite plugin (tools/crewDiscovery.js).
-  // The catalog entries below are generated from crew manifests.
-  // When a new collaborator adds a crew.json, this gets regenerated.
   return [
     {
       id: 'rotican-ai',
@@ -21,8 +17,8 @@ function loadCrewCatalog() {
       label: 'ROTICAN.AI',
       description: 'AI-powered web app builder by Moon',
       category: 'Crew App',
-      launchUrl: ROTICAN_BASE,
-      homeUrl: ROTICAN_BASE,
+      launchUrl: '/rotican/ms',
+      homeUrl: '/rotican/ms',
       allowedOrigins: ['*'],
       launchSurface: 'iframe',
       fallbackMode: 'iframe',

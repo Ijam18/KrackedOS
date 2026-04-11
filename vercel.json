@@ -1,0 +1,16 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "vite",
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "rewrites": [
+    {
+      "source": "/rotican",
+      "destination": "https://rotican-ai.vercel.app/rotican/ms"
+    },
+    {
+      "source": "/rotican/:path*",
+      "destination": "https://rotican-ai.vercel.app/rotican/:path*"
+    }
+  ]
+}

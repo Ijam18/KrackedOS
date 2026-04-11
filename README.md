@@ -176,28 +176,67 @@ save               # persist durable progress to user overlay
 review growth      # review how Krack has evolved
 ```
 
-## Deployment
+## Deployment — Monorepo on Vercel
 
-### Single Vercel Deploy
+Kracked_OS uses **two Vercel projects** from the same GitHub repo. Each
+collaborator's app is a separate Vercel project. The main KrackedOS domain
+uses edge rewrites to proxy crew app paths to their own deployments. Users
+see one unified domain.
 
-KrackedOS + all crew apps deploy as **one Vercel project**:
+### Project 1: KrackedOS (main — Ijam's)
 
-1. Import repo on Vercel
+1. Import repo on Vercel → create project `kracked-os`
+2. **Root Directory**: `./` (repo root)
+3. **Framework Preset**: `Vite`
+4. **Build Command**: `npm run build`
+5. **Output Directory**: `dist`
+6. Env vars: `NVIDIA_API_KEY_70B` (for the serverless NVIDIA proxy)
+7. Deploy
+
+The repo-level [vercel.json](vercel.json) has edge rewrites that proxy
+`/rotican/*` → Moon's separate Vercel deployment.
+
+### Project 2: Rotican.ai (Moon's Next.js app)
+
+1. Import the same repo on Vercel → create project `rotican-ai`
 2. **Root Directory**: `crew/moonwiraja/apps/roticanai`
-3. **Framework**: Next.js (auto-detected)
-4. Enable **"Include source files outside of the Root Directory"**
-5. Add environment variables (see [crew/moonwiraja/apps/roticanai/.env.example](crew/moonwiraja/apps/roticanai/.env.example))
-6. Deploy
+3. **Framework Preset**: `Next.js` (auto-detected)
+4. **Build Command**: blank (uses `bun run build`)
+5. **Output Directory**: blank (uses `.next`)
+6. **Install Command**: `bun install`
+7. Env vars: see the roticanai README — DATABASE_URL, BETTER_AUTH_SECRET,
+   BETTER_AUTH_URL (use this project's domain), OAuth keys, S3, Modal, etc.
+8. Deploy
 
-The build process:
-1. Builds Vite (KrackedOS) at repo root
-2. Copies Vite output into `roticanai/public/`
-3. Builds Next.js (roticanai) with `basePath: /rotican`
-4. Serves:
-   - `/` → KrackedOS static
-   - `/rotican/*` → Roticanai Next.js
+Moon's Next.js config uses `basePath: "/rotican"` in production so that
+all its paths (routes, assets, API) are namespaced. Edge rewrites from
+KrackedOS forward `/rotican/*` to Moon's deployment at the same path,
+so asset URLs resolve cleanly under the KrackedOS domain.
 
-Build script: [tools/build-for-vercel.js](tools/build-for-vercel.js)
+### How Routes Flow in Production
+
+```
+User hits:  https://kracked-os.vercel.app/rotican/ms
+    ↓
+KrackedOS Vercel edge applies rewrite rule
+    ↓
+    https://rotican-ai.vercel.app/rotican/ms
+    ↓
+Moon's Next.js (basePath: /rotican) serves the Malay locale page
+    ↓
+Response content streams back through kracked-os.vercel.app domain
+```
+
+### Adding New Crew Apps
+
+When a new collaborator adds an app:
+
+1. Create their own Vercel project pointing to `crew/<name>/apps/<app>/`
+2. Add a rewrite to the root [vercel.json](vercel.json):
+   ```json
+   { "source": "/<name>/:path*", "destination": "https://<name>-app.vercel.app/<name>/:path*" }
+   ```
+3. Add their entry to [crew/<name>/crew.json](crew/)
 
 ## Tech Stack
 
