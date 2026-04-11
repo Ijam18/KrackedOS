@@ -34,9 +34,13 @@ ReactDOM.createRoot(document.getElementById('root')).render(
   </React.StrictMode>
 );
 
-// Keep the service worker out of dev so Vite HMR and React refresh stay clean.
-if (import.meta.env.PROD && !isElectronRuntime && 'serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js').catch(err => console.log('SW registration failed:', err));
+// Service worker disabled — it was caching stale HTML and breaking Vercel deploys.
+// If an old SW is still registered, unregister it and clear all caches on load.
+if (!isElectronRuntime && 'serviceWorker' in navigator) {
+  navigator.serviceWorker.getRegistrations().then((registrations) => {
+    registrations.forEach((registration) => registration.unregister().catch(() => {}));
   });
+  if ('caches' in window) {
+    caches.keys().then((keys) => keys.forEach((key) => caches.delete(key).catch(() => {})));
+  }
 }

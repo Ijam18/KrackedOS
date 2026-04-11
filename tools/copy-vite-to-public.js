@@ -29,6 +29,17 @@ if (!fs.existsSync(VITE_DIST)) {
   process.exit(1);
 }
 
+// Clean stale hashed asset files from public/assets/ (but keep character/environment folders)
+const publicAssetsDir = path.join(ROTICANAI_PUBLIC, 'assets');
+if (fs.existsSync(publicAssetsDir)) {
+  for (const entry of fs.readdirSync(publicAssetsDir)) {
+    const full = path.join(publicAssetsDir, entry);
+    if (fs.statSync(full).isFile()) {
+      fs.unlinkSync(full);
+    }
+  }
+}
+
 // Rename dist/index.html → dist/kos.html so it doesn't conflict with Next.js.
 const indexHtml = path.join(VITE_DIST, 'index.html');
 const kosHtml = path.join(VITE_DIST, 'kos.html');
