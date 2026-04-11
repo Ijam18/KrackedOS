@@ -39,3 +39,25 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# KrackedOS Vite build output copied by tools/build-for-vercel.js
+# These come from the Vite build at repo root, not from roticanai itself.
+/public/kos.html
+/public/CREDITS-kdacademy-assets.txt
+/public/manifest.json
+/public/sw.js
+/public/selangor-parlimen.svg
+/public/icons/
+/public/kdacademy/
+/public/lesson-visuals/
+/public/wallpapers/
+/public/assets/index-*
+/public/assets/style-*
+/public/assets/shield-check-*
+/public/assets/BuilderStudioLocal-*
+/public/assets/IdeaToPromptApp-*
+/public/assets/KrackedIjamTerminal-*
+/public/assets/KrackedKdAcademy-*
+/public/assets/KrackedMissionConsole-*
+/public/assets/VibeSimulator-*
+/public/assets/ijamsAIService-*
