@@ -1,0 +1,20 @@
+{
+  "name": "moonwiraja",
+  "displayName": "Moon",
+  "role": "collaborator",
+  "joinedAt": "2026-04-03",
+  "apps": [
+    {
+      "id": "rotican-ai",
+      "title": "Rotican.ai",
+      "path": "apps/roticanai",
+      "devCommand": "bun run dev",
+      "port": 3003,
+      "proxyPrefix": "/rotican",
+      "locale": "ms",
+      "icon": "/icons/rotican.png",
+      "color": "#f97316",
+      "description": "AI-powered web app builder"
+    }
+  ]
+}

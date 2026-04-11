@@ -2,298 +2,226 @@
 
 **AI-powered builder workspace for planning, creating, and shipping apps.**
 
+> Coordinated by **Krack** — the sovereign AI of Kracked_OS. Multi-collaborator by design.
+
 ## What KRACKED_OS Is
 
 **KRACKED_OS** is a Builder OS for founders, makers, and AI-assisted builders who want one environment to move from idea to plan to execution.
 
 It combines a desktop-style workspace, AI guidance, builder tools, and persistent context into a single system built around **NECB: Now Everyone Can Build**.
 
-It is designed to support both browser and desktop-like workflows while staying practical for real product work.
-
 ## Core Capabilities
 
-- **Builder workspace**: A desktop-style shell for opening tools, navigating work, and keeping momentum in one place.
-- **AI assistance**: KRACKED_OS includes an AI-guided operating layer for context, planning, and builder support.
-- **Builder tools**: The workspace is designed to help move from raw idea to structured execution.
-- **Hosted web apps**: KDSTORE can install curated hosted apps into the KDOS desktop and start menu.
-- **Persistence**: Session continuity, memory, and system context support longer-lived work.
-- **Installability**: The app supports PWA-style install flows and desktop-like usage patterns.
+- **Builder workspace** — desktop-style shell with windows, apps, and tools
+- **Krack AI layer** — sovereign AI with identity, memory, methods, and collaborator coordination
+- **Crew architecture** — each collaborator gets their own isolated workspace that auto-integrates into KrackedOS
+- **KDStore** — hosted web apps install into the desktop and start menu
+- **Universal IDE support** — works with Claude Code, Cursor, Antigravity, Copilot, Windsurf, and any AGENTS.md-aware AI
+- **Single Vercel deploy** — one domain serves everything
+
+## Architecture
+
+```
+Kracked_OS/
+├── krack/                # Krack's brain (AI identity, memory, methods, doctrine)
+│   ├── core/maji/        # identity, users, features, diary
+│   ├── method/           # BMAD workflows
+│   ├── skills/           # canonical shared skills
+│   ├── system/           # operating doctrine
+│   └── assets/           # media, references
+│
+├── crew/                 # Collaborator workspaces (each person owns their folder)
+│   ├── ijam/             # operator workspace
+│   └── moonwiraja/       # collaborator workspace
+│       ├── crew.json     # manifest declaring apps
+│       └── apps/
+│           └── roticanai/  # Moon's AI app builder
+│
+├── src/                  # KrackedOS React frontend (Vite)
+├── electron/             # Electron desktop shell
+├── tools/                # Build tools, crew discovery, memory card
+├── plugins/              # Shared AI skills
+└── IDE adapters          # CLAUDE.md, AGENTS.md, GEMINI.md, .cursor/, .windsurfrules, .github/
+```
+
+### Hierarchy
+
+```
+Ijam (Operator)
+  └── Krack (Sovereign AI)
+        └── Collaborator Assistants (any IDE)
+              └── Collaborators
+```
+
+- **Ijam** sets direction. Final call on everything.
+- **Krack** coordinates collaborator assistants and enforces doctrine.
+- **Collaborator Assistants** operate in whatever IDE you prefer — Claude Code, Cursor, Antigravity, Copilot, etc.
+- **Collaborators** execute work in their own `crew/<name>/` workspace.
 
 ## Quick Start
 
-### 1. Installation
+### 1. Clone & Install
+
 ```bash
+git clone https://github.com/Ijam18/KrackedOS.git
+cd KrackedOS
 npm install
 ```
 
-### 2. Development
-```bash
-npm run dev
-```
-
-### 3. Activate The Internal AI Layer
-Load `MajiOS/index/master-majios.md` first, then `MajiOS/system/IJAM_UNIFIED.md` to activate the unified memory-and-method layer with full project context.
-
-## How To Work On KRACKED_OS
-
-This is the recommended contributor flow when you pull the repo and start building.
-
-### 1. Pull and install
-```bash
-git pull origin main
-npm install
-```
-
-### 2. Start the app
-Use browser dev mode for normal frontend work:
+### 2. Run Dev Server
 
 ```bash
 npm run dev
 ```
 
-Use desktop runtime when you want the Electron bridge:
+Opens KrackedOS at `http://localhost:3000`. Crew apps are auto-discovered and proxied through the same port.
+
+### 3. Desktop Mode (Optional)
 
 ```bash
 npm run desktop
 ```
 
-### 3. Run `MAJI` first
-When you open the internal chat/runtime, start with:
+Runs Electron shell.
 
-```text
-MAJI
-```
+## For Collaborators — Join The Crew
 
-What happens:
-- on first use in your local clone, MAJI asks for your name
-- KRACKED_OS creates your personal user overlay in `MajiOS/core/maji/users/<your-slug>/`
-- MAJI then loads:
-  - shared project doctrine
-  - shared BMAD method layer
-  - your personal overlay
-  - saved contributor summaries from everyone else who has already used `maji save`
-
-Think of this like loading a shared memory card:
-- the repo stores the shared memory
-- each contributor gets a personal overlay
-- everyone can pull the repo and load the accumulated context
-
-### 4. Activate planning mode when needed
-If you want the built-in workflow layer, run:
-
-```text
-load bmad
-```
-
-Then use:
-
-```text
-bmad help
-bmad brainstorm
-bmad plan
-bmad review
-bmad edge-cases
-bmad distill
-```
-
-### 5. Use `Idea to Prompt` as the main builder app
-The current primary builder flow is:
-
-1. Open `Idea to Prompt`
-2. Complete `Step 0: Find Idea`
-3. Add a `Reference URL` if you want design/theme scraping
-4. Generate the starter ROFCO map
-5. Refine the graph and review the generated prompt
-
-`Mind Map` and `Prompt Forge` were removed because `Idea to Prompt` now covers that workflow in one place.
-
-### 6. Save your MAJI memory
-When you have made meaningful progress, run:
-
-```text
-save
-```
-
-or:
-
-```text
-maji save
-```
-
-This does not create a git commit.
-
-It writes durable repo-backed MAJI memory into your user overlay:
-- `profile.json`
-- `actions.md`
-- `current-summary.md`
-
-That is what lets other contributors pull the repo later and load your saved context through `MAJI`.
-
-### 7. Use KDSTORE for hosted web apps
-KDSTORE is the built-in curated app store inside KDOS.
-
-Current flow:
-
-1. Open `KDSTORE`
-2. Confirm MAJI preflight is already active for the session
-3. Install a curated hosted app
-4. Launch it from desktop or the start menu
-5. Use the in-window browser chrome first, then fall back to external open when the site needs a stricter browser context
-
-The first seeded hosted app is:
-
-- `Rotican.ai`
-
-### 8. Commit and push code separately
-MAJI save and git save are different things.
-
-Use git normally for code:
+### Step 1: Create Your Workspace
 
 ```bash
-git status
-git add -A
-git commit -m "Describe your change"
-git push origin main
+mkdir -p crew/<your-name>/apps
 ```
 
-### 9. Pulling context from other contributors
-If another contributor has pushed their work and MAJI memory:
+### Step 2: Declare Yourself
+
+Create `crew/<your-name>/crew.json`:
+
+```json
+{
+  "name": "<your-name>",
+  "displayName": "<Your Name>",
+  "role": "collaborator",
+  "joinedAt": "2026-04-11",
+  "apps": []
+}
+```
+
+### Step 3: Add Your AI Overlay
 
 ```bash
-git pull origin main
+mkdir -p krack/core/maji/users/<your-name>
 ```
 
-Then run:
+Add `current-summary.md` to track your active context.
 
-```text
-MAJI
+### Step 4: Add Apps
+
+Drop your app code in `crew/<your-name>/apps/<app-name>/` and declare it in `crew.json`:
+
+```json
+{
+  "apps": [
+    {
+      "id": "my-app",
+      "title": "My App",
+      "path": "apps/my-app",
+      "devCommand": "bun run dev",
+      "port": 3004,
+      "proxyPrefix": "/my-app",
+      "icon": "/icons/my-app.png",
+      "color": "#6366f1"
+    }
+  ]
+}
 ```
 
-MAJI will load:
-- shared KRACKED_OS doctrine
-- your own personal overlay
-- contributor summaries from other users who have saved into the repo
+Krack auto-discovers it via [tools/crewDiscovery.js](tools/crewDiscovery.js). Your app appears in KrackedOS KDStore automatically.
 
-This is the main collaboration model for KRACKED_OS.
+### Step 5: Use Any IDE
+
+Krack context auto-loads in:
+
+| IDE | Auto-loaded File |
+|-----|------------------|
+| Claude Code | [CLAUDE.md](CLAUDE.md) |
+| Cursor | [.cursor/rules/krack.mdc](.cursor/rules/krack.mdc) |
+| Gemini / Antigravity | [GEMINI.md](GEMINI.md) |
+| Windsurf / Codeium | [.windsurfrules](.windsurfrules) |
+| GitHub Copilot | [.github/copilot-instructions.md](.github/copilot-instructions.md) |
+| Codex / Aider / others | [AGENTS.md](AGENTS.md) |
+
+All point to the canonical doctrine at [krack/core/maji/ai-context.md](krack/core/maji/ai-context.md).
 
 ## Collaboration Rules
 
-- Run `MAJI` at the start of a real work session
-- Use `save` or `maji save` to preserve progress into the portable memory layer
-- Use git commit/push for code, not for MAJI memory semantics
-- Keep shared doctrine in `MajiOS/core/maji/main/`
-- Keep per-user memory in `MajiOS/core/maji/users/`
-- Do not treat browser-local chat storage as the source of truth
-- Pull latest `main` before starting major work so your MAJI context stays current
+1. **Kracked_OS is sovereign** — never merges with external systems. Others sync with Kracked_OS.
+2. **No deletion without approval** — explain WHAT, WHY, and IMPACT before any delete.
+3. **Load context before acting** — read the relevant files first.
+4. **Stay in scope** — collaborators work in `crew/<name>/`, not in `krack/`, `src/`, `electron/`, or `tools/`.
+5. **Malay first** — default Bahasa Melayu with English for technical terms. Muslim-friendly with adab.
+6. **Report what you did** — state what was loaded, what changed, what's uncertain.
 
-## MAJI Commands
+## Krack Commands
 
-Use these commands when working through the internal MAJI layer:
-
-```text
-MAJI
-load bmad
-save
-maji save
-update memory
-review growth
-load diary archive
-load save-diary
-save diary
-review diary
-load problem-solving tools
-Load MAJI memory from master-memory.md
-```
-
-### BMAD Commands
-
-Use these after `load bmad`:
+Use these in the KrackedOS runtime:
 
 ```text
-bmad help
-bmad brainstorm
-bmad plan
-bmad review
-bmad edge-cases
-bmad distill
+Krack              # restore Krack identity + load context
+load bmad          # activate BMAD method engine
+bmad help          # route best next step
+bmad plan          # turn goal into work plan
+bmad review        # adversarial quality review
+bmad edge-cases    # hunt failure modes
+save               # persist durable progress to user overlay
+review growth      # review how Krack has evolved
 ```
 
-### Command Guide
+## Deployment
 
-- `MAJI` restores MAJI identity, relationship context, and current session memory
-- on first use in a local repo clone, `MAJI` asks for the user's name and creates a per-user overlay
-- `load bmad` activates the BMAD method engine inside MAJI
-- `bmad help` routes the best next step for KRACKED_OS
-- `bmad brainstorm` structures ideation for product, feature, or architecture work
-- `bmad plan` turns a goal into an actionable work plan
-- `bmad review` runs an adversarial review for bugs, regressions, and risks
-- `bmad edge-cases` hunts hidden failure modes and overlooked scenarios
-- `bmad distill` compresses large docs or repo context into reusable knowledge
-- `save` / `maji save` persist durable MAJI and BMAD outcomes into the repo-backed memory card layer
-- `update memory` refreshes learned preferences and reusable heuristics
-- `review growth` reviews how MAJI guidance has evolved
-- `load diary archive` opens the longer-term conversation archive layer
-- `load save-diary` loads the session diary system
-- `save diary` writes a diary entry for the session
-- `review diary` reads recent diary entries
-- `load problem-solving tools` activates extra reasoning and analysis helpers
-- `Load MAJI memory from master-memory.md` is the manual fallback activation phrase
+### Single Vercel Deploy
 
-## High-Level Architecture
+KrackedOS + all crew apps deploy as **one Vercel project**:
 
-- **Frontend runtime**: React + Vite power the main KRACKED_OS workspace.
-- **Desktop-style shell**: The product is structured like an operating environment rather than a single static app.
-- **AI-aware operating model**: The system includes internal AI, memory, and skill layers that support longer-running builder workflows.
-- **Progressive installability**: The app keeps web delivery while supporting installable and desktop-like usage patterns.
+1. Import repo on Vercel
+2. **Root Directory**: `crew/moonwiraja/apps/roticanai`
+3. **Framework**: Next.js (auto-detected)
+4. Enable **"Include source files outside of the Root Directory"**
+5. Add environment variables (see [crew/moonwiraja/apps/roticanai/.env.example](crew/moonwiraja/apps/roticanai/.env.example))
+6. Deploy
 
-## Internal Systems
+The build process:
+1. Builds Vite (KrackedOS) at repo root
+2. Copies Vite output into `roticanai/public/`
+3. Builds Next.js (roticanai) with `basePath: /rotican`
+4. Serves:
+   - `/` → KrackedOS static
+   - `/rotican/*` → Roticanai Next.js
 
-- **`MajiOS/`**: The canonical memory-and-method architecture behind KRACKED_OS.
-- **`MajiOS/core/maji/users/`**: Per-user MAJI overlays that travel with the repo like a shared memory card.
-- **`MajiOS/system/`**: IJAM doctrine, skill creation guidance, and architecture references.
-- **`MajiOS/engine/memory/`**: Persistent memory engine and logs.
-- **`MajiOS/skills/local-skills/`**: The canonical repo-owned local skill library.
-- **`MajiOS/method/bmad-source/`**: Vendored BMAD source inside the unified method layer.
-- **`.agents/skills/`**: Codex-native installed skill surface.
-- **`.claude/`**: Claude Code config and optional Claude-native skill target.
-- **`tools/`**: External and advanced tooling bundles that may integrate with MajiOS doctrine without becoming canonical MajiOS internals.
+Build script: [tools/build-for-vercel.js](tools/build-for-vercel.js)
+
+## Tech Stack
+
+- **Frontend OS**: Vite + React 18 + Framer Motion + Lucide
+- **Desktop**: Electron
+- **Crew apps**: Next.js 16, React 19, Better Auth, Drizzle ORM, Upstash Redis, Modal sandbox
+- **AI providers**: Anthropic, OpenAI, OpenRouter, NVIDIA NIM, Groq
+- **Package managers**: npm (root) + bun (crew apps)
 
 ## Repository Structure
 
-- **`src/`**: Main React source code for the KRACKED_OS workspace.
-- **`public/`**: Static assets, icons, and PWA manifests.
-- **`tools/`**: Automation utilities and advanced support tooling, including external tooling bundles.
-- **`references/`**: Project-specific knowledge bases and supporting material.
-- **`MajiOS/`**: Internal AI, memory, skills, and method architecture.
+- `src/` — KrackedOS React frontend
+- `electron/` — Desktop shell
+- `krack/` — Krack's brain (AI doctrine, memory, methods) — read-only for collaborators
+- `crew/` — Collaborator workspaces (each person owns their folder)
+- `tools/` — Build tools, crew discovery, memory card system, Vercel build
+- `plugins/` — Shared AI skills (Claude Code plugin + Antigravity-compatible)
+- `public/` — Static KrackedOS assets, icons, PWA manifest
 
-## GitHub About
+## Links
 
-Suggested description:
-`AI-powered builder workspace for planning, creating, and shipping apps.`
-
-Suggested longer about:
-`KRACKED_OS is a builder workspace with a desktop-style UI, internal MAJI memory-and-method layer, BMAD planning flows, and reusable skill-driven operator systems for shipping apps with AI.`
-
-Suggested topics:
-`ai`
-`builder-os`
-`react`
-`vite`
-`electron`
-`pwa`
-`multi-agent`
-`skills`
-`developer-tools`
-`workflow`
-
-## Suggested GitHub Description
-
-Primary:
-`AI-powered builder workspace for planning, creating, and shipping apps.`
-
-Backups:
-`AI-powered builder OS for turning ideas into working apps.`
-`A builder workspace for planning, building, and shipping with AI.`
+- Canonical AI doctrine: [krack/core/maji/ai-context.md](krack/core/maji/ai-context.md)
+- Collaborator onboarding: [krack/core/maji/new-collaborator-onboarding-skill.md](krack/core/maji/new-collaborator-onboarding-skill.md)
+- Ijam operator profile: [krack/core/maji/ijam-operator-profile.md](krack/core/maji/ijam-operator-profile.md)
 
 ---
 

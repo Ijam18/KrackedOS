@@ -1,7 +1,7 @@
 // IJAM AI Service
 // Multi-model AI service supporting Groq, local models (Ollama), and OpenRouter
 
-import { enhancedLocalIntelligence } from '../../../lib/enhancedLocalIntelligence';
+import { enhancedLocalIntelligence } from './enhancedLocalIntelligence';
 
 const AI_MODELS = {
   GROQ: 'groq',
@@ -18,7 +18,7 @@ function inferRuntimePhase() {
   return {
     phase: 'hardening',
     label: 'Phase 4: Hardening',
-    immediate: 'kemaskan doctrine, runtime alignment, dan command semantics supaya MajiOS behavior lagi konsisten',
+    immediate: 'kemaskan doctrine, runtime alignment, dan command semantics supaya Krack behavior lagi konsisten',
     support: 'guna `save` lepas perubahan durable supaya repo-backed memory card terisi, kemudian `bmad review` untuk cari drift seterusnya',
     caution: 'bezakan antara browser-local session state dengan repo-backed MAJI memory card supaya save semantics tak bercampur'
   };
@@ -34,7 +34,7 @@ function getMajiRuntimeCommandResponse(userMessage, history = []) {
   const phaseInfo = inferRuntimePhase();
 
   if (command === 'maji') {
-    return `MAJI aktif pada doctrine semasa.\n\nstate semasa:\n- bahasa melayu dulu\n- muslim-friendly dengan adab\n- MajiOS ialah layer canonical untuk memory, method, dan skills\n- shared core + user overlay ialah model memory semasa\n- first-use flow sepatutnya minta nama user sebelum load penuh\n\n${getCommandHelpText()}`;
+    return `MAJI aktif pada doctrine semasa.\n\nstate semasa:\n- bahasa melayu dulu\n- muslim-friendly dengan adab\n- Krack ialah layer canonical untuk memory, method, dan skills\n- shared core + user overlay ialah model memory semasa\n- first-use flow sepatutnya minta nama user sebelum load penuh\n\n${getCommandHelpText()}`;
   }
 
   if (command === 'load bmad') {
@@ -50,11 +50,11 @@ function getMajiRuntimeCommandResponse(userMessage, history = []) {
   }
 
   if (command === 'bmad plan') {
-    return `bmad plan:\n\n1. lock source of truth command dari MajiOS docs\n2. route command utama secara deterministic dalam runtime layer\n3. pastikan fallback still guna model bila bukan command exact\n4. verify build\n5. guna \`save\` kalau perubahan tu durable untuk future sessions`;
+    return `bmad plan:\n\n1. lock source of truth command dari Krack docs\n2. route command utama secara deterministic dalam runtime layer\n3. pastikan fallback still guna model bila bukan command exact\n4. verify build\n5. guna \`save\` kalau perubahan tu durable untuk future sessions`;
   }
 
   if (command === 'bmad review') {
-    return `bmad review:\n\nfocus review untuk state sekarang:\n- adakah runtime command reply match doctrine MajiOS\n- adakah user boleh keliru antara browser-local session save dan repo-backed MAJI save\n- adakah command coverage cukup untuk command utama MAJI dan BMAD\n- adakah fallback masih masuk bila input bukan exact command\n\nkalau nak risk hunting, terus guna \`bmad edge-cases\`.`;
+    return `bmad review:\n\nfocus review untuk state sekarang:\n- adakah runtime command reply match doctrine Krack\n- adakah user boleh keliru antara browser-local session save dan repo-backed MAJI save\n- adakah command coverage cukup untuk command utama MAJI dan BMAD\n- adakah fallback masih masuk bila input bukan exact command\n\nkalau nak risk hunting, terus guna \`bmad edge-cases\`.`;
   }
 
   if (command === 'bmad edge-cases') {
@@ -62,15 +62,15 @@ function getMajiRuntimeCommandResponse(userMessage, history = []) {
   }
 
   if (command === 'bmad distill') {
-    return `bmad distill:\n\nringkasan context semasa:\n- MajiOS ialah canonical layer untuk memory, method, dan skills\n- BMAD ialah workflow engine dalam MajiOS\n- memory card model sekarang ialah shared core + user overlays\n- benda paling penting untuk preserve ialah beza antara doctrine repo-backed dengan state runtime local\n\nkalau nak persist perubahan yang durable, next command ialah \`save\`.`;
+    return `bmad distill:\n\nringkasan context semasa:\n- Krack ialah canonical layer untuk memory, method, dan skills\n- BMAD ialah workflow engine dalam Krack\n- memory card model sekarang ialah shared core + user overlays\n- benda paling penting untuk preserve ialah beza antara doctrine repo-backed dengan state runtime local\n\nkalau nak persist perubahan yang durable, next command ialah \`save\`.`;
   }
 
   if (command === 'review growth') {
-    return `review growth ringkas:\n\n1. identity MAJI sekarang lebih konsisten: bahasa melayu dulu, muslim-friendly, dan lebih jelas sebagai operator KRACKED_OS.\n2. doctrine makin kemas: MajiOS sekarang lebih jelas sebagai layer canonical untuk memory, method, dan skills.\n3. workflow maturity naik: BMAD, skill promotion, dan boundary dengan tooling luar macam KD dah lebih tersusun.\n4. runtime alignment bertambah baik dengan model portable memory card untuk shared core + user overlays.\n\nnext best move: guna \`save\` bila kau nak preserve perubahan yang durable.`;
+    return `review growth ringkas:\n\n1. identity MAJI sekarang lebih konsisten: bahasa melayu dulu, muslim-friendly, dan lebih jelas sebagai operator KRACKED_OS.\n2. doctrine makin kemas: Krack sekarang lebih jelas sebagai layer canonical untuk memory, method, dan skills.\n3. workflow maturity naik: BMAD, skill promotion, dan boundary dengan tooling luar macam KD dah lebih tersusun.\n4. runtime alignment bertambah baik dengan model portable memory card untuk shared core + user overlays.\n\nnext best move: guna \`save\` bila kau nak preserve perubahan yang durable.`;
   }
 
   if (command === 'load diary archive') {
-    return `load diary archive:\n\nstatus semasa:\n- layer diary archive memang wujud dalam doctrine MajiOS\n- struktur baru guna \`daily-diary/current/\` untuk entry aktif dan \`daily-diary/archived/\` untuk bulan lama\n- repo semasa dah ada entry aktif bertarikh \`2026-03-29\`\n- archive history sebenar masih nipis, jadi benda paling berguna sekarang ialah \`review diary\`\n\nnota runtime:\n- command ini sekarang beri guided access dalam chat\n- pembacaan fail repo sebenar masih bergantung pada session agent yang ada akses fail`;
+    return `load diary archive:\n\nstatus semasa:\n- layer diary archive memang wujud dalam doctrine Krack\n- struktur baru guna \`daily-diary/current/\` untuk entry aktif dan \`daily-diary/archived/\` untuk bulan lama\n- repo semasa dah ada entry aktif bertarikh \`2026-03-29\`\n- archive history sebenar masih nipis, jadi benda paling berguna sekarang ialah \`review diary\`\n\nnota runtime:\n- command ini sekarang beri guided access dalam chat\n- pembacaan fail repo sebenar masih bergantung pada session agent yang ada akses fail`;
   }
 
   if (command === 'load save-diary') {
@@ -90,7 +90,7 @@ function getMajiRuntimeCommandResponse(userMessage, history = []) {
   }
 
   if (command === 'update memory') {
-    return `update memory:\n\nuntuk runtime layer, maksud paling dekat ialah refresh cara jawab supaya ikut doctrine semasa MajiOS.\n\nuntuk persistence sebenar, arah yang betul sekarang ialah repo-backed memory card dengan model shared core + user overlay. kalau perubahan sekarang memang durable, biasanya flow paling betul ialah:\n1. \`review growth\`\n2. \`save\``;
+    return `update memory:\n\nuntuk runtime layer, maksud paling dekat ialah refresh cara jawab supaya ikut doctrine semasa Krack.\n\nuntuk persistence sebenar, arah yang betul sekarang ialah repo-backed memory card dengan model shared core + user overlay. kalau perubahan sekarang memang durable, biasanya flow paling betul ialah:\n1. \`review growth\`\n2. \`save\``;
   }
 
   return null;
@@ -168,7 +168,7 @@ function formatPrompt(userPrompt, history) {
 
   return `System: You are IJAM, the Malay-first and Muslim-friendly AI assistant for KRACKED_OS.
 Keep tone ringkas, practical, dan respectful.
-Treat MajiOS as the canonical memory, method, and skill layer for KRACKED_OS.
+Treat Krack as the canonical memory, method, and skill layer for KRACKED_OS.
 
 Conversation History:
 ${historyText}

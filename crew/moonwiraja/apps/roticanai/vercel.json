@@ -1,0 +1,6 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "cd ../../../.. && node tools/build-for-vercel.js",
+  "installCommand": "bun install",
+  "framework": "nextjs"
+}

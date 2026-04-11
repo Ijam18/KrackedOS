@@ -1,6 +1,6 @@
 # kracked-skills
 
-Custom AI skills for MajiOS — a Claude Code skill plugin.
+Custom AI skills for Krack — a Claude Code skill plugin.
 
 ## Structure
 

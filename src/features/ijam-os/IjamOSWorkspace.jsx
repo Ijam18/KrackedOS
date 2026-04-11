@@ -34,7 +34,7 @@ import {
     Volume2,
     PlugZap
 } from 'lucide-react';
-import { callNvidiaLLM, localIntelligence, ZARULIJAM_SYSTEM_PROMPT } from '../../lib/nvidia';
+import { callNvidiaLLM, localIntelligence, ZARULIJAM_SYSTEM_PROMPT } from './lib/nvidia';
 import { useWeather } from '../../utils/useWeather';
 import { useSoundEffects } from '../../utils/useSoundEffects';
 import { motion, AnimatePresence } from 'framer-motion';

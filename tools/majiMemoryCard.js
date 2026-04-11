@@ -6,7 +6,7 @@ import { execFileSync } from 'node:child_process';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, '..');
-const MAJI_ROOT = path.join(REPO_ROOT, 'MajiOS', 'core', 'maji');
+const MAJI_ROOT = path.join(REPO_ROOT, 'krack', 'core', 'maji');
 const USERS_ROOT = path.join(MAJI_ROOT, 'users');
 const SHARED_CORE_FILES = [
   'master-memory.md',

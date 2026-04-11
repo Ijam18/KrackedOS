@@ -5,7 +5,7 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "npx concurrently \"vite\" \"cd roticanai && bun run dev\"",
+    "dev": "npx concurrently \"vite\" \"cd crew/moonwiraja/apps/roticanai && PORT=3003 bun run dev\"",
     "dev:kdos": "vite",
     "build": "vite build",
     "preview": "vite preview",

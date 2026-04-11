@@ -1,0 +1,8 @@
+{
+  "name": "ijam",
+  "displayName": "Ijam",
+  "role": "operator",
+  "joinedAt": "2026-03-01",
+  "apps": [],
+  "note": "Operator owns core system (src/, electron/, tools/). Apps contributed here are personal/experimental."
+}

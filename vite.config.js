@@ -3,6 +3,7 @@ import react from '@vitejs/plugin-react-swc'
 import { scrapeReferencePayload } from './tools/referenceScraper.js'
 import { loadMajiMemoryCard, onboardMajiUser, saveMajiMemoryCard } from './tools/majiMemoryCard.js'
 import { kdbrowserRemoteDevPlugin } from './tools/kdbrowserRemoteDevService.js'
+import { discoverCrewApps, buildCrewProxyConfig } from './tools/crewDiscovery.js'
 
 function ideaToPromptScrapePlugin() {
   return {
@@ -91,19 +92,26 @@ function majiMemoryCardPlugin() {
   }
 }
 
+// Auto-discover crew apps and build proxy config
+const crewApps = discoverCrewApps()
+const crewProxy = buildCrewProxyConfig(crewApps)
+
+if (crewApps.length) {
+  console.log(`[crew] Discovered ${crewApps.length} app(s): ${crewApps.map(a => a.id).join(', ')}`)
+}
+
 export default defineConfig({
   base: './',
   plugins: [react(), ideaToPromptScrapePlugin(), majiMemoryCardPlugin(), kdbrowserRemoteDevPlugin()],
   server: {
     host: '127.0.0.1',
-    port: 5173,
-    strictPort: true,
+    port: 3000,
+    strictPort: false,
     hmr: {
       host: '127.0.0.1',
-      port: 5173,
-      clientPort: 5173,
       protocol: 'ws'
-    }
+    },
+    proxy: crewProxy
   },
   build: {
     chunkSizeWarningLimit: 1000
